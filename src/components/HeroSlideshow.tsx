@@ -1,0 +1,175 @@
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronLeft, ChevronRight, Play, BookOpen } from 'lucide-react'
+
+interface Slide {
+  id: number
+  image: string
+  title: string
+  subtitle: string
+}
+
+const HeroSlideshow: React.FC = () => {
+  const [current, setCurrent] = useState(0)
+  const [isAutoPlay, setIsAutoPlay] = useState(true)
+
+  const slides: Slide[] = [
+    {
+      id: 1,
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop',
+      title: 'Gear Up. Ride Hard.',
+      subtitle: 'Premium Parts • Expert Appointments • Your Ride, Elevated',
+    },
+    {
+      id: 2,
+      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1600&h=900&fit=crop',
+      title: 'Service Fast.',
+      subtitle: 'Premium Motorcycle Parts & Expert Service',
+    },
+    {
+      id: 3,
+      image: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1600&h=900&fit=crop',
+      title: 'Powered By Performance',
+      subtitle: 'Top-Tier Components & Expert Maintenance',
+    },
+    {
+      id: 4,
+      image: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=1600&h=900&fit=crop',
+      title: 'Built To Last',
+      subtitle: 'Quality Parts From Industry Leaders',
+    },
+  ]
+
+  const nextSlide = () => {
+    setCurrent((prev) => (prev + 1) % slides.length)
+    setIsAutoPlay(false)
+  }
+
+  const prevSlide = () => {
+    setCurrent((prev) => (prev - 1 + slides.length) % slides.length)
+    setIsAutoPlay(false)
+  }
+
+  useEffect(() => {
+    if (!isAutoPlay) return
+
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isAutoPlay])
+
+  return (
+    <div className="relative w-full h-screen mt-20 overflow-hidden group">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={current}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          className="absolute inset-0"
+        >
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${slides[current].image})`,
+              backgroundPosition: 'center',
+            }}
+          />
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-overlay" />
+
+          {/* Content */}
+          <div className="relative h-full flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="max-w-4xl"
+            >
+              <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter mb-6 text-white drop-shadow-2xl">
+                {slides[current].title}
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-200 font-light tracking-wide drop-shadow-lg mb-8">
+                {slides[current].subtitle}
+              </p>
+
+              {/* CTA Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+              >
+                <motion.button
+                  className="px-8 py-3 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide flex items-center gap-2 hover:shadow-2xl hover:shadow-moto-accent/50"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Play size={20} fill="currentColor" />
+                  Shop Now
+                </motion.button>
+                <motion.button
+                  className="px-8 py-3 border-2 border-moto-accent-neon rounded-lg font-bold text-moto-accent-neon uppercase tracking-wide flex items-center gap-2 hover:bg-moto-accent-neon/10 backdrop-blur-sm"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <BookOpen size={20} />
+                  Book Service
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        onMouseEnter={() => setIsAutoPlay(false)}
+        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+      >
+        <ChevronLeft size={28} />
+      </button>
+
+      <button
+        onClick={nextSlide}
+        onMouseEnter={() => setIsAutoPlay(false)}
+        className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+      >
+        <ChevronRight size={28} />
+      </button>
+
+      {/* Slide Indicators */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 flex gap-3">
+        {slides.map((_, idx) => (
+          <motion.button
+            key={idx}
+            onClick={() => {
+              setCurrent(idx)
+              setIsAutoPlay(false)
+            }}
+            className={`h-3 rounded-full transition-all duration-300 ${
+              idx === current
+                ? 'w-12 bg-moto-accent-orange'
+                : 'w-3 bg-white/40 hover:bg-white/60'
+            }`}
+            whileHover={{ scale: 1.2 }}
+          />
+        ))}
+      </div>
+
+      {/* Auto-play indicator */}
+      <div className="absolute top-8 right-8 z-40 text-sm text-gray-400 flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${isAutoPlay ? 'bg-moto-accent-neon animate-pulse' : 'bg-gray-600'}`} />
+        {isAutoPlay ? 'Auto-play' : 'Manual'}
+      </div>
+    </div>
+  )
+}
+
+export default HeroSlideshow
