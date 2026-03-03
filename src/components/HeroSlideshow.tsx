@@ -16,7 +16,7 @@ const HeroSlideshow: React.FC = () => {
   const slides: Slide[] = [
     {
       id: 1,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop&q=80',
+      image: 'https://scontent.fmnl9-4.fna.fbcdn.net/v/t1.15752-9/643787299_1281727390507393_2125770188258383661_n.png?_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEso-l7zXL9bfqANziQXJiUlZNTfdhhWr6Vk1N92GFavnZZmi7l_W7r_p84WV15YajYpa6QWxo_1d-KNj7MwInr&_nc_ohc=tqpcOkULju4Q7kNvwEqc3b7&_nc_oc=AdnzehCSyeYSbtuZefz8KGGvQR4L3l9eA3yt2I0_ZTyVzS2cp9_q8Sq0SwjHyaBzmac&_nc_zt=23&_nc_ht=scontent.fmnl9-4.fna&_nc_ss=8&oh=03_Q7cD4wFgmvFMZWK82ffeiiT-oLp_Gy7C-OVbx82g3coqje5Dsw&oe=69CE5ECD',
       title: 'Gear Up. Ride Hard.',
       subtitle: 'Premium Parts • Expert Service • Para sa Mga Rider ng Pilipinas',
     },
