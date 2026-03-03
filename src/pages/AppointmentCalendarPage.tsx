@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Clock, ArrowLeft } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Appointment, AppointmentStatus } from '../types'
 
@@ -28,7 +28,7 @@ const mockAppointments: Appointment[] = [
     shop_id: 'shop_1',
     scheduled_date: new Date().toISOString().split('T')[0],
     scheduled_time: '11:30',
-    service_type: 'Brake Service',
+    service_type: 'Brake Service',  
     mechanic_id: 'mech_2',
     status: 'in_progress',
     created_at: new Date().toISOString(),
@@ -66,11 +66,7 @@ const generateTimeSlots = (date: string, appointments: Appointment[]): TimeSlot[
   return slots
 }
 
-interface AppointmentCalendarPageProps {
-  onNavigate?: (page: string) => void
-}
-
-const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNavigate }) => {
+const AppointmentCalendarPage: React.FC = () => {
   const { t } = useLanguage()
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -186,7 +182,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNav
                   className={`p-2 rounded text-sm transition ${
                     day === null
                       ? ''
-                      : selectedDate === new Date().toISOString().substring(0, 10).replace(/-(\d{2})$/, `-${String(day).padStart(2, '0')}`)
+                      : selectedDate.endsWith(`-${String(day).padStart(2, '0')}`)
                       ? 'bg-blue-600 text-white font-bold'
                       : 'hover:bg-slate-700 text-slate-300'
                   }`}

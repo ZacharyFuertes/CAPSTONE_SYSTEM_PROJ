@@ -52,8 +52,9 @@ const AppContent: React.FC = () => {
       <main className="pt-20">
         {currentPage === 'dashboard' && <Dashboard onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
         {currentPage === 'inventory' && <InventoryPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
-        {currentPage === 'appointments' && <AppointmentCalendarPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
-        {currentPage === 'customers' && <CustomerPortal onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
+        {currentPage === 'appointments' && <AppointmentCalendarPage />}
+        {currentPage === 'customers' && <CustomerPortal />}
+        {currentPage === 'customer-portal' && <CustomerPortal />}
       </main>
 
       {/* Contextual AI Support */}
