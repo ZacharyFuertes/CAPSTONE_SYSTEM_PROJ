@@ -34,7 +34,7 @@ const HeroSlideshow: React.FC = () => {
     },
     {
       id: 4,
-      image: 'https://i.pinimg.com/736x/f9/df/13/f9df130dcc5061d2d5a88d346181198c.jpg',
+      image: 'https://images.pexels.com/photos/10182878/pexels-photo-10182878.jpeg',
       title: 'Built To Last',
       subtitle: 'Quality Parts From Local & International Brands',
     },
