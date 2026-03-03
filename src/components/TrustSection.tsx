@@ -18,27 +18,27 @@ const TrustSection: React.FC = () => {
   const testimonials: Testimonial[] = [
     {
       id: 1,
-      name: 'Marcus Johnson',
-      role: 'Harley Davidson Enthusiast',
-      content: 'MotoShop is my go-to for quality parts. The customer service is exceptional and the quality is unmatched.',
+      name: 'Juan Cruz',
+      role: 'Yamaha Rider - Manila',
+      content: 'MotoShop ang best! Mabilis na service at quality parts talaga. Highly recommended para sa lahat ng riders!',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&q=80',
     },
     {
       id: 2,
-      name: 'Sarah Chen',
-      role: 'Professional Racer',
-      content: 'Incredible selection of racing parts and the fastest shipping I\'ve experienced. Highly recommend!',
+      name: 'Maria Santos',
+      role: 'Honda Rider - Cebu',
+      content: 'Napakabilis ng delivery at ang customer service nila ay sobrang galing. Best motorcycle shop sa Pilipinas!',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&q=80',
     },
     {
       id: 3,
-      name: 'Alex Rivera',
-      role: 'Bike Shop Owner',
-      content: 'Outstanding reliability and support. MotoShop is the partner we rely on for our inventory.',
+      name: 'Antonio Reyes',
+      role: 'Mechanic - Davao',
+      content: 'Trusted supplier ng quality parts. Reliable, affordable, mabilis ang support. Best partner para sa business!',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&q=80',
     },
   ]
 
@@ -108,10 +108,10 @@ const TrustSection: React.FC = () => {
         >
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4 text-white">
-              Trusted by <span className="bg-gradient-accent bg-clip-text text-transparent">Riders Everywhere</span>
+              Trusted ng <span className="bg-gradient-accent bg-clip-text text-transparent">Filipino Riders</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              See what our community of passionate motorcycle enthusiasts have to say about MotoShop
+              Makikita kung ano ang sinasabi ng mga rider mula sa buong Pilipinas tungkol sa MotoShop
             </p>
           </div>
 

@@ -16,27 +16,27 @@ const HeroSlideshow: React.FC = () => {
   const slides: Slide[] = [
     {
       id: 1,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop',
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop&q=80',
       title: 'Gear Up. Ride Hard.',
-      subtitle: 'Premium Parts • Expert Appointments • Your Ride, Elevated',
+      subtitle: 'Premium Parts • Expert Service • Para sa Mga Rider ng Pilipinas',
     },
     {
       id: 2,
-      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1600&h=900&fit=crop',
+      image: 'https://images.unsplash.com/photo-1606611013016-969c19d4a42f?w=1600&h=900&fit=crop&q=80',
       title: 'Service Fast.',
-      subtitle: 'Premium Motorcycle Parts & Expert Service',
+      subtitle: 'Premium Motorcycle Parts & Expert Maintenance sa PH',
     },
     {
       id: 3,
-      image: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1600&h=900&fit=crop',
+      image: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1600&h=900&fit=crop&q=80',
       title: 'Powered By Performance',
-      subtitle: 'Top-Tier Components & Expert Maintenance',
+      subtitle: 'Top-Tier Components Para sa Yamaha, Honda, Suzuki',
     },
     {
       id: 4,
-      image: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=1600&h=900&fit=crop',
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop&q=80',
       title: 'Built To Last',
-      subtitle: 'Quality Parts From Industry Leaders',
+      subtitle: 'Quality Parts From Local & International Brands',
     },
   ]
 

@@ -89,10 +89,10 @@ const Footer: React.FC = () => {
               MOTO<span className="text-moto-accent">SHOP</span>
             </h3>
             <p className="text-gray-400 mb-6 text-sm leading-relaxed">
-              Premium motorcycles, protective gear, and accessories for riders who refuse to settle.
+              Premium motorcycle parts, maintenance, at expert service para sa mga riders ng Pilipinas.
             </p>
             <p className="text-gray-500 text-xs">
-              Gear Up. Ride Out. © {currentYear}
+              Gear Up. Ride Out. © {currentYear} MotoShop PH
             </p>
           </motion.div>
 
@@ -119,15 +119,15 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-gray-400">
               <li className="flex items-start gap-3 hover:text-moto-accent transition-colors">
                 <MapPin size={18} className="mt-0.5 flex-shrink-0" />
-                <span>123 Rider Avenue<br />Motorcycle City, MC 12345</span>
+                <span>Manila, Philippines<br />Available in Metro Manila & Nearby Provinces</span>
               </li>
               <li className="flex items-center gap-3 hover:text-moto-accent transition-colors cursor-pointer">
                 <Phone size={18} />
-                <a href="tel:+1234567890">(123) 456-7890</a>
+                <a href="tel:+639123456789">+63 912 345 6789</a>
               </li>
               <li className="flex items-center gap-3 hover:text-moto-accent transition-colors">
                 <Mail size={18} />
-                <a href="mailto:hello@motoshop.com">hello@motoshop.com</a>
+                <a href="mailto:hello@motoshop.ph">hello@motoshop.ph</a>
               </li>
             </ul>
           </motion.div>

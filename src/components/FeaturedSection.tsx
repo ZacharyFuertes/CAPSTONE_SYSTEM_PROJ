@@ -24,25 +24,25 @@ const FeaturedSection: React.FC = () => {
     {
       id: 1,
       name: 'Premium Exhaust System',
-      price: 349.99,
+      price: 19500,
       rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop',
+      image: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop&q=80',
       category: 'Exhaust',
     },
     {
       id: 2,
       name: 'High-Performance Air Filter',
-      price: 129.99,
+      price: 7200,
       rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&q=80',
       category: 'Filters',
     },
     {
       id: 3,
       name: 'Racing Brake Pads',
-      price: 199.99,
+      price: 11200,
       rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop',
+      image: 'https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop&q=80',
       category: 'Brakes',
     },
   ]
@@ -118,7 +118,7 @@ const FeaturedSection: React.FC = () => {
             Featured <span className="bg-gradient-accent bg-clip-text text-transparent">Parts & Services</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Handpicked premium components and expert services to elevate your ride
+            Premium motorcycle parts at affordable Filipino prices para sa lahat ng uri ng riders
           </p>
         </motion.div>
 
@@ -175,7 +175,7 @@ const FeaturedSection: React.FC = () => {
 
                   <div className="flex justify-between items-center">
                     <span className="text-2xl font-bold text-moto-accent-orange">
-                      ${product.price.toFixed(2)}
+                      ₱{product.price.toLocaleString('en-PH')}
                     </span>
                     <motion.button
                       className="p-2 rounded-lg bg-moto-accent-orange text-white hover:bg-moto-accent transition-colors"
