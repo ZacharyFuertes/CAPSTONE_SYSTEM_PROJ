@@ -22,19 +22,19 @@ const HeroSlideshow: React.FC = () => {
     },
     {
       id: 2,
-      image: 'https://images.unsplash.com/photo-1606611013016-969c19d4a42f?w=1600&h=900&fit=crop&q=80',
+      image: 'https://images.pexels.com/photos/235226/pexels-photo-235226.jpeg',
       title: 'Service Fast.',
       subtitle: 'Premium Motorcycle Parts & Expert Maintenance sa PH',
     },
     {
       id: 3,
-      image: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1600&h=900&fit=crop&q=80',
+      image: 'https://images.pexels.com/photos/1409999/pexels-photo-1409999.jpeg',
       title: 'Powered By Performance',
       subtitle: 'Top-Tier Components Para sa Yamaha, Honda, Suzuki',
     },
     {
       id: 4,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&h=900&fit=crop&q=80',
+      image: 'https://i.pinimg.com/736x/f9/df/13/f9df130dcc5061d2d5a88d346181198c.jpg',
       title: 'Built To Last',
       subtitle: 'Quality Parts From Local & International Brands',
     },
