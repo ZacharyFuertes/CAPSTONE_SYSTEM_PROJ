@@ -16,30 +16,7 @@ const TrustSection: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false)
 
   const testimonials: Testimonial[] = [
-    {
-      id: 1,
-      name: 'Juan Cruz',
-      role: 'Yamaha Rider - Manila',
-      content: 'MotoShop ang best! Mabilis na service at quality parts talaga. Highly recommended para sa lahat ng riders!',
-      rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&q=80',
-    },
-    {
-      id: 2,
-      name: 'Maria Santos',
-      role: 'Honda Rider - Cebu',
-      content: 'Napakabilis ng delivery at ang customer service nila ay sobrang galing. Best motorcycle shop sa Pilipinas!',
-      rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&q=80',
-    },
-    {
-      id: 3,
-      name: 'Antonio Reyes',
-      role: 'Mechanic - Davao',
-      content: 'Trusted supplier ng quality parts. Reliable, affordable, mabilis ang support. Best partner para sa business!',
-      rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&q=80',
-    },
+    
   ]
 
   const stats = [
