@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Clock } from 'lucide-react'
+import { Clock, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Appointment, AppointmentStatus } from '../types'
 
@@ -66,7 +66,11 @@ const generateTimeSlots = (date: string, appointments: Appointment[]): TimeSlot[
   return slots
 }
 
-const AppointmentCalendarPage: React.FC = () => {
+interface AppointmentCalendarPageProps {
+  onNavigate?: (page: string) => void
+}
+
+const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])

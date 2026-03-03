@@ -11,7 +11,9 @@ import CustomerPortal from './pages/CustomerPortal'
 import LoginPage from './pages/LoginPage'
 
 // Landing page imports (original)
+import Navbar from './components/Navbar'
 import HeroSlideshow from './components/HeroSlideshow'
+import ChatAssistantWidget from './components/ChatAssistantWidget'
 import FeaturedSection from './components/FeaturedSection'
 import TrustSection from './components/TrustSection'
 import Footer from './components/Footer'
@@ -28,15 +30,9 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-moto-dark overflow-x-hidden">
         {currentPage === 'landing' ? (
           <>
-            <div className="flex justify-center items-center py-4">
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
-              >
-                Login to Dashboard
-              </button>
-            </div>
+            <Navbar onShowAppointments={() => setCurrentPage('dashboard')} />
             <HeroSlideshow />
+            <ChatAssistantWidget />
             <FeaturedSection />
             <TrustSection />
             <Footer />
@@ -54,10 +50,10 @@ const AppContent: React.FC = () => {
       <SystemNavbar currentPage={currentPage} onNavigate={(page: string) => setCurrentPage(page as PageType)} />
 
       <main className="pt-20">
-        {currentPage === 'dashboard' && <Dashboard />}
-        {currentPage === 'inventory' && <InventoryPage />}
-        {currentPage === 'appointments' && <AppointmentCalendarPage />}
-        {currentPage === 'customers' && <CustomerPortal />}
+        {currentPage === 'dashboard' && <Dashboard onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
+        {currentPage === 'inventory' && <InventoryPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
+        {currentPage === 'appointments' && <AppointmentCalendarPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
+        {currentPage === 'customers' && <CustomerPortal onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
       </main>
 
       {/* Contextual AI Support */}

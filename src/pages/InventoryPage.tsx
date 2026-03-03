@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, AlertCircle, Download } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, AlertCircle, Download, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Part } from '../types'
 
@@ -64,7 +64,11 @@ interface InventoryFilters {
   showLowStock: boolean
 }
 
-const InventoryPage: React.FC = () => {
+interface InventoryPageProps {
+  onNavigate?: (page: string) => void
+}
+
+const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
   const [parts, setParts] = useState<Part[]>(mockParts)
   const [filters, setFilters] = useState<InventoryFilters>({
@@ -118,6 +122,17 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      {/* Back Button */}
+      <motion.button
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={() => onNavigate && onNavigate('dashboard')}
+        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back</span>
+      </motion.button>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <div className="flex items-center justify-between mb-6">
