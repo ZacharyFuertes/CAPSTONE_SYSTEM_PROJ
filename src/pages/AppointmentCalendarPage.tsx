@@ -1,40 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../services/supabaseClient'
 import { Appointment, AppointmentStatus } from '../types'
-
-// Mock data
-const mockAppointments: Appointment[] = [
-  {
-    id: '1',
-    customer_id: 'cust_1',
-    vehicle_id: 'veh_1',
-    shop_id: 'shop_1',
-    scheduled_date: new Date().toISOString().split('T')[0],
-    scheduled_time: '09:00',
-    service_type: 'Oil Change',
-    description: 'Regular maintenance oil change',
-    mechanic_id: 'mech_1',
-    status: 'confirmed',
-    notes: 'Customer prefers eco-friendly oil',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    customer_id: 'cust_2',
-    vehicle_id: 'veh_2',
-    shop_id: 'shop_1',
-    scheduled_date: new Date().toISOString().split('T')[0],
-    scheduled_time: '11:30',
-    service_type: 'Brake Service',  
-    mechanic_id: 'mech_2',
-    status: 'in_progress',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
 
 const statusConfig: Record<AppointmentStatus, { color: string; label: string }> = {
   pending: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'Pending' },
@@ -72,7 +42,8 @@ interface AppointmentCalendarPageProps {
 
 const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+  const { user } = useAuth()
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [showBookingForm, setShowBookingForm] = useState(false)
@@ -82,6 +53,30 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNav
     vehicle_make: '',
     service_type: 'Oil Change',
   })
+
+  // Fetch appointments from Supabase
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('shop_id', user?.shop_id)
+          .order('scheduled_date', { ascending: true })
+
+        if (error) throw error
+        setAppointments(data || [])
+      } catch (err) {
+        console.error('Error fetching appointments:', err)
+        // Fallback to empty array
+        setAppointments([])
+      }
+    }
+
+    if (user?.shop_id) {
+      fetchAppointments()
+    }
+  }, [user?.shop_id])
 
   const timeSlots = generateTimeSlots(selectedDate, appointments)
 

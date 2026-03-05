@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart,
@@ -24,31 +24,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-
-// Mock data - replace with real Supabase queries
-const mockRevenueData = [
-  { date: 'Mon', revenue: 2400 },
-  { date: 'Tue', revenue: 1398 },
-  { date: 'Wed', revenue: 9800 },
-  { date: 'Thu', revenue: 3908 },
-  { date: 'Fri', revenue: 4800 },
-  { date: 'Sat', revenue: 3800 },
-  { date: 'Sun', revenue: 4300 },
-]
-
-const mockStatusData = [
-  { name: 'Completed', value: 35, color: '#10b981' },
-  { name: 'In Progress', value: 12, color: '#f59e0b' },
-  { name: 'Pending', value: 8, color: '#ef4444' },
-]
-
-const mockPartUsageData = [
-  { name: 'Brake Pads', usage: 24 },
-  { name: 'Oil Filter', usage: 18 },
-  { name: 'Air Filter', usage: 15 },
-  { name: 'Spark Plugs', usage: 12 },
-  { name: 'Coolant', usage: 8 },
-]
+import { supabase } from '../services/supabaseClient'
 
 interface StatCard {
   label: string
@@ -66,37 +42,187 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
   const { user } = useAuth()
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week')
+  
+  // Real data state
+  const [revenueData, setRevenueData] = useState<{ date: string; revenue: number }[]>([])
+  const [statusData, setStatusData] = useState<{ name: string; value: number; color: string }[]>([])
+  const [partUsageData, setPartUsageData] = useState<{ name: string; usage: number }[]>([])
+  const [lowStockParts, setLowStockParts] = useState<{ name: string; current: number; reorder: number }[]>([])
+  const [stats, setStats] = useState<StatCard[]>([])
 
-  const stats: StatCard[] = [
-    {
-      label: t('dashboard.revenue'),
-      value: '₱47,500',
-      change: '+12.5% from last week',
-      icon: <DollarSign className="w-8 h-8" />,
-      color: 'from-green-500 to-emerald-600',
-    },
-    {
-      label: t('dashboard.today_jobs'),
-      value: '12',
-      change: '5 completed today',
-      icon: <CheckCircle className="w-8 h-8" />,
-      color: 'from-blue-500 to-cyan-600',
-    },
-    {
-      label: t('dashboard.pending'),
-      value: '8',
-      change: '3 new this week',
-      icon: <Clock className="w-8 h-8" />,
-      color: 'from-orange-500 to-red-600',
-    },
-    {
-      label: 'Active Customers',
-      value: '34',
-      change: '+5 this month',
-      icon: <Users className="w-8 h-8" />,
-      color: 'from-purple-500 to-pink-600',
-    },
-  ]
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch job orders to get status distribution
+        const { data: jobOrders } = await supabase
+          .from('job_orders')
+          .select('status')
+          .eq('shop_id', user?.shop_id)
+
+        // Fetch invoices for revenue
+        const { data: invoices } = await supabase
+          .from('invoices')
+          .select('total_amount, created_at')
+          .eq('shop_id', user?.shop_id)
+          .order('created_at', { ascending: false })
+          .limit(30)
+
+        // Fetch parts with low stock
+        const { data: parts } = await supabase
+          .from('parts')
+          .select('name, quantity_in_stock, reorder_level')
+          .eq('shop_id', user?.shop_id)
+          .lte('quantity_in_stock', 10)
+          .order('quantity_in_stock', { ascending: true })
+          .limit(5)
+
+        // Calculate revenue data
+        const revenueByDay = invoices?.reduce((acc: any, inv: any) => {
+          const date = new Date(inv.created_at)
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
+          const existing = acc.find((d: any) => d.date === dayName)
+          if (existing) {
+            existing.revenue += inv.total_amount || 0
+          } else {
+            acc.push({ date: dayName, revenue: inv.total_amount || 0 })
+          }
+          return acc
+        }, []) || []
+
+        // Set default week data if empty
+        if (revenueByDay.length === 0) {
+          setRevenueData([
+            { date: 'Mon', revenue: 0 },
+            { date: 'Tue', revenue: 0 },
+            { date: 'Wed', revenue: 0 },
+            { date: 'Thu', revenue: 0 },
+            { date: 'Fri', revenue: 0 },
+            { date: 'Sat', revenue: 0 },
+            { date: 'Sun', revenue: 0 },
+          ])
+        } else {
+          setRevenueData(revenueByDay)
+        }
+
+        // Calculate status distribution
+        const statusCounts = jobOrders?.reduce((acc: any, jo: any) => {
+          const existing = acc.find((s: any) => s.name === jo.status)
+          if (existing) {
+            existing.value += 1
+          } else {
+            const statusColors: Record<string, string> = {
+              completed: '#10b981',
+              in_progress: '#f59e0b',
+              pending: '#ef4444',
+            }
+            acc.push({
+              name: jo.status,
+              value: 1,
+              color: statusColors[jo.status] || '#6b7280',
+            })
+          }
+          return acc
+        }, []) || []
+
+        setStatusData(statusCounts.length > 0 ? statusCounts : [
+          { name: 'Completed', value: 0, color: '#10b981' },
+          { name: 'In Progress', value: 0, color: '#f59e0b' },
+          { name: 'Pending', value: 0, color: '#ef4444' },
+        ])
+
+        // Set low stock parts
+        const formattedLowStock = parts?.map((p: any) => ({
+          name: p.name,
+          current: p.quantity_in_stock,
+          reorder: p.reorder_level,
+        })) || []
+
+        setLowStockParts(formattedLowStock.length > 0 ? formattedLowStock : [
+          { name: 'No low stock items', current: 0, reorder: 0 },
+        ])
+
+        // Calculate stats
+        const totalRevenue = invoices?.reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0) || 0
+        const completedJobs = jobOrders?.filter((j: any) => j.status === 'completed').length || 0
+        const pendingJobs = jobOrders?.filter((j: any) => j.status === 'pending').length || 0
+        const totalCustomers = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'customer')
+          .eq('shop_id', user?.shop_id)
+
+        setStats([
+          {
+            label: t('dashboard.revenue'),
+            value: `₱${totalRevenue.toLocaleString()}`,
+            change: '+12.5% from last period',
+            icon: <DollarSign className="w-8 h-8" />,
+            color: 'from-green-500 to-emerald-600',
+          },
+          {
+            label: t('dashboard.today_jobs'),
+            value: completedJobs,
+            change: `${completedJobs} completed`,
+            icon: <CheckCircle className="w-8 h-8" />,
+            color: 'from-blue-500 to-cyan-600',
+          },
+          {
+            label: t('dashboard.pending'),
+            value: pendingJobs,
+            change: `${pendingJobs} need attention`,
+            icon: <Clock className="w-8 h-8" />,
+            color: 'from-orange-500 to-red-600',
+          },
+          {
+            label: 'Active Customers',
+            value: totalCustomers.data?.length || 0,
+            change: `+${totalCustomers.data?.length || 0} this month`,
+            icon: <Users className="w-8 h-8" />,
+            color: 'from-purple-500 to-pink-600',
+          },
+        ])
+
+        // Fetch part usage data (top used parts from job_order_items)
+        const { data: partUsage } = await supabase
+          .from('job_order_items')
+          .select('part_id, quantity, parts(name)')
+          .eq('job_orders.shop_id', user?.shop_id)
+          .limit(5)
+
+        if (partUsage && partUsage.length > 0) {
+          const usageByPart = partUsage.reduce((acc: any, use: any) => {
+            const existing = acc.find((p: any) => p.name === use.parts?.name)
+            if (existing) {
+              existing.usage += use.quantity || 0
+            } else {
+              acc.push({
+                name: use.parts?.name || 'Unknown',
+                usage: use.quantity || 0,
+              })
+            }
+            return acc
+          }, [])
+          setPartUsageData(usageByPart)
+        } else {
+          setPartUsageData([
+            { name: 'Brake Pads', usage: 0 },
+            { name: 'Oil Filter', usage: 0 },
+            { name: 'Air Filter', usage: 0 },
+            { name: 'Spark Plugs', usage: 0 },
+            { name: 'Coolant', usage: 0 },
+          ])
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+        // Use empty/default data on error
+      }
+    }
+
+    if (user?.shop_id) {
+      fetchDashboardData()
+    }
+  }, [user?.shop_id, t])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
@@ -173,7 +299,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockRevenueData}>
+            <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
               <XAxis stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -203,7 +329,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={mockStatusData}
+                data={statusData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -211,7 +337,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 paddingAngle={5}
                 dataKey="value"
               >
-                {mockStatusData.map((entry, index) => (
+                {statusData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -222,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
-            {mockStatusData.map((item) => (
+            {statusData.map((item) => (
               <div key={item.name} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div
@@ -249,7 +375,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         >
           <h2 className="text-xl font-bold text-white mb-6">Top Parts Used</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={mockPartUsageData}>
+            <BarChart data={partUsageData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
               <XAxis stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -274,16 +400,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <h2 className="text-xl font-bold text-white">{t('dashboard.low_stock')}</h2>
           </div>
           <div className="space-y-4">
-            {[
-              { name: 'Spark Plugs', current: 3, reorder: 10 },
-              { name: 'Oil Filter', current: 5, reorder: 15 },
-              { name: 'Brake Fluid', current: 2, reorder: 8 },
-            ].map((item) => (
+            {lowStockParts.map((item) => (
               <div key={item.name} className="bg-slate-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white font-semibold">{item.name}</span>
                   <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
-                    Critical
+                    Low Stock
                   </span>
                 </div>
                 <div className="w-full bg-slate-600 rounded-full h-2">

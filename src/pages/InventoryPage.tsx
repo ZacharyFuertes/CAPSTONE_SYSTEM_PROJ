@@ -1,51 +1,10 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Search, Edit2, Trash2, AlertCircle, Download, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../services/supabaseClient'
 import { Part } from '../types'
-
-// Mock data - replace with real Supabase queries
-const mockParts: Part[] = [
-  {
-    id: '1',
-    shop_id: 'shop_1',
-    name: 'Brake Pad Set',
-    category: 'brakes',
-    sku: 'BP-001',
-    unit_price: 1200,
-    quantity_in_stock: 15,
-    reorder_level: 5,
-    description: 'High-performance brake pads',
-    image_url: 'https://images.unsplash.com/photo-1537462715957-37854212a196?w=300&q=80',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    shop_id: 'shop_1',
-    name: 'Oil Filter',
-    category: 'filters',
-    sku: 'OF-001',
-    unit_price: 350,
-    quantity_in_stock: 3,
-    reorder_level: 10,
-    description: 'Engine oil filter',
-    image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    shop_id: 'shop_1',
-    name: 'Spark Plugs (Set)',
-    category: 'electrical',
-    sku: 'SP-001',
-    unit_price: 800,
-    quantity_in_stock: 8,
-    reorder_level: 10,
-    description: 'Premium spark plugs',
-    image_url: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=300&q=80',
-    created_at: new Date().toISOString(),
-  },
-]
 
 const categoryColors: Record<string, string> = {
   brakes: 'from-red-500 to-red-600',
@@ -70,12 +29,37 @@ interface InventoryPageProps {
 
 const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
-  const [parts, setParts] = useState<Part[]>(mockParts)
+  const { user } = useAuth()
+  const [parts, setParts] = useState<Part[]>([])
   const [filters, setFilters] = useState<InventoryFilters>({
     searchTerm: '',
     showLowStock: false,
   })
   const [_editingPart, setEditingPart] = useState<Part | null>(null)
+
+  // Fetch parts from Supabase
+  useEffect(() => {
+    const fetchParts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('parts')
+          .select('*')
+          .eq('shop_id', user?.shop_id)
+          .order('name', { ascending: true })
+
+        if (error) throw error
+        setParts(data || [])
+      } catch (err) {
+        console.error('Error fetching parts:', err)
+        // Fallback to empty array
+        setParts([])
+      }
+    }
+
+    if (user?.shop_id) {
+      fetchParts()
+    }
+  }, [user?.shop_id])
 
 
   const filteredParts = useMemo(() => {
