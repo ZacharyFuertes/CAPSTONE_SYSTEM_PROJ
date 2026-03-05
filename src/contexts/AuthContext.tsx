@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, UserRole } from '../types'
+import { supabase } from '../services/supabaseClient'
 
 interface AuthContextType {
   user: User | null
@@ -18,51 +19,140 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage in MVP, Supabase in production)
-    const storedUser = localStorage.getItem('shop_user')
-    if (storedUser) {
+    // Check current Supabase session
+    const checkSession = async () => {
       try {
-        setUser(JSON.parse(storedUser))
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          // Fetch user data from users table
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', session.user.email)
+            .single()
+
+          if (!error && userData) {
+            const appUser: User = {
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role as UserRole,
+              shop_id: userData.shop_id,
+              created_at: userData.created_at,
+              updated_at: userData.updated_at,
+            }
+            setUser(appUser)
+          }
+        }
       } catch (error) {
-        console.error('Failed to parse stored user:', error)
-        localStorage.removeItem('shop_user')
+        console.error('Session check error:', error)
+      } finally {
+        setLoading(false)
       }
     }
-    setLoading(false)
+
+    checkSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        // Fetch user data when auth state changes
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', session.user.email)
+          .single()
+
+        if (userData) {
+          const appUser: User = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role as UserRole,
+            shop_id: userData.shop_id,
+            created_at: userData.created_at,
+            updated_at: userData.updated_at,
+          }
+          setUser(appUser)
+        }
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => {
+      subscription?.unsubscribe()
+    }
   }, [])
 
-  const login = async (email: string, _password: string) => {
+  const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // TODO: Replace with Supabase auth
-      // Mock login for MVP
-      const mockUser: User = {
-        id: 'user_' + Date.now(),
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0],
-        role: 'owner',
-        shop_id: 'shop_' + Date.now(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        password,
+      })
+
+      if (error) {
+        throw new Error(error.message)
       }
-      setUser(mockUser)
-      localStorage.setItem('shop_user', JSON.stringify(mockUser))
+
+      // User data will be fetched by auth state listener
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
     } finally {
       setLoading(false)
     }
   }
 
   const logout = async () => {
-    setUser(null)
-    localStorage.removeItem('shop_user')
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
-  const signup = async (email: string, _password: string, name: string, role: UserRole) => {
+  const signup = async (email: string, password: string, name: string, role: UserRole) => {
     setLoading(true)
     try {
-      // TODO: Replace with Supabase auth
-      const mockUser: User = {
-        id: 'user_' + Date.now(),
+      // Sign up with Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (signUpError) {
+        throw new Error(signUpError.message)
+      }
+
+      if (!authData.user) {
+        throw new Error('User creation failed')
+      }
+
+      // Insert user profile into users table
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email,
+          name,
+          role,
+          shop_id: role === 'customer' ? null : 'shop_' + Date.now(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+
+      if (insertError) {
+        throw new Error(insertError.message)
+      }
+
+      // Create app user object
+      const appUser: User = {
+        id: authData.user.id,
         email,
         name,
         role,
@@ -70,8 +160,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
-      setUser(mockUser)
-      localStorage.setItem('shop_user', JSON.stringify(mockUser))
+
+      setUser(appUser)
+    } catch (error) {
+      console.error('Signup error:', error)
+      throw error
     } finally {
       setLoading(false)
     }
