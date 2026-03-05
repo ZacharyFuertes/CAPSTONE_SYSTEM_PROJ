@@ -17,21 +17,27 @@ if (!supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
 /**
- * Test database connection
+ * Test database connection with detailed error messages
  * Use this to verify Supabase is properly connected
  */
 export const testDatabaseConnection = async () => {
   try {
     console.log('🔄 Testing Supabase connection...')
+    console.log('📍 URL:', supabaseUrl)
+    console.log('📍 Env vars loaded:', !!supabaseUrl && !!supabaseAnonKey)
     
-    // Try to fetch from users table
+    // Try to fetch from users table with correct PostgREST syntax
     const { error } = await supabase
       .from('users')
-      .select('count(*)', { count: 'exact' })
+      .select('id')
       .limit(1)
 
     if (error) {
-      console.error('❌ Database Error:', error.message)
+      console.error('❌ Database Error Details:')
+      console.error('   Message:', error.message)
+      console.error('   Code:', error.code)
+      console.error('   Details:', error.details)
+      console.error('   Hint:', error.hint)
       return false
     }
 
