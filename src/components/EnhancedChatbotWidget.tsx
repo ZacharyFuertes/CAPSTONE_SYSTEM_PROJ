@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Loader } from 'lucide-react'
+import { MessageCircle, X, Send, AlertCircle } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Groq } from 'groq-sdk'
+import { supabase } from '../services/supabaseClient'
 
 interface ChatMessageType {
   id: string
@@ -98,13 +99,42 @@ const EnhancedChatbotWidget: React.FC<EnhancedChatbotWidgetProps> = ({ userRole 
     return [...new Set(parts)]
   }
 
+  const fetchInventoryParts = async (): Promise<string[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('parts')
+        .select('name')
+        .limit(10)
+      
+      if (error) throw error
+      return data?.map((p: any) => p.name) || []
+    } catch (err) {
+      console.error('Failed to fetch parts:', err)
+      return []
+    }
+  }
+
+  const matchPartsWithInventory = async (
+    suggestedKeywords: string[],
+    inventoryParts: string[]
+  ): Promise<string[]> => {
+    return suggestedKeywords.filter((keyword) =>
+      inventoryParts.some((part) =>
+        part.toLowerCase().includes(keyword.toLowerCase())
+      )
+    )
+  }
+
   const handleSendMessage = async () => {
     if (!input.trim() || !groqClient.current) return
+
+    // Store input before clearing
+    const userInput = input.trim()
 
     // Add user message
     const userMessage: ChatMessageType = {
       id: Date.now().toString(),
-      content: input,
+      content: userInput,
       sender: 'user',
       timestamp: new Date(),
     }
@@ -117,43 +147,62 @@ const EnhancedChatbotWidget: React.FC<EnhancedChatbotWidgetProps> = ({ userRole 
       const systemPrompt =
         userRole === 'mechanic' ? MECHANIC_SYSTEM_PROMPT : CUSTOMER_SERVICE_PROMPT
 
-      const response = await groqClient.current.chat.completions.create({
-        model: 'mixtral-8x7b-32768', // Fallback model
-        messages: [
-          {
-            role: 'system' as const,
-            content: systemPrompt,
-          },
-          ...messages.map((msg) => {
-            const role: 'user' | 'assistant' = msg.sender === 'user' ? 'user' : 'assistant'
-            return {
-              role,
-              content: msg.content,
-            }
-          }),
-          {
-            role: 'user' as const,
-            content: input,
-          },
-        ],
+      // Fetch inventory parts for matching
+      const inventoryParts = await fetchInventoryParts()
+
+      // Create messages array with stored userInput (not the input state variable)
+      const conversationMessages = [
+        {
+          role: 'system' as const,
+          content: systemPrompt,
+        },
+        ...messages.map((msg) => {
+          const role: 'user' | 'assistant' = msg.sender === 'user' ? 'user' : 'assistant'
+          return {
+            role,
+            content: msg.content,
+          }
+        }),
+        {
+          role: 'user' as const,
+          content: userInput,
+        },
+      ]
+
+      // Use Groq streaming for real-time response
+      let botResponseContent = ''
+      const stream = await groqClient.current.chat.completions.create({
+        model: 'mixtral-8x7b-32768',
+        messages: conversationMessages as any,
         max_tokens: 1024,
         temperature: 0.7,
+        stream: true,
       })
 
-      const botResponseContent = response.choices[0]?.message?.content || 'Unable to generate response'
-      const suggestedParts = extractPartsFromResponse(botResponseContent)
+      // Collect streamed response
+      for await (const chunk of stream) {
+        if (chunk.choices[0]?.delta?.content) {
+          botResponseContent += chunk.choices[0].delta.content
+        }
+      }
+
+      // Extract parts and match with inventory
+      const suggestedKeywords = extractPartsFromResponse(botResponseContent)
+      const matchedParts = await matchPartsWithInventory(suggestedKeywords, inventoryParts)
+      const finalParts = matchedParts.length > 0 ? matchedParts : suggestedKeywords.slice(0, 3)
 
       const botMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
-        content: botResponseContent,
+        content: botResponseContent || 'Unable to generate response',
         sender: 'bot',
         timestamp: new Date(),
-        suggestedParts: suggestedParts.length > 0 ? suggestedParts : undefined,
+        suggestedParts: finalParts.length > 0 ? finalParts : undefined,
       }
 
       setMessages((prev) => [...prev, botMessage])
     } catch (error) {
       console.error('Chatbot error:', error)
+      
       const errorMessage: ChatMessageType = {
         id: (Date.now() + 1).toString(),
         content: 'Sorry, I encountered an error. Please try again or contact support.',
@@ -232,15 +281,17 @@ const EnhancedChatbotWidget: React.FC<EnhancedChatbotWidgetProps> = ({ userRole 
                         : 'bg-slate-700 text-slate-100'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     {message.suggestedParts && message.suggestedParts.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-600">
-                        <p className="text-xs font-semibold mb-1">Suggested Parts:</p>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="mt-3 pt-3 border-t border-slate-600">
+                        <p className="text-xs font-semibold mb-2 flex items-center gap-1">
+                          <span className="text-yellow-400">⚙️</span> Suggested Parts:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
                           {message.suggestedParts.map((part, i) => (
                             <span
                               key={i}
-                              className="text-xs bg-slate-600 px-2 py-1 rounded"
+                              className="text-xs bg-gradient-to-r from-slate-600 to-slate-500 px-3 py-1 rounded-full hover:from-slate-500 hover:to-slate-400 transition cursor-default"
                             >
                               {part}
                             </span>
@@ -254,12 +305,30 @@ const EnhancedChatbotWidget: React.FC<EnhancedChatbotWidgetProps> = ({ userRole 
 
               {loading && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center space-x-2 text-slate-400"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
                 >
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Thinking...</span>
+                  <div className="bg-slate-700 rounded-lg px-4 py-3 flex items-center gap-3">
+                    <div className="flex gap-1">
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity }}
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                      />
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                        className="w-2 h-2 bg-blue-400 rounded-full"
+                      />
+                    </div>
+                    <span className="text-sm text-slate-300">AI is thinking...</span>
+                  </div>
                 </motion.div>
               )}
 
@@ -268,21 +337,28 @@ const EnhancedChatbotWidget: React.FC<EnhancedChatbotWidgetProps> = ({ userRole 
 
             {/* Input */}
             <div className="border-t border-slate-700 p-4 bg-slate-800">
+              {!groqClient.current && (
+                <div className="mb-3 flex items-center gap-2 bg-red-900 border border-red-700 rounded p-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <span className="text-xs text-red-300">Chatbot API not initialized</span>
+                </div>
+              )}
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && !loading && handleSendMessage()}
                   placeholder={t('chat.placeholder')}
-                  className="flex-1 bg-slate-700 text-white px-3 py-2 rounded text-sm border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  disabled={loading || !groqClient.current}
+                  className="flex-1 bg-slate-700 text-white px-3 py-2 rounded text-sm border border-slate-600 focus:border-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSendMessage}
-                  disabled={loading || !input.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white p-2 rounded transition"
+                  disabled={loading || !input.trim() || !groqClient.current}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white p-2 rounded transition"
                 >
                   <Send className="w-4 h-4" />
                 </motion.button>
