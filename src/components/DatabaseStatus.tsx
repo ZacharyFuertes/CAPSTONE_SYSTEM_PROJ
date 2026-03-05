@@ -1,54 +1,54 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, AlertCircle, Loader, ChevronDown } from 'lucide-react'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 import { testDatabaseConnection } from '../services/supabaseClient'
 
-type ConnectionStatus = 'testing' | 'connected' | 'error'
+type ConnectionStatus = 'idle' | 'connected' | 'error'
 
 export const DatabaseStatus: React.FC = () => {
-  const [status, setStatus] = useState<ConnectionStatus>('testing')
+  const [status, setStatus] = useState<ConnectionStatus>('idle')
   const [message, setMessage] = useState('')
-  const [expanded, setExpanded] = useState(false)
-  const [logs, setLogs] = useState<string[]>([])
 
   useEffect(() => {
-    // Capture console logs
-    const originalLog = console.log
-    const originalError = console.error
-
-    console.log = (...args) => {
-      setLogs(prev => [...prev, '✓ ' + args.join(' ')])
-      originalLog(...args)
-    }
-
-    console.error = (...args) => {
-      setLogs(prev => [...prev, '✗ ' + args.join(' ')])
-      originalError(...args)
-    }
+    let isMounted = true
+    let retryCount = 0
+    const maxRetries = 3
 
     const testConnection = async () => {
       try {
         const isConnected = await testDatabaseConnection()
-        if (isConnected) {
-          setStatus('connected')
-          setMessage('✅ Database Connected')
-        } else {
-          setStatus('error')
-          setMessage('❌ Database Not Connected - Check logs')
+        if (isMounted) {
+          if (isConnected) {
+            setStatus('connected')
+            setMessage('✅ Database Connected')
+          } else {
+            setStatus('error')
+            setMessage('❌ Database Error')
+          }
         }
       } catch (err) {
-        setStatus('error')
-        setMessage('❌ Connection Failed')
+        if (isMounted) {
+          retryCount++
+          if (retryCount < maxRetries) {
+            // Retry silently
+            setTimeout(testConnection, 3000)
+          } else {
+            setStatus('error')
+            setMessage('❌ Connection Failed')
+          }
+        }
       }
     }
 
-    testConnection()
+    // Delay initial test to not block auth
+    setTimeout(testConnection, 2000)
 
     return () => {
-      console.log = originalLog
-      console.error = originalError
+      isMounted = false
     }
   }, [])
+
+  if (status === 'idle') return null
 
   return (
     <motion.div
@@ -56,65 +56,26 @@ export const DatabaseStatus: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="fixed top-4 right-4 z-50"
     >
-      {/* Main Status Card */}
-      <motion.div
-        className={`p-4 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer border ${
+      <div
+        className={`p-3 rounded-lg shadow-lg flex items-center gap-2 ${
           status === 'connected'
-            ? 'bg-green-900 border-green-700'
-            : status === 'error'
-            ? 'bg-red-900 border-red-700'
-            : 'bg-yellow-900 border-yellow-700'
+            ? 'bg-green-900 border border-green-700'
+            : 'bg-red-900 border border-red-700'
         }`}
-        onClick={() => setExpanded(!expanded)}
       >
-        {status === 'testing' && (
-          <>
-            <Loader className="animate-spin text-yellow-400" size={20} />
-            <span className="text-yellow-300">Testing database...</span>
-          </>
-        )}
         {status === 'connected' && (
           <>
-            <CheckCircle className="text-green-400" size={20} />
-            <span className="text-green-300">{message}</span>
+            <CheckCircle className="text-green-400" size={18} />
+            <span className="text-green-300 text-sm">{message}</span>
           </>
         )}
         {status === 'error' && (
           <>
-            <AlertCircle className="text-red-400" size={20} />
-            <span className="text-red-300">{message}</span>
-            <ChevronDown
-              size={18}
-              className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
-            />
+            <AlertCircle className="text-red-400" size={18} />
+            <span className="text-red-300 text-sm">{message}</span>
           </>
         )}
-      </motion.div>
-
-      {/* Expanded Logs */}
-      {expanded && status === 'error' && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mt-2 p-4 rounded-lg bg-slate-900 border border-red-700 max-w-md max-h-64 overflow-y-auto"
-        >
-          <p className="text-red-400 text-sm font-bold mb-3">Debug Logs:</p>
-          <div className="space-y-1 text-xs font-mono">
-            {logs.length > 0 ? (
-              logs.map((log, idx) => (
-                <div key={idx} className="text-slate-300">
-                  {log}
-                </div>
-              ))
-            ) : (
-              <div className="text-slate-500">No logs captured yet...</div>
-            )}
-          </div>
-          <div className="mt-3 text-xs text-slate-400">
-            💡 <strong>Tip:</strong> Open DevTools (F12) → Console to see full error details
-          </div>
-        </motion.div>
-      )}
+      </div>
     </motion.div>
   )
 }

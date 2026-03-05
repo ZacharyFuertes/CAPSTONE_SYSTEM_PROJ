@@ -19,69 +19,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check current Supabase session
+    // Check if user is already logged in via Supabase session
+    let isMounted = true
+    
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        setLoading(true)
         
-        if (session) {
-          // Fetch user data from users table
-          const { data: userData, error } = await supabase
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        )
+        
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+        
+        if (!isMounted) return
+
+        if (session?.user) {
+          // Fetch user profile from database
+          const { data: userData } = await supabase
             .from('users')
             .select('*')
-            .eq('email', session.user.email)
+            .eq('id', session.user.id)
             .single()
 
-          if (!error && userData) {
-            const appUser: User = {
-              id: userData.id,
-              email: userData.email,
-              name: userData.name,
-              role: userData.role as UserRole,
-              shop_id: userData.shop_id,
-              created_at: userData.created_at,
-              updated_at: userData.updated_at,
-            }
-            setUser(appUser)
+          if (isMounted && userData) {
+            setUser(userData)
           }
         }
-      } catch (error) {
-        console.error('Session check error:', error)
+      } catch (err) {
+        console.error('Session check error:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
     checkSession()
 
-    // Listen for auth changes
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        // Fetch user data when auth state changes
+      if (!isMounted) return
+      
+      if (session?.user) {
         const { data: userData } = await supabase
           .from('users')
           .select('*')
-          .eq('email', session.user.email)
+          .eq('id', session.user.id)
           .single()
-
-        if (userData) {
-          const appUser: User = {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role as UserRole,
-            shop_id: userData.shop_id,
-            created_at: userData.created_at,
-            updated_at: userData.updated_at,
-          }
-          setUser(appUser)
+        
+        if (isMounted && userData) {
+          setUser(userData)
         }
       } else {
-        setUser(null)
+        if (isMounted) setUser(null)
       }
     })
 
     return () => {
+      isMounted = false
       subscription?.unsubscribe()
     }
   }, [])
@@ -89,19 +85,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        throw new Error(error.message)
+      if (signInError) {
+        throw new Error(signInError.message)
       }
 
-      // User data will be fetched by auth state listener
-    } catch (error) {
-      console.error('Login error:', error)
-      throw error
+      if (authUser?.id) {
+        // Fetch user data immediately
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single()
+
+        if (userData) {
+          setUser(userData)
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      throw err
     } finally {
       setLoading(false)
     }
