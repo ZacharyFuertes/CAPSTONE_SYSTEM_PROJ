@@ -8,8 +8,8 @@ export interface User {
   phone?: string
   role: UserRole
   shop_id?: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 // Vehicle Types

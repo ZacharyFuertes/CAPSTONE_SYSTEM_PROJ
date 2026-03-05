@@ -145,8 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name,
           role,
           shop_id: role === 'customer' ? null : 'shop_' + Date.now(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select()
 
@@ -164,8 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name,
         role,
         shop_id: role === 'customer' ? undefined : 'shop_' + Date.now(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       }
 
       setUser(appUser)
