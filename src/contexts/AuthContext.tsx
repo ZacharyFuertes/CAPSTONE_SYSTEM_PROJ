@@ -126,15 +126,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
 
       if (signUpError) {
+        console.error('Supabase signup error:', signUpError)
         throw new Error(signUpError.message)
       }
 
       if (!authData.user) {
-        throw new Error('User creation failed')
+        throw new Error('User creation failed - no user returned')
       }
 
+      console.log('Auth user created:', authData.user.id)
+
       // Insert user profile into users table
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -145,10 +148,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
+        .select()
 
       if (insertError) {
-        throw new Error(insertError.message)
+        console.error('Users table insert error:', insertError)
+        throw new Error(`Failed to create user profile: ${insertError.message}`)
       }
+
+      console.log('User profile created:', insertData)
 
       // Create app user object
       const appUser: User = {
@@ -163,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(appUser)
     } catch (error) {
-      console.error('Signup error:', error)
+      console.error('Full signup error:', error)
       throw error
     } finally {
       setLoading(false)
