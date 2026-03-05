@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Calendar, Wrench, Phone, Mail, Download } from 'lucide-react'
+import { Calendar, Wrench, Phone, Mail, Download, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
 interface ServiceRecord {
@@ -72,7 +72,11 @@ interface SelectedRecord {
   showDetails: boolean
 }
 
-const CustomerPortal: React.FC = () => {
+interface CustomerPortalProps {
+  onNavigate?: (page: string) => void
+}
+
+const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
   const { } = useLanguage()
   const [selectedRecord, setSelectedRecord] = useState<SelectedRecord>({
     record: null,
@@ -88,6 +92,17 @@ const CustomerPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      {/* Back Button */}
+      <motion.button
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={() => onNavigate && onNavigate('dashboard')}
+        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back</span>
+      </motion.button>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">Customer Portal</h1>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Clock } from 'lucide-react'
+import { Clock, ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Appointment, AppointmentStatus } from '../types'
 
@@ -66,7 +66,11 @@ const generateTimeSlots = (date: string, appointments: Appointment[]): TimeSlot[
   return slots
 }
 
-const AppointmentCalendarPage: React.FC = () => {
+interface AppointmentCalendarPageProps {
+  onNavigate?: (page: string) => void
+}
+
+const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -145,6 +149,17 @@ const AppointmentCalendarPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      {/* Back Button */}
+      <motion.button
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={() => onNavigate && onNavigate('dashboard')}
+        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back</span>
+      </motion.button>
+
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">{t('appointments.title')}</h1>
         <p className="text-slate-400">
