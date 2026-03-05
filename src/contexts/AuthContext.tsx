@@ -26,13 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setLoading(true)
         
-        // Add timeout to prevent hanging (10s allows Supabase Web Locks to complete properly)
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 10000)
-        )
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+        // Get session without timeout - Supabase handles this internally
+        // The onAuthStateChange listener below will handle actual auth state
+        const { data: { session } } = await supabase.auth.getSession()
         
         if (!isMounted) return
 
@@ -50,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('Session check error:', err)
+        // Don't treat as fatal - onAuthStateChange will handle state updates
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -57,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkSession()
 
-    // Listen for auth state changes
+    // Listen for auth state changes - this handles all auth events including login/logout
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return
       
