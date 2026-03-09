@@ -153,6 +153,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth user created:', authData.user.id)
 
       // Insert user profile into users table
+      // Generate a proper UUID for shop_id (v4 format: 8-4-4-4-12 hex digits)
+      const generateUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = (Math.random() * 16) | 0
+          const v = c === 'x' ? r : (r & 0x3) | 0x8
+          return v.toString(16)
+        })
+      }
+
       const { data: insertData, error: insertError } = await supabase
         .from('users')
         .insert({
@@ -160,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email,
           name,
           role,
-          shop_id: role === 'customer' ? null : 'shop_' + Date.now(),
+          shop_id: role === 'customer' ? null : generateUUID(),
         })
         .select()
 
@@ -177,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         name,
         role,
-        shop_id: role === 'customer' ? undefined : 'shop_' + Date.now(),
+        shop_id: role === 'customer' ? undefined : insertData?.[0]?.shop_id,
       }
 
       setUser(appUser)
