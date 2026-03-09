@@ -1,31 +1,47 @@
+/// <reference types="vite/client" />
+// src/main.tsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
+import { LanguageProvider } from './contexts/LanguageContext'
+import { AuthProvider } from './contexts/AuthContext'
 
-// Development-only warning about Supabase lock issues in Strict Mode
-// @ts-ignore - Vite typing for import.meta.env
+// Dev-only warning about Supabase Strict Mode lock issue
 if (import.meta.env.DEV) {
   console.warn(
     '%c⚠️ Supabase Auth Lock Warning',
     'color: orange; font-weight: bold;',
     'React Strict Mode is DISABLED in development to prevent Supabase Web Lock timeouts.',
-    'This is expected and harmless — Strict Mode will be enabled in production for safety checks.',
-    'The orphaned lock errors you might see are a known React 18 + Supabase issue and do not affect functionality.'
+    'This is expected and harmless — Strict Mode is enabled in production.'
   )
 }
 
-// Conditionally wrap with StrictMode: disabled in DEV to avoid Supabase Web Lock orphaning,
-// but enabled in PRODUCTION for safety
-const rootElement = document.getElementById('root')!
+// Get root element safely
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Root element not found. Make sure <div id="root"></div> exists in index.html')
+}
+
+// Create root
 const root = ReactDOM.createRoot(rootElement)
 
-// @ts-ignore - Vite typing for import.meta.env
-const AppComponent = import.meta.env.DEV ? (
-  <App />
-) : (
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+// Render conditionally: no StrictMode in DEV, keep it in production
+root.render(
+  import.meta.env.DEV ? (
+    <>
+      <LanguageProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </LanguageProvider>
+    </>
+  ) : (
+    <React.StrictMode>
+      <LanguageProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </LanguageProvider>
+    </React.StrictMode>
+  )
 )
-
-root.render(AppComponent)

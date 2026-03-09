@@ -83,6 +83,44 @@ export interface JobOrder {
   completed_at?: string
 }
 
+// Products Types
+export interface Product {
+  id: string
+  shop_id: string
+  name: string
+  description?: string
+  category: string
+  sku: string
+  unit_price: number
+  quantity_in_stock: number
+  image_url?: string
+  rating?: number
+  created_at: string
+}
+
+// Featured Products Types
+export interface FeaturedProduct {
+  id: string
+  shop_id: string
+  product_id: string
+  display_order: number
+  is_active: boolean
+  product?: Product
+  created_at: string
+  updated_at: string
+}
+
+export interface FeaturedProduct {
+  id: string
+  shop_id: string
+  product_id: string
+  display_order: number
+  is_active: boolean
+  product?: Product
+  created_at: string
+  updated_at: string
+}
+
 // Invoice/Billing Types
 export interface Invoice {
   id: string

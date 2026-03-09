@@ -10,6 +10,7 @@ import InventoryPage from './pages/InventoryPage'
 import AppointmentCalendarPage from './pages/AppointmentCalendarPage'
 import CustomerPortal from './pages/CustomerPortal'
 import LoginPage from './pages/LoginPage'
+import AdminProductsPage from './pages/AdminProductsPage'
 
 // Landing page imports (original)
 import Navbar from './components/Navbar'
@@ -19,7 +20,7 @@ import FeaturedSection from './components/FeaturedSection'
 import TrustSection from './components/TrustSection'
 import Footer from './components/Footer'
 
-type PageType = 'landing' | 'dashboard' | 'inventory' | 'appointments' | 'customers' | 'customer-portal'
+type PageType = 'landing' | 'dashboard' | 'inventory' | 'appointments' | 'customers' | 'customer-portal' | 'products'
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth()
@@ -52,12 +53,13 @@ const AppContent: React.FC = () => {
       <DatabaseStatus />
       <SystemNavbar currentPage={currentPage} onNavigate={(page: string) => setCurrentPage(page as PageType)} />
 
-      <main className="pt-20">
+      <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-12">
         {currentPage === 'dashboard' && <Dashboard onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
         {currentPage === 'inventory' && <InventoryPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
         {currentPage === 'appointments' && <AppointmentCalendarPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
         {currentPage === 'customers' && <CustomerPortal onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
         {currentPage === 'customer-portal' && <CustomerPortal onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
+        {currentPage === 'products' && <AdminProductsPage onNavigate={(page: string) => setCurrentPage(page as PageType)} />}
       </main>
 
       {/* Contextual AI Support */}

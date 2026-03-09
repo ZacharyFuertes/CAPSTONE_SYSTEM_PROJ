@@ -1,17 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star, ShoppingCart, Calendar, User, Mail, Phone, Clock, MapPin } from 'lucide-react'
-
-interface Product {
-  id: number
-  name: string
-  price: number
-  rating: number
-  image: string
-  category: string
-}
+import { useAuth } from '../contexts/AuthContext'
+import { featuredProductService } from '../services/productService'
+import { FeaturedProduct } from '../types/index'
 
 const FeaturedSection: React.FC = () => {
+  const { user } = useAuth()
+  const shopId = user?.shop_id || ''
+
   const [appointmentData, setAppointmentData] = useState({
     name: '',
     email: '',
@@ -20,32 +17,96 @@ const FeaturedSection: React.FC = () => {
     service: 'General Maintenance',
   })
 
-  const products: Product[] = [
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
+  const [loading, setLoading] = useState(false)
+
+  // Fetch featured products from database
+  useEffect(() => {
+    if (shopId) {
+      fetchFeaturedProducts()
+    }
+  }, [shopId])
+
+  const fetchFeaturedProducts = async () => {
+    setLoading(true)
+    try {
+      const data = await featuredProductService.getFeaturedProducts(shopId)
+      setFeaturedProducts(data)
+    } catch (err) {
+      console.error('Error fetching featured products:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Default products for when not logged in or no featured products
+  const defaultProducts: FeaturedProduct[] = [
     {
-      id: 1,
-      name: 'Premium Exhaust System',
-      price: 19500,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop&q=80',
-      category: 'Exhaust',
+      id: '1',
+      shop_id: '',
+      product_id: '1',
+      display_order: 1,
+      is_active: true,
+      product: {
+        id: '1',
+        shop_id: '',
+        name: 'Premium Exhaust System',
+        unit_price: 19500,
+        rating: 4.8,
+        image_url: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop&q=80',
+        category: 'Exhaust',
+        sku: 'EXH-001',
+        quantity_in_stock: 0,
+        created_at: new Date().toISOString(),
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 2,
-      name: 'High-Performance Air Filter',
-      price: 7200,
-      rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&q=80',
-      category: 'Filters',
+      id: '2',
+      shop_id: '',
+      product_id: '2',
+      display_order: 2,
+      is_active: true,
+      product: {
+        id: '2',
+        shop_id: '',
+        name: 'High-Performance Air Filter',
+        unit_price: 7200,
+        rating: 4.9,
+        image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&q=80',
+        category: 'Filters',
+        sku: 'FLT-001',
+        quantity_in_stock: 0,
+        created_at: new Date().toISOString(),
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 3,
-      name: 'Racing Brake Pads',
-      price: 11200,
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop&q=80',
-      category: 'Brakes',
+      id: '3',
+      shop_id: '',
+      product_id: '3',
+      display_order: 3,
+      is_active: true,
+      product: {
+        id: '3',
+        shop_id: '',
+        name: 'Racing Brake Pads',
+        unit_price: 11200,
+        rating: 4.7,
+        image_url: 'https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop&q=80',
+        category: 'Brakes',
+        sku: 'BRK-001',
+        quantity_in_stock: 0,
+        created_at: new Date().toISOString(),
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
   ]
+
+  const products = featuredProducts.length > 0 ? featuredProducts : defaultProducts
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -131,63 +192,72 @@ const FeaturedSection: React.FC = () => {
             viewport={{ once: true }}
             className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {products.map((product) => (
-              <motion.div
-                key={product.id}
-                variants={itemVariants}
-                className="group relative bg-moto-darker border border-moto-gray-light/20 rounded-xl overflow-hidden hover:border-moto-accent-orange/50 transition-all duration-300"
-                whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(230, 57, 70, 0.2)' }}
-              >
-                {/* Product Image */}
-                <div className="relative h-64 overflow-hidden bg-moto-gray">
-                  <motion.img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ duration: 0.4 }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                  {/* Category Badge */}
-                  <div className="absolute top-3 right-3 px-3 py-1 bg-moto-accent-orange text-white text-xs font-bold rounded-full">
-                    {product.category}
-                  </div>
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4">
-                  <h3 className="font-bold text-white mb-2 line-clamp-2 group-hover:text-moto-accent-orange transition-colors">
-                    {product.name}
-                  </h3>
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={i < Math.floor(product.rating) ? 'text-moto-accent-orange fill-current' : 'text-gray-600'}
+            {loading ? (
+              <div className="col-span-3 text-center text-gray-400 py-8">Loading featured products...</div>
+            ) : products.length > 0 ? (
+              products.map((fp) => {
+                const product = fp.product
+                return (
+                  <motion.div
+                    key={fp.id}
+                    variants={itemVariants}
+                    className="group relative bg-moto-darker border border-moto-gray-light/20 rounded-xl overflow-hidden hover:border-moto-accent-orange/50 transition-all duration-300"
+                    whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(230, 57, 70, 0.2)' }}
+                  >
+                    {/* Product Image */}
+                    <div className="relative h-64 overflow-hidden bg-moto-gray">
+                      <motion.img
+                        src={product?.image_url || 'https://via.placeholder.com/500'}
+                        alt={product?.name}
+                        className="w-full h-full object-cover"
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.4 }}
                       />
-                    ))}
-                    <span className="text-xs text-gray-400 ml-2">({product.rating})</span>
-                  </div>
+                      <div className="absolute inset-0 bg-gradient-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-moto-accent-orange">
-                      ₱{product.price.toLocaleString('en-PH')}
-                    </span>
-                    <motion.button
-                      className="p-2 rounded-lg bg-moto-accent-orange text-white hover:bg-moto-accent transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <ShoppingCart size={20} />
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                      {/* Category Badge */}
+                      <div className="absolute top-3 right-3 px-3 py-1 bg-moto-accent-orange text-white text-xs font-bold rounded-full">
+                        {product?.category}
+                      </div>
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-white mb-2 line-clamp-2 group-hover:text-moto-accent-orange transition-colors">
+                        {product?.name}
+                      </h3>
+
+                      {/* Rating */}
+                      <div className="flex items-center gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={16}
+                            className={i < Math.floor(product?.rating || 0) ? 'text-moto-accent-orange fill-current' : 'text-gray-600'}
+                          />
+                        ))}
+                        <span className="text-xs text-gray-400 ml-2">({product?.rating})</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl font-bold text-moto-accent-orange">
+                          ₱{product?.unit_price.toLocaleString('en-PH')}
+                        </span>
+                        <motion.button
+                          className="p-2 rounded-lg bg-moto-accent-orange text-white hover:bg-moto-accent transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <ShoppingCart size={20} />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })
+            ) : (
+              <div className="col-span-3 text-center text-gray-400 py-8">No featured products available</div>
+            )}
           </motion.div>
 
           {/* Quick Book Appointment - Right Column */}

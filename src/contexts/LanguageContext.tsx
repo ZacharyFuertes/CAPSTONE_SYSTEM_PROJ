@@ -30,7 +30,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.low_stock': 'Low Stock Alert',
     'dashboard.avg_job': 'Average Job Value',
     'dashboard.satisfaction': 'Satisfaction Score',
-
+    
     // Inventory
     'inventory.title': 'Inventory Management',
     'inventory.add_part': 'Add New Part',

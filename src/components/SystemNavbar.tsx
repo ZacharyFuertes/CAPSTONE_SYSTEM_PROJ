@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Globe, LogOut, BarChart3, Package, Calendar, Users } from 'lucide-react'
+import { Menu, X, Globe, LogOut, BarChart3, Package, Calendar, Users, Star } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -19,7 +19,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     { id: 'inventory', label: t('nav.inventory'), icon: Package },
     { id: 'appointments', label: t('nav.appointments'), icon: Calendar },
     { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'products', label: 'Products', icon: Star, adminOnly: true },
   ]
+
+  const filteredMenuItems = user?.role === 'admin' || user?.role === 'owner' 
+    ? menuItems 
+    : menuItems.filter(item => !item.adminOnly)
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 shadow-lg">
@@ -43,7 +48,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const Icon = item.icon
               const isActive = currentPage === item.id
               return (
@@ -121,7 +126,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden border-t border-slate-700 py-4 space-y-2"
             >
-              {menuItems.map((item) => {
+              {filteredMenuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = currentPage === item.id
                 return (

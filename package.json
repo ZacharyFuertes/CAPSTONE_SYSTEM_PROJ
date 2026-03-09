@@ -11,8 +11,8 @@
     "seed": "node seed-demo.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.40.0",
     "@hookform/resolvers": "^3.3.4",
+    "@supabase/supabase-js": "^2.98.0",
     "@tanstack/react-table": "^8.13.2",
     "axios": "^1.6.5",
     "chart.js": "^4.4.1",

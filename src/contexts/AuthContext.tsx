@@ -26,9 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setLoading(true)
         
-        // Get session without timeout - Supabase handles this internally
-        // The onAuthStateChange listener below will handle actual auth state
-        const { data: { session } } = await supabase.auth.getSession()
+        // Add timeout to prevent hanging indefinitely
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session check timed out')), 10000)
+        )
+        
+        const sessionPromise = supabase.auth.getSession()
+        
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as Awaited<typeof sessionPromise>
         
         if (!isMounted) return
 
@@ -82,10 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Login timed out. Please check your connection.')), 15000)
+      )
+      
+      const loginPromise = supabase.auth.signInWithPassword({ email, password })
+      
+      const { data: { user: authUser }, error: signInError } = await Promise.race([loginPromise, timeoutPromise]) as Awaited<typeof loginPromise>
 
       if (signInError) {
         throw new Error(signInError.message)
@@ -123,11 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     setLoading(true)
     try {
-      // Sign up with Supabase Auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Signup timed out. Please check your connection.')), 15000)
+      )
+      
+      const signupPromise = supabase.auth.signUp({ email, password })
+      
+      const { data: authData, error: signUpError } = await Promise.race([signupPromise, timeoutPromise]) as Awaited<typeof signupPromise>
 
       if (signUpError) {
         console.error('Supabase signup error:', signUpError)
