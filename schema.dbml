@@ -1,0 +1,164 @@
+// MotoShop - Single Shop AI Mechanic System Database Schema
+// Docs: https://dbml.dbdiagram.io/docs
+// B2B System for One Mechanic Shop
+
+Table users {
+  id uuid [primary key]
+  email varchar [unique, not null]
+  name varchar [not null]
+  role varchar [not null, note: 'admin, mechanic, customer']
+  phone varchar
+  address varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table customers {
+  id uuid [primary key]
+  user_id uuid [not null]
+  phone varchar
+  address varchar
+  city varchar
+  total_spent decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table vehicles {
+  id uuid [primary key]
+  customer_id uuid [not null]
+  make varchar [not null]
+  model varchar [not null]
+  year integer [not null]
+  plate_number varchar [not null]
+  engine_number varchar [not null]
+  vin varchar
+  created_at timestamp
+}
+
+Table parts {
+  id uuid [primary key]
+  name varchar [not null]
+  description text
+  sku varchar [unique, not null]
+  category varchar [note: 'brakes, tires, oils, electrical, suspension, exhaust, filters, other']
+  quantity_in_stock integer [default: 0]
+  min_stock_level integer [default: 5]
+  unit_price decimal [not null]
+  supplier varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table products {
+  id uuid [primary key]
+  name varchar [not null]
+  description text
+  category varchar
+  sku varchar [unique, not null]
+  unit_price decimal [not null]
+  quantity_in_stock integer
+  image_url varchar
+  rating decimal
+  created_at timestamp
+}
+
+Table appointments {
+  id uuid [primary key]
+  customer_id uuid [not null]
+  vehicle_id uuid [not null]
+  mechanic_id uuid
+  scheduled_date timestamp [not null]
+  scheduled_time varchar
+  service_type varchar [not null]
+  description text
+  status varchar [not null, note: 'pending, confirmed, in_progress, completed, cancelled']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table job_orders {
+  id uuid [primary key]
+  appointment_id uuid
+  customer_id uuid [not null]
+  mechanic_id uuid [not null]
+  vehicle_id uuid [not null]
+  title varchar [not null]
+  description text
+  status varchar [not null, note: 'draft, in_progress, completed, cancelled']
+  parts_used jsonb
+  labor_hours decimal
+  labor_rate decimal
+  total_cost decimal
+  created_at timestamp
+  completed_at timestamp
+  updated_at timestamp
+}
+
+Table featured_products {
+  id uuid [primary key]
+  product_id uuid [not null]
+  position integer
+  created_at timestamp
+}
+
+// Relationships
+Ref customers_users: customers.user_id > users.id
+Ref vehicles_customers: vehicles.customer_id > customers.id
+Ref appointments_customers: appointments.customer_id > customers.id
+Ref appointments_vehicle: appointments.vehicle_id > vehicles.id
+Ref appointments_mechanic: appointments.mechanic_id > users.id
+Ref job_orders_customers: job_orders.customer_id > customers.id
+Ref job_orders_appointment: job_orders.appointment_id > appointments.id
+Ref job_orders_mechanic: job_orders.mechanic_id > users.id
+Ref job_orders_vehicle: job_orders.vehicle_id > vehicles.id
+Ref featured_products_products: featured_products.product_id > products.id
+
+// Sample Data
+Records users(id, email, name, role) {
+  'user1-uuid', 'admin@motoshop.com', 'John Admin', 'admin'
+  'user2-uuid', 'bob@motoshop.com', 'Bob Mechanic', 'mechanic'
+  'user3-uuid', 'charlie@motoshop.com', 'Charlie Mechanic', 'mechanic'
+  'user4-uuid', 'david@email.com', 'David Customer', 'customer'
+  'user5-uuid', 'emma@email.com', 'Emma Customer', 'customer'
+}
+
+Records customers(id, user_id, address, city) {
+  'cust1-uuid', 'user4-uuid', '123 Main St', 'Manila'
+  'cust2-uuid', 'user5-uuid', '456 Oak Ave', 'Cebu'
+}
+
+Records vehicles(id, customer_id, make, model, year, plate_number, engine_number) {
+  'veh1-uuid', 'cust1-uuid', 'Honda', 'Civic', 2020, 'ABC-1234', 'ENG-001'
+  'veh2-uuid', 'cust2-uuid', 'Toyota', 'Camry', 2019, 'XYZ-5678', 'ENG-002'
+}
+
+Records parts(id, name, category, sku, quantity_in_stock, unit_price) {
+  'part1-uuid', 'Synthetic Oil 5W-30', 'oils', 'SKU-001', 150, 24.99
+  'part2-uuid', 'Brake Pads Set', 'brakes', 'SKU-002', 45, 89.99
+  'part3-uuid', 'Air Filter', 'filters', 'SKU-003', 200, 15.99
+  'part4-uuid', 'Tires Michelin', 'tires', 'SKU-004', 30, 120.00
+}
+
+Records products(id, name, category, sku, unit_price, quantity_in_stock) {
+  'prod1-uuid', 'Premium Oil Service', 'service', 'PROD-001', 49.99, 999
+  'prod2-uuid', 'Brake Inspection', 'service', 'PROD-002', 79.99, 999
+  'prod3-uuid', 'Tire Rotation', 'service', 'PROD-003', 89.99, 999
+}
+
+Records appointments(id, customer_id, vehicle_id, mechanic_id, service_type, status) {
+  'apt1-uuid', 'cust1-uuid', 'veh1-uuid', 'user2-uuid', 'Oil Change', 'completed'
+  'apt2-uuid', 'cust2-uuid', 'veh2-uuid', 'user3-uuid', 'Brake Check', 'confirmed'
+  'apt3-uuid', 'cust1-uuid', 'veh1-uuid', 'user2-uuid', 'Engine Diagnostic', 'pending'
+}
+
+Records job_orders(id, customer_id, vehicle_id, mechanic_id, title, status) {
+  'jo1-uuid', 'cust1-uuid', 'veh1-uuid', 'user2-uuid', 'Oil Change Service', 'completed'
+  'jo2-uuid', 'cust1-uuid', 'veh1-uuid', 'user2-uuid', 'Engine Diagnostics', 'in_progress'
+}
+
+Records featured_products(id, product_id, position) {
+  'feat1-uuid', 'prod1-uuid', 1
+  'feat2-uuid', 'prod2-uuid', 2
+}

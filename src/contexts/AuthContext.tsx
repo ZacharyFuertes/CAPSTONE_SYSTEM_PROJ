@@ -16,67 +16,69 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Check if user is already logged in via Supabase session
     let isMounted = true
-    
-    const checkSession = async () => {
-      try {
-        setLoading(true)
-        
-        // Add timeout to prevent hanging indefinitely
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timed out')), 10000)
-        )
-        
-        const sessionPromise = supabase.auth.getSession()
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as Awaited<typeof sessionPromise>
-        
-        if (!isMounted) return
 
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return
+      
+      try {
         if (session?.user) {
+          // Only set loading if we're actually checking the database
+          setLoading(true)
+          
           // Fetch user profile from database
-          const { data: userData } = await supabase
+          let { data: userData, error: selectError } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single()
 
+          // If user not found in database, create a minimal record
+          if (selectError?.code === 'PGRST116' || !userData) {
+            console.log('User record not found, creating default user record...')
+            const { data: newUser, error: insertError } = await supabase
+              .from('users')
+              .insert({
+                id: session.user.id,
+                email: session.user.email || 'unknown',
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                role: 'customer',
+              })
+              .select()
+              .single()
+
+            if (!insertError && newUser) {
+              userData = newUser
+            }
+          }
+
           if (isMounted && userData) {
             setUser(userData)
           }
+        } else {
+          if (isMounted) setUser(null)
         }
       } catch (err) {
-        console.error('Session check error:', err)
-        // Don't treat as fatal - onAuthStateChange will handle state updates
+        console.error('Error updating user on auth state change:', err)
       } finally {
         if (isMounted) setLoading(false)
       }
+    })
+
+    // Check session in background - no timeout
+    const checkSessionOnMount = async () => {
+      try {
+        await supabase.auth.getSession()
+      } catch (err) {
+        console.debug('Background session check error:', err)
+      }
     }
 
-    checkSession()
-
-    // Listen for auth state changes - this handles all auth events including login/logout
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return
-      
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        
-        if (isMounted && userData) {
-          setUser(userData)
-        }
-      } else {
-        if (isMounted) setUser(null)
-      }
-    })
+    checkSessionOnMount()
 
     return () => {
       isMounted = false
@@ -87,14 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Login timed out. Please check your connection.')), 15000)
-      )
-      
-      const loginPromise = supabase.auth.signInWithPassword({ email, password })
-      
-      const { data: { user: authUser }, error: signInError } = await Promise.race([loginPromise, timeoutPromise]) as Awaited<typeof loginPromise>
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (signInError) {
         throw new Error(signInError.message)
@@ -102,11 +97,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (authUser?.id) {
         // Fetch user data immediately
-        const { data: userData } = await supabase
+        let { data: userData, error: selectError } = await supabase
           .from('users')
           .select('*')
           .eq('id', authUser.id)
           .single()
+
+        // If user not found in database, create a minimal record
+        if (selectError?.code === 'PGRST116' || !userData) {
+          console.log('User record not found in database, creating one...')
+          const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: authUser.id,
+              email: authUser.email || email,
+              name: authUser.user_metadata?.name || email.split('@')[0],
+              role: 'customer',
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error('Failed to create user record:', insertError)
+            throw new Error('Account created but profile setup failed. Please contact support.')
+          }
+
+          userData = newUser
+        }
 
         if (userData) {
           setUser(userData)
@@ -132,17 +149,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     setLoading(true)
     try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Signup timed out. Please check your connection.')), 15000)
-      )
-      
-      const signupPromise = supabase.auth.signUp({ email, password })
-      
-      const { data: authData, error: signUpError } = await Promise.race([signupPromise, timeoutPromise]) as Awaited<typeof signupPromise>
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({ email, password })
 
       if (signUpError) {
         console.error('Supabase signup error:', signUpError)
+        // Provide more helpful error messages
+        if (signUpError.message.includes('already registered')) {
+          throw new Error('This email is already registered. Please login instead or use a different email.')
+        }
         throw new Error(signUpError.message)
       }
 

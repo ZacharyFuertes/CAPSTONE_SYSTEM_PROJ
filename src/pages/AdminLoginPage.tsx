@@ -1,22 +1,30 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Lock, Loader } from 'lucide-react'
+import { Mail, Lock, Loader, ArrowLeft, Home } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { UserRole } from '../types'
 
-interface LoginPageProps {
+interface AdminLoginPageProps {
   onLoginSuccess: () => void
+  onBack: () => void
+  onHome?: () => void
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack, onHome }) => {
   const { login, signup } = useAuth()
   const [isSignup, setIsSignup] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string
+    password: string
+    name: string
+    role: UserRole
+  }>({
     email: '',
     password: '',
     name: '',
-    role: 'owner' as const,
+    role: 'owner',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,15 +34,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     try {
       if (isSignup) {
+        if (formData.role === 'customer') {
+          setError('Please use Customer Login for customer accounts')
+          setLoading(false)
+          return
+        }
         await signup(formData.email, formData.password, formData.name, formData.role)
       } else {
         await login(formData.email, formData.password)
       }
       onLoginSuccess()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed. Please try again.'
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed. Please try again.'
       setError(errorMessage)
-      console.error('Auth error:', error)
+      console.error('Auth error:', err)
     } finally {
       setLoading(false)
     }
@@ -42,21 +55,43 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      {/* Home Button */}
+      <motion.button
+        onClick={onHome || onBack}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="fixed top-6 left-6 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
+        whileHover={{ scale: 1.05, x: -4 }}
+      >
+        <Home size={18} />
+        <span className="hidden sm:inline text-sm font-medium">Home</span>
+      </motion.button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
+        {/* Back Button */}
+        <motion.button
+          onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white mb-6 font-medium transition"
+          whileHover={{ scale: 1.05, x: -4 }}
+        >
+          <ArrowLeft size={18} />
+          Back to Login Choice
+        </motion.button>
+
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-moto-accent to-red-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-3xl">M</span>
           </div>
           <h1 className="text-3xl font-bold text-white">MotoShop</h1>
-          <p className="text-slate-400 mt-2">Auto Shop Management System</p>
+          <p className="text-slate-400 mt-2">Admin & Staff Portal</p>
         </div>
 
-        {/* Forms */}
+        {/* Form */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -64,7 +99,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           className="bg-slate-800 rounded-lg p-8 border border-slate-700 shadow-2xl"
         >
           <h2 className="text-2xl font-bold text-white mb-6">
-            {isSignup ? 'Create Account' : 'Welcome Back'}
+            {isSignup ? 'Create Admin Account' : 'Admin Login'}
           </h2>
 
           {error && (
@@ -87,8 +122,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
-                  placeholder="you@example.com"
+                  className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
+                  placeholder="admin@motoshop.com"
                   required
                 />
               </div>
@@ -102,8 +137,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
-                  placeholder="Juan Dela Cruz"
+                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
+                  placeholder="Manager Name"
                   required={isSignup}
                 />
               </div>
@@ -118,15 +153,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      role: e.target.value as typeof formData.role,
+                      role: e.target.value as UserRole,
                     })
                   }
-                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
                 >
-                  <option value="owner">Shop Owner/Admin</option>
+                  <option value="owner">Shop Owner</option>
                   <option value="mechanic">Mechanic/Staff</option>
-                  <option value="customer">Customer</option>
                 </select>
+                <p className="text-slate-500 text-xs mt-1">
+                  Customer accounts must use the Customer Login
+                </p>
               </div>
             )}
 
@@ -139,7 +176,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                  className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
                   placeholder="••••••••"
                   required
                 />
@@ -152,48 +189,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-moto-accent to-red-600 hover:from-moto-accent-dark hover:to-red-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading && <Loader className="w-5 h-5 animate-spin" />}
-              {isSignup ? 'Create Account' : 'Sign In'}
+              {isSignup ? 'Create Admin Account' : 'Sign In'}
             </motion.button>
-
-            {/* Demo Credentials (Remove in production) */}
-            {!isSignup && (
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-xs text-blue-400">
-                <p className="font-semibold mb-1">Demo Credentials:</p>
-                <p>Email: demo@motoshop.com</p>
-                <p>Password: demo123</p>
-              </div>
-            )}
           </form>
 
-          {/* Toggle */}
-          <div className="mt-6 text-center">
-            <p className="text-slate-400 text-sm">
-              {isSignup ? 'Already have an account?' : "Don't have an account?"}
-              <button
-                onClick={() => setIsSignup(!isSignup)}
-                className="ml-2 text-blue-400 hover:text-blue-300 font-semibold transition"
-              >
-                {isSignup ? 'Sign In' : 'Sign Up'}
-              </button>
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-8 text-center text-slate-400 text-sm"
-        >
-          <p>Built for Filipino auto shops • Secure & Bilingual</p>
+          {/* Toggle Signup/Login */}
+          <p className="text-center text-slate-400 text-sm mt-6">
+            {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <button
+              onClick={() => {
+                setIsSignup(!isSignup)
+                setError('')
+              }}
+              className="text-moto-accent hover:text-moto-accent-dark font-semibold transition"
+            >
+              {isSignup ? 'Sign In' : 'Create Account'}
+            </button>
+          </p>
         </motion.div>
       </motion.div>
     </div>
   )
 }
 
-export default LoginPage
+export default AdminLoginPage
