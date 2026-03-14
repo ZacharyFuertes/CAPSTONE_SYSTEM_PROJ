@@ -3,13 +3,13 @@ import { motion } from "framer-motion";
 import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
-interface CustomerLoginPageProps {
+interface MechanicLoginPageProps {
   onLoginSuccess: () => void;
   onBack: () => void;
   onHome?: () => void;
 }
 
-const LoginPage: React.FC<CustomerLoginPageProps> = ({
+const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
   onLoginSuccess,
   onBack,
   onHome,
@@ -40,16 +40,16 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
           formData.email,
           formData.password,
           formData.name,
-          "customer",
+          "mechanic",
         );
       } else {
         await login(formData.email, formData.password);
       }
 
-      // Check if user role is allowed for customer portal
-      if (user && user.role !== "customer") {
+      // Check if user role is allowed for mechanic portal
+      if (user && user.role !== "mechanic") {
         setError(
-          `Access Denied: This portal is for Customers only. Your account is registered as '${user.role}'.`,
+          `Access Denied: This portal is for Mechanics only. Your account is registered as '${user.role}'.`,
         );
         await logout();
         setLoading(false);
@@ -104,11 +104,11 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-3xl">👤</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-3xl">⚙️</span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            Customer Portal
+            Mechanic Portal
           </h1>
           <p className="text-slate-400">
             {isSignup ? "Create your account" : "Sign in to your account"}
@@ -143,9 +143,9 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="customer@motoshop.com"
+                placeholder="mechanic@motoshop.com"
                 required
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-green-500 transition"
+                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
               />
             </div>
           </div>
@@ -167,7 +167,7 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-green-500 transition"
+                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
               />
             </div>
           </div>
@@ -183,9 +183,9 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Juan Dela Cruz"
+                placeholder="John Doe"
                 required
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-green-500 transition"
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
               />
             </div>
           )}
@@ -196,7 +196,7 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
             disabled={loading}
             whileHover={{ scale: loading ? 1 : 1.02 }}
             whileTap={{ scale: loading ? 1 : 0.98 }}
-            className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
+            className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
           >
             {loading && <Loader size={18} className="animate-spin" />}
             {isSignup ? "Create Account" : "Sign In"}
@@ -214,7 +214,7 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                 setError("");
                 setFormData({ email: "", password: "", name: "" });
               }}
-              className="ml-2 text-green-400 hover:text-green-300 font-semibold transition"
+              className="ml-2 text-blue-400 hover:text-blue-300 font-semibold transition"
             >
               {isSignup ? "Sign In" : "Create Account"}
             </button>
@@ -225,4 +225,4 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
   );
 };
 
-export default LoginPage;
+export default MechanicLoginPage;

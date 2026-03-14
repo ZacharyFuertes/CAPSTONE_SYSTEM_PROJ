@@ -9,7 +9,12 @@ interface Slide {
   subtitle: string
 }
 
-const HeroSlideshow: React.FC = () => {
+interface HeroSlideshowProps {
+  onBookNow?: () => void
+  onShopNow?: () => void
+}
+
+const HeroSlideshow: React.FC<HeroSlideshowProps> = ({ onBookNow, onShopNow }) => {
   const [current, setCurrent] = useState(0)
   const [isAutoPlay, setIsAutoPlay] = useState(true)
 
@@ -80,7 +85,7 @@ const HeroSlideshow: React.FC = () => {
             }}
           />
 
-          {/* Gradient Overlay */}
+          {/* Gradient Overlay*/}
           <div className="absolute inset-0 bg-gradient-overlay" />
 
           {/* Content */}
@@ -106,6 +111,7 @@ const HeroSlideshow: React.FC = () => {
                 className="flex flex-col sm:flex-row gap-4 justify-center items-center"
               >
                 <motion.button
+                  onClick={onShopNow}
                   className="px-8 py-3 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide flex items-center gap-2 hover:shadow-2xl hover:shadow-moto-accent/50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -114,6 +120,7 @@ const HeroSlideshow: React.FC = () => {
                   Shop Now
                 </motion.button>
                 <motion.button
+                  onClick={onBookNow}
                   className="px-8 py-3 border-2 border-moto-accent-neon rounded-lg font-bold text-moto-accent-neon uppercase tracking-wide flex items-center gap-2 hover:bg-moto-accent-neon/10 backdrop-blur-sm"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

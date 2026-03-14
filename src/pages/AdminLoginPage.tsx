@@ -1,57 +1,80 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, Lock, Loader, ArrowLeft, Home } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
-import { UserRole } from '../types'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../types";
 
 interface AdminLoginPageProps {
-  onLoginSuccess: () => void
-  onBack: () => void
-  onHome?: () => void
+  onLoginSuccess: () => void;
+  onBack: () => void;
+  onHome?: () => void;
 }
 
-const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack, onHome }) => {
-  const { login, signup } = useAuth()
-  const [isSignup, setIsSignup] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
+  onLoginSuccess,
+  onBack,
+  onHome,
+}) => {
+  const { login, signup, logout, user } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState<{
-    email: string
-    password: string
-    name: string
-    role: UserRole
+    email: string;
+    password: string;
+    name: string;
+    role: UserRole;
   }>({
-    email: '',
-    password: '',
-    name: '',
-    role: 'owner',
-  })
+    email: "",
+    password: "",
+    name: "",
+    role: "owner",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       if (isSignup) {
-        if (formData.role === 'customer') {
-          setError('Please use Customer Login for customer accounts')
-          setLoading(false)
-          return
+        if (formData.role === "customer") {
+          setError("Please use Customer Login for customer accounts");
+          setLoading(false);
+          return;
         }
-        await signup(formData.email, formData.password, formData.name, formData.role)
+        await signup(
+          formData.email,
+          formData.password,
+          formData.name,
+          formData.role,
+        );
       } else {
-        await login(formData.email, formData.password)
+        await login(formData.email, formData.password);
       }
-      onLoginSuccess()
+
+      // Check if user role is allowed for admin portal
+      if (user && user.role !== "admin" && user.role !== "owner") {
+        setError(
+          `Access Denied: This portal is for Admin and Owner only. Your account is registered as '${user.role}'.`,
+        );
+        await logout();
+        setLoading(false);
+        return;
+      }
+
+      onLoginSuccess();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed. Please try again.'
-      setError(errorMessage)
-      console.error('Auth error:', err)
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please try again.";
+      setError(errorMessage);
+      console.error("Auth error:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -99,7 +122,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
           className="bg-slate-800 rounded-lg p-8 border border-slate-700 shadow-2xl"
         >
           <h2 className="text-2xl font-bold text-white mb-6">
-            {isSignup ? 'Create Admin Account' : 'Admin Login'}
+            {isSignup ? "Create Admin Account" : "Admin Login"}
           </h2>
 
           {error && (
@@ -115,13 +138,17 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">Email</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Email
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
                   placeholder="admin@motoshop.com"
                   required
@@ -132,11 +159,15 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
             {/* Name (Signup only) */}
             {isSignup && (
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Full Name</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
                   placeholder="Manager Name"
                   required={isSignup}
@@ -147,7 +178,9 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
             {/* Role (Signup only) */}
             {isSignup && (
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Role</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  Role
+                </label>
                 <select
                   value={formData.role}
                   onChange={(e) =>
@@ -169,13 +202,17 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
 
             {/* Password */}
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">Password</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="w-full bg-slate-700 text-white pl-10 pr-4 py-2 rounded border border-slate-600 focus:border-moto-accent focus:outline-none transition"
                   placeholder="••••••••"
                   required
@@ -192,27 +229,27 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, onBack,
               className="w-full bg-gradient-to-r from-moto-accent to-red-600 hover:from-moto-accent-dark hover:to-red-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading && <Loader className="w-5 h-5 animate-spin" />}
-              {isSignup ? 'Create Admin Account' : 'Sign In'}
+              {isSignup ? "Create Admin Account" : "Sign In"}
             </motion.button>
           </form>
 
           {/* Toggle Signup/Login */}
           <p className="text-center text-slate-400 text-sm mt-6">
-            {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
+            {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               onClick={() => {
-                setIsSignup(!isSignup)
-                setError('')
+                setIsSignup(!isSignup);
+                setError("");
               }}
               className="text-moto-accent hover:text-moto-accent-dark font-semibold transition"
             >
-              {isSignup ? 'Sign In' : 'Create Account'}
+              {isSignup ? "Sign In" : "Create Account"}
             </button>
           </p>
         </motion.div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminLoginPage
+export default AdminLoginPage;

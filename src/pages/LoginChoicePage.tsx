@@ -1,16 +1,18 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Users, Shield, ChevronRight, Home } from 'lucide-react'
+import { Users, Wrench, Building2, ChevronRight, Home } from 'lucide-react'
 
 interface LoginChoicePageProps {
   onChooseCustomer: () => void
-  onChooseAdmin: () => void
+  onChooseMechanic: () => void
+  onChooseOwner: () => void
   onBack: () => void
 }
 
 const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
   onChooseCustomer,
-  onChooseAdmin,
+  onChooseMechanic,
+  onChooseOwner,
   onBack,
 }) => {
   return (
@@ -30,7 +32,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-4xl"
       >
         {/* Header */}
         <div className="text-center mb-12">
@@ -47,7 +49,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
         </div>
 
         {/* Login Options */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           {/* Customer Login */}
           <motion.button
             onClick={onChooseCustomer}
@@ -56,58 +58,91 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-moto-accent-neon rounded-xl overflow-hidden transition-all"
+            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-green-500 rounded-xl overflow-hidden transition-all"
           >
             {/* Background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-moto-accent-neon/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
             {/* Content */}
             <div className="relative z-10">
               <motion.div
-                className="w-16 h-16 bg-moto-accent-neon/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-moto-accent-neon/30 transition"
+                className="w-16 h-16 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/30 transition"
               >
-                <Users className="w-8 h-8 text-moto-accent-neon" />
+                <Users className="w-8 h-8 text-green-500" />
               </motion.div>
 
-              <h3 className="text-xl font-bold text-white mb-2">Customer Login</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Customer</h3>
               <p className="text-slate-400 text-sm mb-6">
-                View your bookings, book appointments, and track your service history
+                Book appointments and track repairs
               </p>
 
-              <div className="flex items-center justify-center gap-2 text-moto-accent-neon font-semibold group-hover:gap-3 transition-all">
+              <div className="flex items-center justify-center gap-2 text-green-500 font-semibold group-hover:gap-3 transition-all">
                 Login
                 <ChevronRight className="w-5 h-5" />
               </div>
             </div>
           </motion.button>
 
-          {/* Admin Login */}
+          {/* Mechanic Login */}
           <motion.button
-            onClick={onChooseAdmin}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            onClick={onChooseMechanic}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-moto-accent rounded-xl overflow-hidden transition-all"
+            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-blue-500 rounded-xl overflow-hidden transition-all"
           >
             {/* Background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-moto-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
             {/* Content */}
             <div className="relative z-10">
               <motion.div
-                className="w-16 h-16 bg-moto-accent/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-moto-accent/30 transition"
+                className="w-16 h-16 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/30 transition"
               >
-                <Shield className="w-8 h-8 text-moto-accent" />
+                <Wrench className="w-8 h-8 text-blue-500" />
               </motion.div>
 
-              <h3 className="text-xl font-bold text-white mb-2">Admin/Staff Login</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Mechanic</h3>
               <p className="text-slate-400 text-sm mb-6">
-                Manage appointments, inventory, customers, and shop operations
+                Manage assigned jobs and repairs
               </p>
 
-              <div className="flex items-center justify-center gap-2 text-moto-accent font-semibold group-hover:gap-3 transition-all">
+              <div className="flex items-center justify-center gap-2 text-blue-500 font-semibold group-hover:gap-3 transition-all">
+                Login
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
+          </motion.button>
+
+          {/* Owner/Admin Login */}
+          <motion.button
+            onClick={onChooseOwner}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-red-500 rounded-xl overflow-hidden transition-all"
+          >
+            {/* Background effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <motion.div
+                className="w-16 h-16 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-red-500/30 transition"
+              >
+                <Building2 className="w-8 h-8 text-red-500" />
+              </motion.div>
+
+              <h3 className="text-xl font-bold text-white mb-2">Owner/Admin</h3>
+              <p className="text-slate-400 text-sm mb-6">
+                Manage shop and all operations
+              </p>
+
+              <div className="flex items-center justify-center gap-2 text-red-500 font-semibold group-hover:gap-3 transition-all">
                 Login
                 <ChevronRight className="w-5 h-5" />
               </div>
@@ -120,7 +155,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
           onClick={onBack}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           className="w-full py-3 text-slate-400 hover:text-slate-300 font-semibold transition"
         >
           ← Back to Home

@@ -1,0 +1,427 @@
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Calendar, Clock, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
+import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../services/supabaseClient'
+
+interface Mechanic {
+  id: string
+  name: string
+  email: string
+}
+
+interface Availability {
+  id: string
+  mechanic_id: string
+  mechanic_name: string
+  day_of_week: string
+  start_time: string
+  end_time: string
+  is_available: boolean
+}
+
+interface AdminMechanicAvailabilityProps {
+  onNavigate?: (page: string) => void
+}
+
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ onNavigate }) => {
+  const { } = useLanguage()
+  const { user } = useAuth()
+  const [mechanics, setMechanics] = useState<Mechanic[]>([])
+  const [availability, setAvailability] = useState<Availability[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedMechanic, setSelectedMechanic] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [formData, setFormData] = useState({
+    mechanic_id: '',
+    day_of_week: 'Monday',
+    start_time: '08:00',
+    end_time: '17:00',
+  })
+
+  // Check if user is admin/owner
+  useEffect(() => {
+    if (user?.role !== 'owner') {
+      onNavigate && onNavigate('dashboard')
+    }
+  }, [user?.role])
+
+  // Fetch mechanics and availability
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch all mechanics
+      const { data: mechanicsData, error: mechanicsError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('role', 'mechanic')
+
+      if (mechanicsError) throw mechanicsError
+
+      setMechanics(mechanicsData || [])
+
+      // Fetch availability
+      const { data: availabilityData, error: availabilityError } = await supabase
+        .from('mechanic_availability')
+        .select('*')
+        .order('day_of_week', { ascending: true })
+
+      if (availabilityError && availabilityError.code !== 'PGRST116') {
+        throw availabilityError
+      }
+
+      // Enhance availability with mechanic names
+      const enhancedAvailability: Availability[] = (availabilityData || []).map((av: any) => {
+        const mechanic = mechanicsData?.find((m) => m.id === av.mechanic_id)
+        return {
+          ...av,
+          mechanic_name: mechanic?.name || 'Unknown',
+        }
+      })
+
+      setAvailability(enhancedAvailability)
+    } catch (err) {
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddAvailability = async () => {
+    if (!formData.mechanic_id) {
+      alert('Please select a mechanic')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('mechanic_availability')
+        .insert([
+          {
+            mechanic_id: formData.mechanic_id,
+            day_of_week: formData.day_of_week,
+            start_time: formData.start_time,
+            end_time: formData.end_time,
+            is_available: true,
+          },
+        ])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add to local state
+      const mechanic = mechanics.find((m) => m.id === formData.mechanic_id)
+      setAvailability([
+        ...availability,
+        {
+          ...data,
+          mechanic_name: mechanic?.name || 'Unknown',
+        },
+      ])
+
+      // Reset form
+      setFormData({
+        mechanic_id: '',
+        day_of_week: 'Monday',
+        start_time: '08:00',
+        end_time: '17:00',
+      })
+      setShowAddForm(false)
+    } catch (err) {
+      console.error('Error adding availability:', err)
+      alert('Failed to add availability')
+    }
+  }
+
+  const handleDeleteAvailability = async (availabilityId: string) => {
+    if (!confirm('Are you sure you want to delete this availability slot?')) return
+
+    try {
+      const { error } = await supabase
+        .from('mechanic_availability')
+        .delete()
+        .eq('id', availabilityId)
+
+      if (error) throw error
+
+      // Remove from local state
+      setAvailability(availability.filter((a) => a.id !== availabilityId))
+    } catch (err) {
+      console.error('Error deleting availability:', err)
+      alert('Failed to delete availability')
+    }
+  }
+
+  const handleToggleAvailability = async (availabilityId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('mechanic_availability')
+        .update({ is_available: !currentStatus })
+        .eq('id', availabilityId)
+
+      if (error) throw error
+
+      // Update local state
+      setAvailability(
+        availability.map((a) => (a.id === availabilityId ? { ...a, is_available: !currentStatus } : a))
+      )
+    } catch (err) {
+      console.error('Error updating availability:', err)
+      alert('Failed to update availability')
+    }
+  }
+
+  const selectedMechanicData = mechanics.find((m) => m.id === selectedMechanic)
+  const filteredAvailability = selectedMechanic
+    ? availability.filter((a) => a.mechanic_id === selectedMechanic)
+    : availability
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Loading mechanic availability...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      {/* Back Button */}
+      <motion.button
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={() => onNavigate && onNavigate('dashboard')}
+        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span>Back</span>
+      </motion.button>
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <h1 className="text-4xl font-bold text-white mb-2">Mechanic Availability</h1>
+        <p className="text-slate-400">Manage when mechanics are available to work</p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Mechanics List */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-slate-800 rounded-lg p-6 border border-slate-700 h-fit"
+        >
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Mechanics
+          </h2>
+
+          <div className="space-y-2 mb-6">
+            <button
+              onClick={() => setSelectedMechanic(null)}
+              className={`w-full p-3 rounded-lg transition text-left ${
+                selectedMechanic === null
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              All Mechanics
+            </button>
+            {mechanics.map((mechanic) => (
+              <button
+                key={mechanic.id}
+                onClick={() => setSelectedMechanic(mechanic.id)}
+                className={`w-full p-3 rounded-lg transition text-left ${
+                  selectedMechanic === mechanic.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <p className="font-semibold">{mechanic.name}</p>
+                <p className="text-xs">{mechanic.email}</p>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            <Plus size={18} />
+            Add Availability
+          </button>
+        </motion.div>
+
+        {/* Main Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-3"
+        >
+          {/* Add Form */}
+          {showAddForm && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-slate-800 rounded-lg p-6 border border-blue-500/30 mb-6"
+            >
+              <h3 className="text-xl font-bold text-white mb-4">Add New Availability Slot</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">Mechanic</label>
+                  <select
+                    value={formData.mechanic_id}
+                    onChange={(e) => setFormData({ ...formData, mechanic_id: e.target.value })}
+                    className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select a mechanic</option>
+                    {mechanics.map((mechanic) => (
+                      <option key={mechanic.id} value={mechanic.id}>
+                        {mechanic.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">Day of Week</label>
+                  <select
+                    value={formData.day_of_week}
+                    onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
+                    className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    {daysOfWeek.map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-2">Start Time</label>
+                    <input
+                      type="time"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                      className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-2">End Time</label>
+                    <input
+                      type="time"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                      className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddAvailability}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded transition"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 rounded transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Availability List */}
+          <div className="space-y-4">
+            {filteredAvailability.length === 0 ? (
+              <div className="text-center py-12 bg-slate-800 rounded-lg border border-slate-700">
+                <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">
+                  {selectedMechanic ? `No availability slots set for ${selectedMechanicData?.name}` : 'No availability slots added yet'}
+                </p>
+              </div>
+            ) : (
+              filteredAvailability.map((slot) => (
+                <motion.div
+                  key={slot.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-blue-400" />
+                        {slot.day_of_week}
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Mechanic: <span className="text-white font-semibold">{slot.mechanic_name}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {slot.is_available ? (
+                        <span className="flex items-center gap-1 text-green-400 text-sm font-semibold">
+                          <CheckCircle size={16} />
+                          Available
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm font-semibold">Unavailable</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-700/50 rounded p-4 mb-4 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-400" />
+                    <span className="text-white font-semibold">
+                      {slot.start_time} - {slot.end_time}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleToggleAvailability(slot.id, slot.is_available)}
+                      className={`flex-1 px-3 py-2 rounded font-semibold transition ${
+                        slot.is_available
+                          ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400'
+                          : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
+                      }`}
+                    >
+                      {slot.is_available ? 'Mark Unavailable' : 'Mark Available'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAvailability(slot.id)}
+                      className="px-3 py-2 rounded bg-red-600/20 hover:bg-red-600/30 text-red-400 transition font-semibold flex items-center justify-center"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+export default AdminMechanicAvailability

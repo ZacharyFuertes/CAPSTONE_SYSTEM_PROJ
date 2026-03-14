@@ -103,8 +103,20 @@ Table featured_products {
   created_at timestamp
 }
 
+Table mechanic_availability {
+  id uuid [primary key]
+  mechanic_id uuid [not null]
+  day_of_week varchar [not null, note: 'Monday to Sunday']
+  start_time varchar [not null, note: 'HH:MM format']
+  end_time varchar [not null, note: 'HH:MM format']
+  is_available boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
 // Relationships
 Ref customers_users: customers.user_id > users.id
+Ref mechanic_availability_mechanic: mechanic_availability.mechanic_id > users.id
 Ref vehicles_customers: vehicles.customer_id > customers.id
 Ref appointments_customers: appointments.customer_id > customers.id
 Ref appointments_vehicle: appointments.vehicle_id > vehicles.id

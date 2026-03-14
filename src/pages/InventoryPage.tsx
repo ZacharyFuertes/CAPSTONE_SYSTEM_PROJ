@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Edit2, Trash2, AlertCircle, Download, ArrowLeft } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, AlertCircle, Download, ArrowLeft, Lock } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabaseClient'
@@ -29,13 +29,14 @@ interface InventoryPageProps {
 
 const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
   const { t } = useLanguage()
-  const { user } = useAuth()
+  const { user, canManageInventory } = useAuth()
   const [parts, setParts] = useState<Part[]>([])
   const [filters, setFilters] = useState<InventoryFilters>({
     searchTerm: '',
     showLowStock: false,
   })
   const [_editingPart, setEditingPart] = useState<Part | null>(null)
+  const [deniedMessage, setDeniedMessage] = useState(false)
 
   // Fetch parts from Supabase
   useEffect(() => {
@@ -61,6 +62,11 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
     }
   }, [user?.shop_id])
 
+  // Handle unauthorized action
+  const handleUnauthorizedAction = () => {
+    setDeniedMessage(true)
+    setTimeout(() => setDeniedMessage(false), 3000)
+  }
 
   const filteredParts = useMemo(() => {
     return parts.filter((part) => {
@@ -104,6 +110,8 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
     a.click()
   }
 
+  const isOwner = canManageInventory()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
       {/* Back Button */}
@@ -117,13 +125,48 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
         <span>Back</span>
       </motion.button>
 
+      {/* Role Info Banner */}
+      {!isOwner && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3"
+        >
+          <Lock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
+          <div>
+            <h3 className="font-semibold text-blue-300 mb-1">Read-Only Access</h3>
+            <p className="text-blue-200 text-sm">
+              You are viewing inventory in read-only mode. Only shop owners can add, edit, or delete parts.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Unauthorized Action Message */}
+      <AnimatePresence>
+        {deniedMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-6 bg-red-600/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-semibold text-red-300">Access Denied</h3>
+              <p className="text-red-200 text-sm">Only shop owners can modify inventory.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">{t('inventory.title')}</h1>
             <p className="text-slate-400">
-              Manage {filteredParts.length} / {parts.length} parts in your inventory
+              {isOwner ? 'Manage' : 'View'} {filteredParts.length} / {parts.length} parts in your inventory
             </p>
           </div>
           <div className="flex gap-3">
@@ -134,13 +177,26 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
               <Download className="w-4 h-4" />
               Export CSV
             </button>
-            <button
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-              title="Add part form coming soon"
-            >
-              <Plus className="w-5 h-5" />
-              {t('inventory.add_part')}
-            </button>
+            {/* Add Part Button - Only for Owners */}
+            {isOwner ? (
+              <button
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                title="Add new part"
+              >
+                <Plus className="w-5 h-5" />
+                {t('inventory.add_part')}
+              </button>
+            ) : (
+              <button
+                disabled
+                onClick={handleUnauthorizedAction}
+                className="flex items-center gap-2 bg-slate-600 text-slate-400 px-4 py-2 rounded-lg cursor-not-allowed"
+                title="Only owners can add parts"
+              >
+                <Lock className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -249,22 +305,46 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
                     <span className="text-2xl font-bold text-blue-400">
                       ₱{part.unit_price.toLocaleString()}
                     </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingPart(part)}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          setParts(parts.filter((p) => p.id !== part.id))
-                        }
-                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {/* CRUD Buttons - Only visible to Owners */}
+                    {isOwner && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingPart(part)}
+                          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
+                          title="Edit part"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setParts(parts.filter((p) => p.id !== part.id))}
+                          className="p-2 bg-red-600 hover:bg-red-700 text-white rounded transition"
+                          title="Delete part"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    {/* Disabled Buttons for Non-Owners */}
+                    {!isOwner && (
+                      <div className="flex gap-2">
+                        <button
+                          disabled
+                          onClick={handleUnauthorizedAction}
+                          className="p-2 bg-slate-600 text-slate-400 rounded cursor-not-allowed"
+                          title="Only owners can edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          disabled
+                          onClick={handleUnauthorizedAction}
+                          className="p-2 bg-slate-600 text-slate-400 rounded cursor-not-allowed"
+                          title="Only owners can delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
