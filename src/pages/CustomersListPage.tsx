@@ -26,9 +26,7 @@ interface CustomersListPageProps {
   onNavigate?: (page: string) => void;
 }
 
-const CustomersListPage: React.FC<CustomersListPageProps> = ({
-  onNavigate,
-}) => {
+const CustomersListPage: React.FC<CustomersListPageProps> = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
