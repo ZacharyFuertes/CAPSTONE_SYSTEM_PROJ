@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener - don't use retry logic here, keep it simple
+    // Set up auth state listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -51,12 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         if (session?.user) {
-          // Fetch user profile from database - simple, no retry
+          // Fetch user profile from database
           const { data: userData, error: selectError } = await supabase
             .from("users")
             .select("*")
             .eq("id", session.user.id)
             .single();
+
+          if (!isMounted) return;
 
           // If user not found in database, create a minimal record
           if (selectError?.code === "PGRST116" || !userData) {
@@ -77,15 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               .select()
               .single();
 
-            if (!insertError && newUser) {
-              if (isMounted) {
-                setUser(newUser);
-                localStorage.setItem("cachedUser", JSON.stringify(newUser));
-              }
+            if (!insertError && newUser && isMounted) {
+              setUser(newUser);
+              localStorage.setItem("cachedUser", JSON.stringify(newUser));
             }
           } else if (isMounted && userData) {
             setUser(userData);
-            // Cache user in localStorage for page reloads
             localStorage.setItem("cachedUser", JSON.stringify(userData));
           }
         } else {
@@ -94,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } catch (err) {
         console.error("Error updating user on auth state change:", err);
-        // Don't break auth flow - just log the error
       }
     });
 

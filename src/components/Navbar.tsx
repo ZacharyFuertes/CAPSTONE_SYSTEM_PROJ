@@ -53,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({
               />
               <div className="absolute inset-0 bg-moto-accent-orange blur-lg opacity-0 group-hover:opacity-50 transition-opacity" />
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight">
+            <span className="font-display text-2xl font-black tracking-tight">
               MOTOSHOP
             </span>
           </motion.div>

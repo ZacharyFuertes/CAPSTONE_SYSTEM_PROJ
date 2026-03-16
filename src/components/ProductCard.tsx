@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { ShoppingCart, Star } from 'lucide-react'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { ShoppingCart, Star } from "lucide-react";
 
 /**
  * ProductCard Component
- * 
+ *
  * Reusable card component for displaying motorcycle products
  * Features:
  * - Product image with hover overlay
@@ -15,13 +15,13 @@ import { ShoppingCart, Star } from 'lucide-react'
  */
 
 interface ProductCardProps {
-  id: string
-  name: string
-  category: string
-  price: number
-  image: string
-  rating: number
-  inStock: boolean
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image: string;
+  rating: number;
+  inStock: boolean;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -32,13 +32,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   rating,
   inStock,
 }) => {
-  const [isHovered, setIsHovered] = useState(false)
-  const [isAdded, setIsAdded] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
 
   const handleAddToCart = () => {
-    setIsAdded(true)
-    setTimeout(() => setIsAdded(false), 2000)
-  }
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+  };
 
   return (
     <motion.div
@@ -49,11 +49,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Container */}
-      <div className="relative h-56 sm:h-64 overflow-hidden bg-moto-darker">
+      <div className="relative h-40 sm:h-48 overflow-hidden bg-moto-darker flex items-center justify-center">
         <motion.img
           src={image}
           alt={name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           animate={{ scale: isHovered ? 1.05 : 1 }}
           transition={{ duration: 0.4 }}
         />
@@ -69,27 +69,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
             disabled={!inStock}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${
               isAdded
-                ? 'bg-green-500 text-white'
+                ? "bg-green-500 text-white"
                 : inStock
-                  ? 'bg-moto-accent hover:bg-moto-accent-dark text-white'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  ? "bg-moto-accent hover:bg-moto-accent-dark text-white"
+                  : "bg-gray-600 text-gray-400 cursor-not-allowed"
             }`}
             aria-label={`Add ${name} to cart`}
           >
             <ShoppingCart size={18} />
-            <span>{isAdded ? 'Added!' : inStock ? 'Add' : 'Out'}</span>
+            <span>{isAdded ? "Added!" : inStock ? "Add" : "Out"}</span>
           </button>
         </motion.div>
         {/* Stock Badge */}
         <div className="absolute top-3 right-3">
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              inStock
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
+              inStock ? "bg-green-500 text-white" : "bg-red-500 text-white"
             }`}
           >
-            {inStock ? 'In Stock' : 'Out of Stock'}
+            {inStock ? "In Stock" : "Out of Stock"}
           </span>
         </div>
       </div>
@@ -112,7 +110,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <Star
               key={i}
               size={16}
-              className={i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-500'}
+              className={
+                i < Math.floor(rating)
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-gray-500"
+              }
             />
           ))}
           <span className="text-xs text-gray-400 ml-2">({rating}/5)</span>
@@ -123,10 +125,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <span className="text-2xl sm:text-3xl font-bold text-white">
             ${price.toLocaleString()}
           </span>
-          <motion.div
-            whileHover={{ rotate: 15 }}
-            whileTap={{ scale: 0.9 }}
-          >
+          <motion.div whileHover={{ rotate: 15 }} whileTap={{ scale: 0.9 }}>
             <ShoppingCart
               size={20}
               className="text-moto-accent hover:text-moto-accent-dark cursor-pointer"
@@ -135,7 +134,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default ProductCard
+export default ProductCard;

@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import InventoryPage from "./pages/InventoryPage";
 import AppointmentCalendarPage from "./pages/AppointmentCalendarPage";
 import CustomerPortal from "./pages/CustomerPortal";
+import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
 import BrowsePartsPage from "./pages/BrowsePartsPage";
 import AdminMechanicAvailability from "./pages/AdminMechanicAvailability";
@@ -201,7 +202,6 @@ const AppContent: React.FC = () => {
   if (user && !allowedPages.includes(currentPage)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <DatabaseStatus />
         <SystemNavbar
           currentPage={defaultPage}
           onNavigate={(page: string) => handlePageChange(page as PageType)}
@@ -241,7 +241,7 @@ const AppContent: React.FC = () => {
           />
         )}
         {currentPage === "customers" && (
-          <CustomerPortal
+          <CustomersListPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}

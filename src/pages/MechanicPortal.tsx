@@ -18,16 +18,18 @@ interface AppointmentData {
   scheduled_time: string;
   service_type: string;
   status: string;
-  customer: Array<{
-    name: string;
-    email: string;
+  customers?: {
+    id: string;
     phone: string;
-  }>;
-  vehicles: Array<{
+    users: {
+      name: string;
+    };
+  };
+  vehicles?: {
     make: string;
     model: string;
     plate_number: string;
-  }>;
+  };
 }
 
 interface MechanicPortalProps {
@@ -59,7 +61,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
             scheduled_time,
             service_type,
             status,
-            customer:users(name, email, phone),
+            customers(id, phone, users(name)),
             vehicles(make, model, plate_number)
           `,
           )
@@ -289,20 +291,20 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                       <div className="bg-slate-700/50 rounded p-4">
                         <p className="text-slate-400 text-sm mb-2">Customer</p>
                         <p className="text-white font-semibold">
-                          {apt.customer[0]?.name}
+                          {apt.customers?.users?.name || "N/A"}
                         </p>
                         <p className="text-slate-400 text-sm">
-                          {apt.customer[0]?.phone}
+                          {apt.customers?.phone || "N/A"}
                         </p>
                       </div>
 
                       <div className="bg-slate-700/50 rounded p-4">
                         <p className="text-slate-400 text-sm mb-2">Vehicle</p>
                         <p className="text-white font-semibold">
-                          {apt.vehicles[0]?.make} {apt.vehicles[0]?.model}
+                          {apt.vehicles?.make} {apt.vehicles?.model}
                         </p>
                         <p className="text-slate-400 text-sm">
-                          Plate: {apt.vehicles[0]?.plate_number}
+                          Plate: {apt.vehicles?.plate_number}
                         </p>
                       </div>
                     </div>
@@ -363,8 +365,8 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                       {apt.service_type}
                     </p>
                     <p className="text-slate-400 text-sm mt-1">
-                      {apt.customer[0]?.name} • {apt.vehicles[0]?.make}{" "}
-                      {apt.vehicles[0]?.model}
+                      {apt.customers?.users?.name || "Customer"} •{" "}
+                      {apt.vehicles?.make} {apt.vehicles?.model}
                     </p>
                   </div>
                   <span

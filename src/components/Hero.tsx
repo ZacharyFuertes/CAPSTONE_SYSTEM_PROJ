@@ -1,10 +1,10 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import React from "react";
+import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 /**
  * Hero Section Component
- * 
+ *
  * Eye-catching introductory section with:
  * - Full-screen motorcycle background image
  * - Dark overlay for text readability
@@ -13,16 +13,16 @@ import { ChevronDown } from 'lucide-react'
  */
 const Hero: React.FC = () => {
   const scrollToProducts = () => {
-    const productsSection = document.getElementById('products')
-    productsSection?.scrollIntoView({ behavior: 'smooth' })
-  }
+    const productsSection = document.getElementById("products");
+    productsSection?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <section
       className="relative w-full h-screen bg-cover bg-center flex items-center justify-center overflow-hidden"
       style={{
         backgroundImage: `linear-gradient(135deg, rgba(15, 15, 15, 0.7) 0%, rgba(26, 26, 26, 0.8) 100%), url('https://images.unsplash.com/photo-1507035896870-6d47a3e3a6ab?w=1600&h=900&fit=crop')`,
-        backgroundAttachment: 'fixed',
+        backgroundAttachment: "fixed",
       }}
     >
       {/* Content Container */}
@@ -31,9 +31,9 @@ const Hero: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold text-white mb-4 leading-tight">
+          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-display font-black text-white mb-4 leading-none tracking-wider">
             Gear Up.
             <span className="block text-moto-accent">Ride Out.</span>
           </h1>
@@ -41,13 +41,13 @@ const Hero: React.FC = () => {
 
         {/* Subtitle */}
         <motion.p
-          className="text-lg sm:text-xl text-gray-200 mb-8 max-w-2xl mx-auto"
+          className="text-base sm:text-lg md:text-xl text-gray-100 mb-8 max-w-2xl mx-auto font-medium tracking-wide"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
-          Premium motorcycles, protective gear, and accessories for riders who demand the best.
-          Fast shipping. Real quality. Pure adrenaline.
+          Premium motorcycles, protective gear, and accessories for riders who
+          demand the best. Fast shipping. Real quality. Pure adrenaline.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -55,7 +55,7 @@ const Hero: React.FC = () => {
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
+          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
         >
           <button
             onClick={scrollToProducts}
@@ -89,7 +89,7 @@ const Hero: React.FC = () => {
         </button>
       </motion.div>
     </section>
-  )
-}
+  );
+};
 
-export default Hero
+export default Hero;

@@ -33,7 +33,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Filters",
       price: 450,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcSaLUpmocducA385wmGWxMjj3NPopkQ6ohCtaadIqbJhyWyWrUDlcSud2WkG-tsCPmVggaeav2-Osl6wYxlVyrnOj-OrUCoOejrYKpIaeFb_3R3n0tJhqgxqA",
       rating: 4.8,
       reviews: 234,
       inStock: true,
@@ -44,8 +44,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       name: "Air Filter",
       category: "Filters",
       price: 650,
-      image:
-        "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=500&h=500&fit=crop",
+      image: "https://m.media-amazon.com/images/I/81EQio4lHlL.jpg",
       rating: 4.9,
       reviews: 189,
       inStock: true,
@@ -57,7 +56,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Brakes",
       price: 1200,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQOWVt03NPiiV-eZ4ryoT4G4hNrQRVqxxU-SBYZH3bWbpGLHw3YoUY0Byi-w5ILYVRoXUfmJdQ_uzLgMOr68YonTVqiRUUM9GP20rKb2oNL6NiGxy4G7qqhItw",
       rating: 4.7,
       reviews: 156,
       inStock: true,
@@ -69,7 +68,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Electrical",
       price: 800,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://www.partspro.ph/cdn/shop/files/IridiumIX-B_700x.jpg?v=1742352489",
       rating: 4.6,
       reviews: 142,
       inStock: true,
@@ -81,7 +80,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Accessories",
       price: 550,
       image:
-        "https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=500&h=500&fit=crop",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbj-BCKrR5JBP-OQHvaGHqHQj3coychNZaEg&s",
       rating: 4.5,
       reviews: 98,
       inStock: true,
@@ -93,7 +92,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Electrical",
       price: 2800,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://img.lazcdn.com/g/p/11b752fe5ed0a26a8cbe7421207456b0.jpg_960x960q80.jpg_.webp",
       rating: 4.8,
       reviews: 267,
       inStock: true,
@@ -105,7 +104,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Fluids",
       price: 1800,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://m.media-amazon.com/images/I/61ep7z3yB3L._AC_UF1000,1000_QL80_.jpg",
       rating: 4.7,
       reviews: 201,
       inStock: true,
@@ -117,7 +116,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Fluids",
       price: 320,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://down-ph.img.susercontent.com/file/ph-11134207-7ra0n-mb3ucjswkpyp17",
       rating: 4.6,
       reviews: 124,
       inStock: true,
@@ -129,7 +128,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Fluids",
       price: 480,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://www.partspro.ph/cdn/shop/files/MultiATFN.jpg?v=1691041651",
       rating: 4.5,
       reviews: 89,
       inStock: true,
@@ -141,7 +140,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Fluids",
       price: 380,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRE-UzVnvRXIJTichfwrz26Z2QxCtCO7qiSQ&s",
       rating: 4.7,
       reviews: 156,
       inStock: true,
@@ -153,7 +152,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Belts",
       price: 650,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://img.lazcdn.com/g/p/c28725e1bcf0458b7a6ba7e4fe0ba0b5.jpg_720x720q80.jpg",
       rating: 4.4,
       reviews: 76,
       inStock: true,
@@ -165,7 +164,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
       category: "Cooling",
       price: 1100,
       image:
-        "https://images.unsplash.com/photo-1486262715619-81c4e4e89e1f?w=500&h=500&fit=crop",
+        "https://img.lazcdn.com/g/ff/kf/S1d3152de25664de9a5288107f3506f55d.jpg_720x720q80.jpg",
       rating: 4.6,
       reviews: 112,
       inStock: true,

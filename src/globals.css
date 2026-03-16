@@ -49,15 +49,19 @@ button, a {
 
 /* Premium heading styles */
 h1 {
-  @apply font-display font-bold tracking-tight;
+  @apply font-display font-black tracking-wider leading-none;
 }
 
 h2 {
-  @apply font-display font-bold tracking-wide;
+  @apply font-display font-black tracking-wider leading-snug;
 }
 
 h3 {
-  @apply font-bold tracking-wide;
+  @apply font-display font-bold tracking-wide leading-snug;
+}
+
+h4, h5, h6 {
+  @apply font-semibold tracking-wide;
 }
 
 /* Custom animations */
