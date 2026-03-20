@@ -40,6 +40,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [loading, setLoading] = useState(false);
 
+  // Clear stale localStorage if session did not survive (common Vercel edge-case)
+  useEffect(() => {
+    const checkAuthSession = async () => {
+      const { data: sessionData, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Auth session check error:", error);
+      }
+
+      const cachedUser = localStorage.getItem("cachedUser");
+      if (!sessionData?.session && cachedUser) {
+        localStorage.removeItem("cachedUser");
+        localStorage.removeItem("lastVisitedPage");
+        setUser(null);
+      }
+    };
+
+    checkAuthSession();
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 

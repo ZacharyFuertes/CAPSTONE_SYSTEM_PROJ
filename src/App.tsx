@@ -54,47 +54,26 @@ const AppContent: React.FC = () => {
   const handlePageChange = (page: AppPage | string) => {
     const newPage = page as AppPage;
 
-    // If authenticated, ensure the user is allowed to view the page
-    if (isAuthenticated && !isPageAllowedForRole(newPage, user?.role)) {
-      const fallbackPage = getDefaultPageByRole(user?.role);
+    if (!isAuthenticated) {
+      setCurrentPage("landing");
+      return;
+    }
+
+    if (!user?.role) {
+      // role is still resolving (network/role fetch in progress)
+      setCurrentPage("dashboard");
+      return;
+    }
+
+    if (!isPageAllowedForRole(newPage, user.role)) {
+      const fallbackPage = getDefaultPageByRole(user.role);
       setCurrentPage(fallbackPage);
       localStorage.setItem("lastVisitedPage", fallbackPage);
       return;
     }
 
-    // Enforce strict RBAC for customer and mechanic
-    if (isAuthenticated && user?.role === "customer") {
-      const primaryCustomerPage: AppPage = "appointments";
-      if (
-        newPage !== "appointments" &&
-        newPage !== "customer-portal" &&
-        newPage !== "browse-parts"
-      ) {
-        setCurrentPage(primaryCustomerPage);
-        localStorage.setItem("lastVisitedPage", primaryCustomerPage);
-        return;
-      }
-    }
-
-    if (isAuthenticated && user?.role === "mechanic") {
-      const allowedMechanic = [
-        "dashboard",
-        "appointments",
-        "inventory",
-        "mechanic-portal",
-      ];
-      if (!allowedMechanic.includes(newPage as AppPage)) {
-        const fallbackMechanic = "dashboard" as AppPage;
-        setCurrentPage(fallbackMechanic);
-        localStorage.setItem("lastVisitedPage", fallbackMechanic);
-        return;
-      }
-    }
-
     setCurrentPage(newPage);
-    if (isAuthenticated) {
-      localStorage.setItem("lastVisitedPage", newPage);
-    }
+    localStorage.setItem("lastVisitedPage", newPage);
   };
 
   // Reset page to landing when user logs out - use useEffect to avoid render conflicts
@@ -199,6 +178,20 @@ const AppContent: React.FC = () => {
             onHome={() => setCurrentLoginType("landing")}
           />
         )}
+      </div>
+    );
+  }
+
+  // While user object is authenticated but role is not yet resolved, show loader
+  if (isAuthenticated && !user?.role) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="text-center">
+          <p className="text-xl font-semibold mb-2">
+            Loading role permissions...
+          </p>
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
+        </div>
       </div>
     );
   }
