@@ -22,6 +22,7 @@ import {
   DollarSign,
   ArrowLeft,
   Lock,
+  Wrench,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -67,18 +68,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const fetchDashboardData = async () => {
       try {
         // Fetch job orders to get status distribution
-        const { data: jobOrders } = await supabase
+        const jobOrdersQuery = supabase
           .from("job_orders")
           .select("status")
           .eq("shop_id", user?.shop_id);
 
+        if (user?.role === "mechanic") {
+          jobOrdersQuery.eq("mechanic_id", user.id);
+        }
+
+        const { data: jobOrders } = await jobOrdersQuery;
+
         // Fetch invoices for revenue
-        const { data: invoices } = await supabase
+        const invoicesQuery = supabase
           .from("invoices")
           .select("total_amount, created_at")
           .eq("shop_id", user?.shop_id)
           .order("created_at", { ascending: false })
           .limit(30);
+
+        if (user?.role === "mechanic") {
+          invoicesQuery.eq("mechanic_id", user.id);
+        }
+
+        const { data: invoices } = await invoicesQuery;
 
         // Fetch parts with low stock
         const { data: parts } = await supabase
@@ -181,36 +194,62 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .eq("role", "customer")
           .eq("shop_id", user?.shop_id);
 
-        setStats([
-          {
-            label: t("dashboard.revenue"),
-            value: `₱${totalRevenue.toLocaleString()}`,
-            change: "+12.5% from last period",
-            icon: <DollarSign className="w-8 h-8" />,
-            color: "from-green-500 to-emerald-600",
-          },
-          {
-            label: t("dashboard.today_jobs"),
-            value: completedJobs,
-            change: `${completedJobs} completed`,
-            icon: <CheckCircle className="w-8 h-8" />,
-            color: "from-blue-500 to-cyan-600",
-          },
-          {
-            label: t("dashboard.pending"),
-            value: pendingJobs,
-            change: `${pendingJobs} need attention`,
-            icon: <Clock className="w-8 h-8" />,
-            color: "from-orange-500 to-red-600",
-          },
-          {
-            label: "Active Customers",
-            value: totalCustomers.data?.length || 0,
-            change: `+${totalCustomers.data?.length || 0} this month`,
-            icon: <Users className="w-8 h-8" />,
-            color: "from-purple-500 to-pink-600",
-          },
-        ]);
+        if (user?.role === "mechanic") {
+          setStats([
+            {
+              label: "Assigned Jobs",
+              value: jobOrders?.length || 0,
+              change: `${completedJobs} completed`,
+              icon: <Wrench className="w-8 h-8" />,
+              color: "from-blue-500 to-cyan-600",
+            },
+            {
+              label: "Ongoing Jobs",
+              value: pendingJobs,
+              change: `${pendingJobs} in progress`,
+              icon: <Clock className="w-8 h-8" />,
+              color: "from-orange-500 to-red-600",
+            },
+            {
+              label: "My Customers",
+              value: totalCustomers.data?.length || 0,
+              change: `Read-only`,
+              icon: <Users className="w-8 h-8" />,
+              color: "from-purple-500 to-pink-600",
+            },
+          ]);
+        } else {
+          setStats([
+            {
+              label: t("dashboard.revenue"),
+              value: `₱${totalRevenue.toLocaleString()}`,
+              change: "+12.5% from last period",
+              icon: <DollarSign className="w-8 h-8" />,
+              color: "from-green-500 to-emerald-600",
+            },
+            {
+              label: t("dashboard.today_jobs"),
+              value: completedJobs,
+              change: `${completedJobs} completed`,
+              icon: <CheckCircle className="w-8 h-8" />,
+              color: "from-blue-500 to-cyan-600",
+            },
+            {
+              label: t("dashboard.pending"),
+              value: pendingJobs,
+              change: `${pendingJobs} need attention`,
+              icon: <Clock className="w-8 h-8" />,
+              color: "from-orange-500 to-red-600",
+            },
+            {
+              label: "Active Customers",
+              value: totalCustomers.data?.length || 0,
+              change: `+${totalCustomers.data?.length || 0} this month`,
+              icon: <Users className="w-8 h-8" />,
+              color: "from-purple-500 to-pink-600",
+            },
+          ]);
+        }
 
         // Fetch part usage data (top used parts from job_order_items)
         const { data: partUsage } = await supabase
@@ -253,8 +292,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   }, [user?.shop_id, t]);
 
-  // Role-based access control: Only admin and owner can access the dashboard
-  if (user && user.role !== "admin" && user.role !== "owner") {
+  // Role-based access control: Customers should not access dashboard
+  if (user && user.role === "customer") {
     return <AccessDenied requestedPage="dashboard" onNavigate={onNavigate} />;
   }
 

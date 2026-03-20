@@ -2,6 +2,12 @@ import "./globals.css";
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import {
+  AppPage,
+  getDefaultPageByRole,
+  getPagesByRole,
+  isPageAllowedForRole,
+} from "./utils/roleAccess";
 import SystemNavbar from "./components/SystemNavbar";
 import EnhancedChatbotWidget from "./components/EnhancedChatbotWidget";
 import DatabaseStatus from "./components/DatabaseStatus";
@@ -13,6 +19,8 @@ import CustomerPortal from "./pages/CustomerPortal";
 import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
 import BrowsePartsPage from "./pages/BrowsePartsPage";
+import ReportsPage from "./pages/ReportsPage";
+import SettingsPage from "./pages/SettingsPage";
 import AdminMechanicAvailability from "./pages/AdminMechanicAvailability";
 import LoginPage from "./pages/LoginPage";
 import MechanicLoginPage from "./pages/MechanicLoginPage";
@@ -28,32 +36,61 @@ import FeaturedSection from "./components/FeaturedSection";
 import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
 
-type PageType =
-  | "landing"
-  | "dashboard"
-  | "inventory"
-  | "appointments"
-  | "customers"
-  | "customer-portal"
-  | "browse-parts"
-  | "products"
-  | "mechanic-portal"
-  | "mechanic-availability";
+type PageType = AppPage;
+
 type LoginType = "landing" | "choice" | "customer" | "mechanic" | "owner";
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
-  const [currentPage, setCurrentPage] = useState<PageType>(() => {
+  const { isAuthenticated, user, loading } = useAuth();
+  const [currentPage, setCurrentPage] = useState<AppPage>(() => {
     // Restore the last visited page from localStorage
-    const savedPage = localStorage.getItem("lastVisitedPage") as PageType;
+    const savedPage = localStorage.getItem("lastVisitedPage") as AppPage;
     return isAuthenticated && savedPage ? savedPage : "landing";
   });
   const [currentLoginType, setCurrentLoginType] =
     useState<LoginType>("landing");
 
   // Save current page to localStorage whenever it changes
-  const handlePageChange = (page: PageType | string) => {
-    const newPage = page as PageType;
+  const handlePageChange = (page: AppPage | string) => {
+    const newPage = page as AppPage;
+
+    // If authenticated, ensure the user is allowed to view the page
+    if (isAuthenticated && !isPageAllowedForRole(newPage, user?.role)) {
+      const fallbackPage = getDefaultPageByRole(user?.role);
+      setCurrentPage(fallbackPage);
+      localStorage.setItem("lastVisitedPage", fallbackPage);
+      return;
+    }
+
+    // Enforce strict RBAC for customer and mechanic
+    if (isAuthenticated && user?.role === "customer") {
+      const primaryCustomerPage: AppPage = "appointments";
+      if (
+        newPage !== "appointments" &&
+        newPage !== "customer-portal" &&
+        newPage !== "browse-parts"
+      ) {
+        setCurrentPage(primaryCustomerPage);
+        localStorage.setItem("lastVisitedPage", primaryCustomerPage);
+        return;
+      }
+    }
+
+    if (isAuthenticated && user?.role === "mechanic") {
+      const allowedMechanic = [
+        "dashboard",
+        "appointments",
+        "inventory",
+        "mechanic-portal",
+      ];
+      if (!allowedMechanic.includes(newPage as AppPage)) {
+        const fallbackMechanic = "dashboard" as AppPage;
+        setCurrentPage(fallbackMechanic);
+        localStorage.setItem("lastVisitedPage", fallbackMechanic);
+        return;
+      }
+    }
+
     setCurrentPage(newPage);
     if (isAuthenticated) {
       localStorage.setItem("lastVisitedPage", newPage);
@@ -70,12 +107,39 @@ const AppContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  // Ensure the current page is valid for the current role whenever auth / role / page changes
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const allowedPages = getPagesByRole(user?.role);
+    const defaultPage = getDefaultPageByRole(user?.role);
+
+    if (!allowedPages.includes(currentPage)) {
+      setCurrentPage(defaultPage);
+      localStorage.setItem("lastVisitedPage", defaultPage);
+    }
+  }, [isAuthenticated, user?.role, currentPage]);
+
   // Handle going back to landing page (resets to default state)
   const handleBackToLanding = () => {
     setCurrentPage("landing");
     // Clear session cache on logout
     localStorage.removeItem("lastVisitedPage");
   };
+
+  // If auth loading, show a spinner placeholder
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="text-center">
+          <p className="text-xl font-semibold mb-2">
+            Checking authentication and role permissions...
+          </p>
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   // If not authenticated, show landing page or login
   if (!isAuthenticated) {
@@ -161,42 +225,8 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Role-based access control: Define allowed pages by role
-  // Owner: Full access to all pages
-  // Mechanic: Dashboard, Appointments (own), Inventory (view-only)
-  // Customer: Appointments (own), Customer Portal only
-  const getDefaultPage = (role?: string): PageType => {
-    if (role === "customer") return "appointments";
-    if (role === "mechanic") return "dashboard";
-    if (role === "owner") return "dashboard";
-    return "landing";
-  };
-
-  const getAllowedPages = (role?: string): PageType[] => {
-    switch (role) {
-      case "customer":
-        // Customers: Only view own appointments, portal, and browse parts
-        return ["appointments", "customer-portal", "browse-parts"];
-      case "mechanic":
-        // Mechanics: Dashboard, own appointments, view inventory, mechanic portal
-        return ["dashboard", "appointments", "inventory", "mechanic-portal"];
-      case "owner":
-        // Owners: Full access to everything
-        return [
-          "dashboard",
-          "inventory",
-          "appointments",
-          "customers",
-          "products",
-          "mechanic-availability",
-        ];
-      default:
-        return ["landing"];
-    }
-  };
-
-  const allowedPages = getAllowedPages(user?.role);
-  const defaultPage = getDefaultPage(user?.role);
+  const allowedPages = getPagesByRole(user?.role);
+  const defaultPage = getDefaultPageByRole(user?.role);
 
   // If user tries to access unauthorized page, show AccessDenied
   if (user && !allowedPages.includes(currentPage)) {
@@ -204,12 +234,12 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <SystemNavbar
           currentPage={defaultPage}
-          onNavigate={(page: string) => handlePageChange(page as PageType)}
+          onNavigate={(page: string) => handlePageChange(page as AppPage)}
         />
         <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-12">
           <AccessDenied
             requestedPage={currentPage}
-            onNavigate={(page: string) => handlePageChange(page as PageType)}
+            onNavigate={(page: string) => handlePageChange(page as AppPage)}
           />
         </main>
       </div>
@@ -267,6 +297,16 @@ const AppContent: React.FC = () => {
         )}
         {currentPage === "browse-parts" && (
           <BrowsePartsPage
+            onNavigate={(page: string) => handlePageChange(page as PageType)}
+          />
+        )}
+        {currentPage === "reports" && (
+          <ReportsPage
+            onNavigate={(page: string) => handlePageChange(page as PageType)}
+          />
+        )}
+        {currentPage === "settings" && (
+          <SettingsPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}

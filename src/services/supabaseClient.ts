@@ -88,3 +88,43 @@ export const getAppointments = async () => {
 };
 
 export default supabase;
+
+/*
+  Supabase RLS policy examples for strict RBAC enforcement:
+
+  -- users table: only owner can manage staff and customers
+  CREATE POLICY "Owners can manage users" ON public.users
+  FOR ALL
+  USING (auth.role() = 'authenticated' AND (select role from public.users where id = auth.uid()) = 'owner');
+
+  -- parts table: owner full CRUD, mechanic read-only, customer none
+  CREATE POLICY "Owners can full part operations" ON public.parts
+  FOR ALL
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'owner'));
+
+  CREATE POLICY "Mechanics can view parts" ON public.parts
+  FOR SELECT
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'mechanic'));
+
+  -- appointments: owner sees all, mechanic sees assigned, customer sees own
+  CREATE POLICY "Owner can manage all appointments" ON public.appointments
+  FOR ALL
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'owner'));
+
+  CREATE POLICY "Mechanic can access assigned appointments" ON public.appointments
+  FOR SELECT, UPDATE
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'mechanic') AND mechanic_id = auth.uid());
+
+  CREATE POLICY "Customer can access own appointments" ON public.appointments
+  FOR SELECT, INSERT
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'customer') AND customer_id = auth.uid());
+
+  -- job_orders: owner full, mechanic own only
+  CREATE POLICY "Job order owner access" ON public.job_orders
+  FOR ALL
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'owner'));
+
+  CREATE POLICY "Mechanic can update own job orders" ON public.job_orders
+  FOR SELECT, UPDATE
+  USING (exists (select 1 from public.users where id = auth.uid() and role = 'mechanic') AND mechanic_id = auth.uid());
+*/

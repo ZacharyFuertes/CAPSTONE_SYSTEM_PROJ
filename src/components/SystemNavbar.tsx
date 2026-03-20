@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { AppPage, getPagesByRole } from "../utils/roleAccess";
 
 interface NavbarProps {
   currentPage: string;
@@ -79,6 +80,20 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
       tooltip: "Owner only",
     },
     {
+      id: "reports",
+      label: "Reports",
+      icon: BarChart3,
+      requiredRole: ["owner"],
+      tooltip: "Owner only",
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      icon: Lock,
+      requiredRole: ["owner"],
+      tooltip: "Owner only",
+    },
+    {
       id: "mechanic-availability",
       label: "Manage Mechanics",
       icon: Clock,
@@ -94,13 +109,15 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     },
   ];
 
-  // Filter menu items based on user role
+  // Filter menu items based on role-based access control mapping
   const getMenuItems = (): MenuItem[] => {
     if (!user) return [];
 
+    const allowedPages = getPagesByRole(user.role);
     return allMenuItems.filter((item) => {
       if (!item.requiredRole) return true;
-      return item.requiredRole.includes(user.role);
+      // Allow menu items only if they are part of role's allowed pages
+      return allowedPages.includes(item.id as AppPage);
     });
   };
 
@@ -119,8 +136,10 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
 
   const handleMenuItemClick = (itemId: string) => {
     const item = allMenuItems.find((m) => m.id === itemId);
-    if (item?.requiredRole && !item.requiredRole.includes(user?.role || "")) {
-      setDisabledTooltip(item.tooltip || "Access denied");
+    const allowedPages = getPagesByRole(user?.role);
+
+    if (!allowedPages.includes(itemId as AppPage)) {
+      setDisabledTooltip(item?.tooltip || "Access denied");
       setTimeout(() => setDisabledTooltip(null), 3000);
     } else {
       onNavigate(itemId);
