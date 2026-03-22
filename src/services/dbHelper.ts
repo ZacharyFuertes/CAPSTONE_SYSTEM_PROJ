@@ -2,6 +2,8 @@
  * Database helper with retry logic and better error handling
  */
 
+import { supabase } from "./supabaseClient";
+
 interface RetryOptions {
   maxRetries?: number;
   delayMs?: number;
@@ -72,28 +74,15 @@ export async function withRetry<T>(
  */
 export async function validateDatabaseConnection(): Promise<boolean> {
   try {
-    // This should be fast - just checks connectivity
-    const result = await withRetry(
-      async () => {
-        // Use a simple HEAD request equivalent
-        const { error } = await fetch(import.meta.env.VITE_SUPABASE_URL || "", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        })
-          .then((r) => ({
-            error: !r.ok ? { message: "Connection failed" } : null,
-          }))
-          .catch((e) => ({ error: { message: e.message } }));
+    // Test actual database connectivity with a simple query
+    const { error } = await supabase.from("users").select("id").limit(1);
 
-        return !error;
-      },
-      "Database connectivity check",
-      { maxRetries: 2, delayMs: 300 },
-    );
+    if (error) {
+      console.warn("Database connectivity check failed:", error.message);
+      return false;
+    }
 
-    return result;
+    return true;
   } catch (err) {
     console.warn("Database connection check failed, may be temporary");
     return false;

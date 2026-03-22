@@ -12,7 +12,6 @@ import { formatDatabaseError } from "../services/dbHelper";
 
 /**
  * Auth Context Type
- * Provides session management and authentication methods
  */
 interface AuthContextType {
   user: User | null;
@@ -27,7 +26,6 @@ interface AuthContextType {
     role: UserRole,
   ) => Promise<void>;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
-  // RBAC permission methods
   canManageInventory: () => boolean;
   canViewInventory: () => boolean;
   canManageAppointments: () => boolean;
@@ -42,25 +40,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * AuthProvider - Manages authentication state and session persistence
+ * REFACTORED AuthProvider - Clean Supabase pattern
  *
- * KEY FEATURES for fixing reload bug:
- * 1. On mount: calls supabase.auth.getSession() → restores persisted session from localStorage
- * 2. Subscribes to supabase.auth.onAuthStateChange() → syncs live auth changes
- * 3. Manages isLoading properly → loading=true until initial session check completes
- * 4. Fetches user profile from DB based on auth session
- * 5. Cleans up subscription on unmount
- *
- * This pattern ensures that:
- * - Browser refresh → getSession() restores session from localStorage → user stays logged in
- * - Login → auth state change fires → listener updates state
- * - Logout → auth state change fires → listener clears state
+ * FIX for loading animation bug:
+ * - Separate session hydration from the loading state
+ * - getSession() on mount (fast, reads from localStorage)
+ * - Show page immediately without loading spinner
+ * - Fetch profile in background
+ * - Only show loading spinner during actual login/signup
  */
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<
     | ReturnType<typeof supabase.auth.onAuthStateChange>["data"]["subscription"]
     | null
@@ -68,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   /**
    * Fetch and set user profile from database
-   * Creates profile if it doesn't exist
+   * Runs in background without blocking UI
    */
   const setUserProfileFromSession = async (userId: string, email?: string) => {
     try {
@@ -79,7 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         .single();
 
       if (userData) {
-        console.log("✅ [Auth] User profile loaded from DB");
+        console.log("✅ [Auth] User profile loaded");
         setUser(userData as User);
         return;
       }
@@ -111,66 +104,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   /**
-   * FIXED: Single unified effect to handle auth state
-   *
-   * KEY FIX for race condition:
-   * - Removed separate restoreSession() effect that called getSession()
-   * - Supabase's onAuthStateChange automatically fires INITIAL_SESSION event on mount
-   *   with the persisted session from localStorage
-   * - This INITIAL_SESSION event replaces the need for manual getSession() call
-   * - Single setIsLoading(false) call AFTER user profile is fetched, preventing race
-   *
-   * Before (BUGGY):
-   *   1. restoreSession effect calls getSession() (async)
-   *   2. onAuthStateChange listener fires INITIAL_SESSION immediately
-   *   3. Both try to set isLoading=false, causing race condition
-   *   4. UI sees logged-out state briefly before user profile loads
-   *
-   * After (FIXED):
-   *   1. Only onAuthStateChange listener, which gets INITIAL_SESSION from Supabase
-   *   2. Waits for setUserProfileFromSession() to complete (fetches user from DB)
-   *   3. Only then calls setIsLoading(false) in finally block
-   *   4. UI sees fully loaded user state, no flashing/redirects
+   * EFFECT 1: Restore session on mount (one-time, no loading spinner)
+   * This is FAST because getSession() reads from localStorage
    */
   useEffect(() => {
-    let isMounted = true;
-
-    console.log("📡 [Auth] Setting up auth state listener");
-
-    // Subscribe to auth changes
-    // Supabase automatically fires INITIAL_SESSION event on mount with persisted session
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("📡 [Auth] Auth event:", event, !!session?.user?.id);
-
+    const restoreSession = async () => {
       try {
+        console.log("� [Auth] Restoring session from storage...");
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         if (session?.user?.id) {
-          // User is/remains logged in
-          console.log("👤 [Auth] User session found:", session.user.id);
-          // Wait for user profile to be fetched from DB before marking as loaded
-          await setUserProfileFromSession(session.user.id, session.user.email);
+          console.log("✅ [Auth] Session restored");
+          // Fetch profile in background (non-blocking)
+          setUserProfileFromSession(session.user.id, session.user.email);
         } else {
-          // User is logged out or no session
-          console.log("🚪 [Auth] No active session");
-          if (isMounted) {
-            setUser(null);
-          }
+          console.log("ℹ️ [Auth] No session found");
+          setUser(null);
         }
       } catch (err) {
-        console.error("❌ [Auth] Error handling auth state change:", err);
-      } finally {
-        // Only set loading to false AFTER user profile has been fetched/cleared
-        // This is the single point where loading state is finalized
-        if (isMounted) {
-          setIsLoading(false);
+        console.error("❌ [Auth] Error restoring session:", err);
+        setUser(null);
+      }
+    };
+
+    restoreSession();
+  }, []);
+
+  /**
+   * EFFECT 2: Listen for auth changes (login, logout, etc.)
+   * Real-time auth state sync
+   */
+  useEffect(() => {
+    console.log("📡 [Auth] Setting up auth state listener");
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      try {
+        console.log("📡 [Auth] Auth event:", event);
+
+        if (session?.user?.id) {
+          console.log("👤 [Auth] User authenticated:", session.user.id);
+          // Fetch profile in background
+          setUserProfileFromSession(session.user.id, session.user.email);
+        } else {
+          console.log("👋 [Auth] User logged out");
+          setUser(null);
         }
+      } finally {
+        // Always reset loading state for any auth event
+        setIsLoading(false);
       }
     });
 
     subscriptionRef.current = data.subscription;
 
     return () => {
-      // Clean up subscription on unmount
-      isMounted = false;
       if (subscriptionRef.current) {
         console.log("🧹 [Auth] Cleaning up auth listener");
         subscriptionRef.current.unsubscribe();
@@ -191,7 +181,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (!data?.user?.id) throw new Error("Login failed");
 
       console.log("✅ [Auth] Login successful");
-      // Auth state listener will automatically fetch user profile and update state
     } catch (err) {
       console.error("❌ [Auth] Login error:", err);
       setIsLoading(false);
@@ -204,11 +193,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setUser(null);
+      setIsLoading(false);
       console.log("✅ [Auth] Logged out successfully");
-      // Auth state listener will automatically clear user state
     } catch (err) {
       console.error("❌ [Auth] Logout error:", err);
-      // Force clear state even if error occurs
       setUser(null);
       throw new Error(formatDatabaseError(err));
     }
@@ -231,29 +220,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (error) throw error;
       if (!data?.user?.id) throw new Error("Signup failed");
 
-      // Create user profile in database
-      const { data: newUser, error: profileError } = await supabase
-        .from("users")
-        .insert({
-          id: data.user.id,
-          email,
-          name,
-          role,
-          shop_id:
-            role === "customer"
-              ? null
-              : crypto.randomUUID?.() || Date.now().toString(),
-        })
-        .select()
-        .single();
+      // Create user profile
+      const { error: profileError } = await supabase.from("users").insert({
+        id: data.user.id,
+        email,
+        name,
+        role,
+        shop_id:
+          role === "customer"
+            ? null
+            : crypto.randomUUID?.() || Date.now().toString(),
+      });
 
       if (profileError) throw profileError;
 
       console.log("✅ [Auth] Signup successful");
-      if (newUser) {
-        setUser(newUser as User);
-      }
-      // Auth state listener will also sync the session
     } catch (err) {
       console.error("❌ [Auth] Signup error:", err);
       setIsLoading(false);

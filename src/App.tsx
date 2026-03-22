@@ -42,48 +42,88 @@ type LoginType = "landing" | "choice" | "customer" | "mechanic" | "owner";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
+
+  // Initialize currentPage from localStorage, falling back to landing
   const [currentPage, setCurrentPage] = useState<AppPage>(() => {
-    // Restore the last visited page from localStorage
-    const savedPage = localStorage.getItem("lastVisitedPage") as AppPage;
-    return isAuthenticated && savedPage ? savedPage : "landing";
+    const savedPage = localStorage.getItem("moto_last_page") as AppPage;
+    return savedPage || "landing";
   });
   const [currentLoginType, setCurrentLoginType] =
     useState<LoginType>("landing");
 
-  // Save current page to localStorage whenever it changes
+  /**
+   * Wrapper around setCurrentPage that persists to localStorage
+   * Use this instead of setCurrentPage directly to ensure page navigation is persisted
+   */
+  const navigateTo = (page: AppPage) => {
+    localStorage.setItem("moto_last_page", page);
+    setCurrentPage(page);
+  };
+
+  /**
+   * Validate that the current page is still allowed for the user's role
+   * This runs after auth is fully loaded to ensure we don't show unauthorized pages
+   */
+  useEffect(() => {
+    // Only validate once auth is loaded and user role is available
+    if (isLoading) return;
+
+    // If not authenticated, clear any persisted page and force landing
+    if (!isAuthenticated) {
+      localStorage.removeItem("moto_last_page");
+      setCurrentPage("landing");
+      return;
+    }
+
+    // If user has no role yet, don't validate (still loading)
+    if (!user?.role) return;
+
+    // Check if the current page is allowed for this user's role
+    if (
+      !isPageAllowedForRole(currentPage, user.role) &&
+      currentPage !== "landing"
+    ) {
+      console.log(
+        `⚠️ [App] Current page '${currentPage}' not allowed for role '${user.role}', redirecting to '${getDefaultPageByRole(user.role)}'`,
+      );
+      // Clear the invalid persisted page
+      localStorage.removeItem("moto_last_page");
+      // Redirect to the default page for this role
+      navigateTo(getDefaultPageByRole(user.role));
+    }
+  }, [isLoading, isAuthenticated, user?.role, currentPage]);
+
+  // Handle page changes with role validation
   const handlePageChange = (page: AppPage | string) => {
     const newPage = page as AppPage;
 
     if (!isAuthenticated) {
-      setCurrentPage("landing");
+      navigateTo("landing");
       return;
     }
 
     if (!user?.role) {
       // role is still resolving (network/role fetch in progress)
-      setCurrentPage("dashboard");
+      navigateTo("dashboard");
       return;
     }
 
     if (!isPageAllowedForRole(newPage, user.role)) {
       const fallbackPage = getDefaultPageByRole(user.role);
-      setCurrentPage(fallbackPage);
-      localStorage.setItem("lastVisitedPage", fallbackPage);
+      navigateTo(fallbackPage);
       return;
     }
 
-    setCurrentPage(newPage);
-    localStorage.setItem("lastVisitedPage", newPage);
+    navigateTo(newPage);
   };
 
   // Reset page to landing when user logs out - use useEffect to avoid render conflicts
   useEffect(() => {
     if (!isAuthenticated) {
       console.log("🚪 User logged out, resetting to landing");
+      localStorage.removeItem("moto_last_page");
       setCurrentPage("landing");
       setCurrentLoginType("landing");
-      // Clear session cache on logout
-      localStorage.removeItem("lastVisitedPage");
     }
   }, [isAuthenticated]);
 
@@ -95,16 +135,14 @@ const AppContent: React.FC = () => {
     const defaultPage = getDefaultPageByRole(user?.role);
 
     if (!allowedPages.includes(currentPage)) {
-      setCurrentPage(defaultPage);
-      localStorage.setItem("lastVisitedPage", defaultPage);
+      navigateTo(defaultPage);
     }
   }, [isAuthenticated, user?.role, currentPage]);
 
   // Handle going back to landing page (resets to default state)
   const handleBackToLanding = () => {
-    setCurrentPage("landing");
-    // Clear session cache on logout
-    localStorage.removeItem("lastVisitedPage");
+    localStorage.removeItem("moto_last_page");
+    navigateTo("landing");
   };
 
   // If auth loading, show a spinner placeholder

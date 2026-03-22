@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../services/supabaseClient";
 
 interface MechanicLoginPageProps {
   onLoginSuccess: () => void;
@@ -14,10 +15,11 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
   onBack,
   onHome,
 }) => {
-  const { login, signup, logout, user } = useAuth();
+  const { login, signup, user, isLoading } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginAttempted, setLoginAttempted] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -33,9 +35,32 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
     e.preventDefault();
     setError("");
     setLoading(true);
+    setLoginAttempted(false);
 
     try {
       if (isSignup) {
+        // Check if email already exists with a different role
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("email, role")
+          .eq("email", formData.email)
+          .single();
+
+        if (existingUser && existingUser.role !== "mechanic") {
+          const portalMap: { [key: string]: string } = {
+            customer: "Customer Portal",
+            admin: "Admin Portal",
+            owner: "Admin Portal",
+          };
+          const correctPortal =
+            portalMap[existingUser.role] || "appropriate portal";
+          setError(
+            `❌ This email is registered as a ${existingUser.role}. Please use the ${correctPortal} instead.`,
+          );
+          setLoading(false);
+          return;
+        }
+
         await signup(
           formData.email,
           formData.password,
@@ -46,31 +71,92 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
         await login(formData.email, formData.password);
       }
 
-      // Check if user role is allowed for mechanic portal
-      if (user && user.role !== "mechanic") {
-        setError(
-          `Access Denied: This portal is for Mechanics only. Your account is registered as '${user.role}'.`,
-        );
-        await logout();
-        setLoading(false);
-        return;
+      // Signal that login attempt has completed
+      // AuthContext will be updated in the background via onAuthStateChange
+      setLoginAttempted(true);
+    } catch (err) {
+      let errorMessage = "Authentication failed. Please try again.";
+
+      if (err instanceof Error) {
+        const message = err.message.toLowerCase();
+
+        if (message.includes("invalid login credentials")) {
+          errorMessage = isSignup
+            ? "Email already registered or invalid credentials. Please use a different email or sign in instead."
+            : "❌ Invalid email or password. Please check and try again.";
+        } else if (message.includes("user already registered")) {
+          errorMessage =
+            "This email is already registered. Please sign in instead.";
+        } else if (message.includes("email not confirmed")) {
+          errorMessage =
+            "⚠️ Email not confirmed. Please check your email for the verification link.";
+        } else if (message.includes("too many requests")) {
+          errorMessage =
+            "⏳ Too many login attempts. Please try again in a few minutes.";
+        } else if (message.includes("invalid email")) {
+          errorMessage =
+            "❌ Invalid email format. Please enter a valid email address.";
+        } else {
+          errorMessage = err.message;
+        }
       }
 
-      onLoginSuccess();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Authentication failed. Please try again.";
       setError(errorMessage);
       console.error("Auth error:", err);
-    } finally {
       setLoading(false);
     }
   };
 
+  // Poll for user role after login completes
+  useEffect(() => {
+    if (!loginAttempted || isLoading || !user) {
+      return;
+    }
+
+    // User profile is loaded and role is available from AuthContext
+    if (user.role !== "mechanic") {
+      let portalURL = "";
+
+      if (user.role === "customer") {
+        portalURL =
+          "Your account is registered as a Customer. Please use the Customer Portal to login.";
+      } else if (user.role === "admin" || user.role === "owner") {
+        portalURL =
+          "Your account is registered as Admin/Owner. Please use the Admin Portal to login.";
+      }
+
+      setError(`❌ Wrong Portal! ${portalURL}`);
+      supabase.auth.signOut();
+      setLoading(false);
+      setLoginAttempted(false);
+      return;
+    }
+
+    // Role is correct, login succeeded
+    setLoading(false);
+    setLoginAttempted(false);
+    onLoginSuccess();
+  }, [loginAttempted, isLoading, user]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      {/* Error Notification at Top */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-sm border border-red-400/50 rounded-lg shadow-lg"
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-red-200 text-xl mt-0.5">⚠️</div>
+            <div>
+              <p className="text-white font-semibold text-sm">{error}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Back Button */}
       <motion.button
         onClick={onBack}
@@ -114,17 +200,6 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
             {isSignup ? "Create your account" : "Sign in to your account"}
           </p>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"
-          >
-            {error}
-          </motion.div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

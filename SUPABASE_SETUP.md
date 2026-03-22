@@ -188,10 +188,27 @@ ALTER TABLE job_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own data" ON users
   FOR SELECT USING (auth.uid() = id);
 
+-- Users can insert their own profile (needed for signup/first login)
+CREATE POLICY "Users can insert own data" ON users
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Users can update their own profile
+CREATE POLICY "Users can update own data" ON users
+  FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
 -- Shops owner can view their shop
 CREATE POLICY "Users can view owned shops" ON shops
   FOR SELECT USING (auth.uid() = owner_id);
+
+-- Shops owner can insert their own shop
+CREATE POLICY "Users can insert own shops" ON shops
+  FOR INSERT WITH CHECK (auth.uid() = owner_id);
 ```
+
+**IMPORTANT:** If you see RLS policy errors after logout and refresh, make sure the above INSERT policies are created. These are essential for:
+- ✅ New user signup (profile creation)
+- ✅ Login after session expiration (profile restoration)
+- ✅ Database connection after logout → refresh cycle
 
 ---
 
