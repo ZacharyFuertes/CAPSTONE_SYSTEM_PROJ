@@ -111,83 +111,66 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   /**
-   * CRITICAL: On mount, restore session from localStorage
-   * This is THE FIX for the reload bug
+   * FIXED: Single unified effect to handle auth state
+   *
+   * KEY FIX for race condition:
+   * - Removed separate restoreSession() effect that called getSession()
+   * - Supabase's onAuthStateChange automatically fires INITIAL_SESSION event on mount
+   *   with the persisted session from localStorage
+   * - This INITIAL_SESSION event replaces the need for manual getSession() call
+   * - Single setIsLoading(false) call AFTER user profile is fetched, preventing race
+   *
+   * Before (BUGGY):
+   *   1. restoreSession effect calls getSession() (async)
+   *   2. onAuthStateChange listener fires INITIAL_SESSION immediately
+   *   3. Both try to set isLoading=false, causing race condition
+   *   4. UI sees logged-out state briefly before user profile loads
+   *
+   * After (FIXED):
+   *   1. Only onAuthStateChange listener, which gets INITIAL_SESSION from Supabase
+   *   2. Waits for setUserProfileFromSession() to complete (fetches user from DB)
+   *   3. Only then calls setIsLoading(false) in finally block
+   *   4. UI sees fully loaded user state, no flashing/redirects
    */
   useEffect(() => {
     let isMounted = true;
 
-    const restoreSession = async () => {
+    console.log("📡 [Auth] Setting up auth state listener");
+
+    // Subscribe to auth changes
+    // Supabase automatically fires INITIAL_SESSION event on mount with persisted session
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("📡 [Auth] Auth event:", event, !!session?.user?.id);
+
       try {
-        console.log("📋 [Auth] Restoring session from storage...");
-
-        // This retrieves the persisted session from localStorage
-        // Supabase automatically stores the session in localStorage when user logs in
-        const { data, error } = await supabase.auth.getSession();
-
-        if (!isMounted) return;
-
-        if (error) {
-          console.error("❌ [Auth] Error getting session:", error);
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.session?.user?.id) {
-          console.log("✅ [Auth] Session restored from storage");
-          await setUserProfileFromSession(
-            data.session.user.id,
-            data.session.user.email,
-          );
+        if (session?.user?.id) {
+          // User is/remains logged in
+          console.log("👤 [Auth] User session found:", session.user.id);
+          // Wait for user profile to be fetched from DB before marking as loaded
+          await setUserProfileFromSession(session.user.id, session.user.email);
         } else {
-          console.log("ℹ️ [Auth] No persisted session found");
-          setUser(null);
+          // User is logged out or no session
+          console.log("🚪 [Auth] No active session");
+          if (isMounted) {
+            setUser(null);
+          }
         }
       } catch (err) {
-        console.error("❌ [Auth] Session restoration error:", err);
-        setUser(null);
+        console.error("❌ [Auth] Error handling auth state change:", err);
       } finally {
+        // Only set loading to false AFTER user profile has been fetched/cleared
+        // This is the single point where loading state is finalized
         if (isMounted) {
           setIsLoading(false);
         }
       }
-    };
-
-    restoreSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  /**
-   * Listen for auth state changes (login, logout, session refresh)
-   * This keeps state in sync with Supabase Auth
-   */
-  useEffect(() => {
-    console.log("🔔 [Auth] Setting up auth state listener");
-
-    // Subscribe to auth changes
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("📡 [Auth] Auth event:", event, !!session?.user?.id);
-
-      if (session?.user?.id) {
-        // User is/remains logged in
-        await setUserProfileFromSession(session.user.id, session.user.email);
-      } else {
-        // User is logged out or no session
-        console.log("🚪 [Auth] No active session");
-        setUser(null);
-      }
-
-      // Ensure loading is false after first event
-      setIsLoading(false);
     });
 
     subscriptionRef.current = data.subscription;
 
     return () => {
       // Clean up subscription on unmount
+      isMounted = false;
       if (subscriptionRef.current) {
         console.log("🧹 [Auth] Cleaning up auth listener");
         subscriptionRef.current.unsubscribe();
