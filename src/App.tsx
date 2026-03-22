@@ -41,7 +41,7 @@ type PageType = AppPage;
 type LoginType = "landing" | "choice" | "customer" | "mechanic" | "owner";
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<AppPage>(() => {
     // Restore the last visited page from localStorage
     const savedPage = localStorage.getItem("lastVisitedPage") as AppPage;
@@ -79,6 +79,7 @@ const AppContent: React.FC = () => {
   // Reset page to landing when user logs out - use useEffect to avoid render conflicts
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log("🚪 User logged out, resetting to landing");
       setCurrentPage("landing");
       setCurrentLoginType("landing");
       // Clear session cache on logout
@@ -107,7 +108,7 @@ const AppContent: React.FC = () => {
   };
 
   // If auth loading, show a spinner placeholder
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="text-center">
@@ -142,6 +143,7 @@ const AppContent: React.FC = () => {
               onBrowseParts={handleOpenLogin}
               onBookAppointment={handleOpenLogin}
               onJoinSignIn={handleOpenLogin}
+              onViewAccount={() => handlePageChange("customer-portal")}
             />
             <HeroSlideshow
               onBookNow={handleOpenLogin}
@@ -205,6 +207,7 @@ const AppContent: React.FC = () => {
           onBrowseParts={() => handlePageChange("products")}
           onBookAppointment={() => handlePageChange("appointments")}
           onJoinSignIn={() => handleBackToLanding()}
+          onViewAccount={() => handlePageChange("customer-portal")}
         />
         <HeroSlideshow
           onBookNow={() => handlePageChange("appointments")}

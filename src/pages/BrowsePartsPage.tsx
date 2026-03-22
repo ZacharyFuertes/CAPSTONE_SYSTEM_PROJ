@@ -1,32 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Star, Clock, MapPin } from "lucide-react";
+import { Star, Search, ShoppingCart, Zap, Package } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { supabase } from "../services/supabaseClient";
 
 interface Part {
   id: string;
   name: string;
   category: string;
   price: number;
-  image: string;
-  rating: number;
-  reviews: number;
-  inStock: boolean;
-  quantity: number;
+  image?: string;
+  image_url?: string;
+  rating?: number;
+  reviews?: number;
+  inStock?: boolean;
+  quantity?: number;
+  quantity_in_stock?: number;
+  description?: string;
 }
 
 interface BrowsePartsPageProps {
   onNavigate?: (page: string) => void;
 }
 
-const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
+const BrowsePartsPage: React.FC<BrowsePartsPageProps> = () => {
   const {} = useLanguage();
+  const [parts, setParts] = useState<Part[]>([]);
+  const [filteredParts, setFilteredParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [hoveredPart, setHoveredPart] = useState<string | null>(null);
-  const [reservedParts, setReservedParts] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const fetchAbortRef = React.useRef<AbortController | null>(null);
+  const fetchedRef = React.useRef(false);
 
-  // Common car parts used in Philippines
-  const parts: Part[] = [
+  const categories = [
+    { id: "all", label: "All Parts" },
+    { id: "filters", label: "Filters" },
+    { id: "tires", label: "Tires" },
+    { id: "brakes", label: "Brakes" },
+    { id: "oils", label: "Oils" },
+    { id: "electrical", label: "Electrical" },
+    { id: "suspension", label: "Suspension" },
+  ];
+
+  // Demo parts data as fallback
+  const demoParts: Part[] = [
     {
       id: "1",
       name: "Oil Filter",
@@ -172,236 +190,321 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ onNavigate }) => {
     },
   ];
 
-  const categories = [
-    "all",
-    "Filters",
-    "Brakes",
-    "Electrical",
-    "Accessories",
-    "Fluids",
-    "Belts",
-    "Cooling",
-  ];
+  // Fetch parts from database
+  useEffect(() => {
+    const fetchParts = async () => {
+      // Skip if we've already fetched or are fetching
+      if (fetchedRef.current) {
+        return;
+      }
 
-  const filteredParts =
-    selectedCategory === "all"
-      ? parts
-      : parts.filter((p) => p.category === selectedCategory);
+      // Cancel any previous fetch
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort();
+      }
 
-  const handleReservePart = (partId: string) => {
-    const newReserved = new Set(reservedParts);
-    if (newReserved.has(partId)) {
-      newReserved.delete(partId);
-    } else {
-      newReserved.add(partId);
+      // Create new abort controller for this fetch
+      fetchAbortRef.current = new AbortController();
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("parts")
+          .select("*")
+          .order("name", { ascending: true });
+
+        if (fetchAbortRef.current?.signal.aborted) return;
+
+        if (error) throw error;
+
+        // Mark that we've fetched
+        fetchedRef.current = true;
+
+        // Use demo parts if database is empty
+        const partsToUse =
+          (data as Part[])?.length > 0 ? (data as Part[]) : demoParts;
+        setParts(partsToUse);
+      } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+        console.error("Error fetching parts:", err);
+        // Fallback to demo parts on error
+        if (!fetchAbortRef.current?.signal.aborted) {
+          setParts(demoParts);
+        }
+      } finally {
+        if (!fetchAbortRef.current?.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchParts();
+
+    // Cleanup: abort fetch if component unmounts
+    return () => {
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Filter parts based on category and search
+  useEffect(() => {
+    let result = parts;
+
+    if (selectedCategory !== "all") {
+      result = result.filter(
+        (p) =>
+          (p.category || "")
+            .toLowerCase()
+            .includes(selectedCategory.toLowerCase()) ||
+          selectedCategory === "all",
+      );
     }
-    setReservedParts(newReserved);
+
+    if (searchQuery) {
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    setFilteredParts(result);
+  }, [parts, selectedCategory, searchQuery]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center gap-1">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            size={14}
-            className={
-              i < Math.round(rating)
-                ? "fill-orange-400 text-orange-400"
-                : "text-slate-600"
-            }
-          />
-        ))}
-        <span className="text-xs text-slate-400 ml-1">({rating})</span>
-      </div>
-    );
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      {/* Back Button */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={() => onNavigate && onNavigate("appointments")}
-        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
-      >
-        <ArrowLeft size={20} />
-        <span>Back</span>
-      </motion.button>
-
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Browse Available Parts
-        </h1>
-        <p className="text-slate-400">
-          Reserve parts and visit our shop to complete your order
-        </p>
-
-        {/* Info Box */}
-        <div className="mt-4 bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3">
-          <MapPin size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-blue-300 font-semibold">Reservation Process</p>
-            <p className="text-blue-200 text-sm">
-              Reserve parts online and visit our shop to confirm availability
-              and complete your purchase.
-            </p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Category Filter */}
-      <div className="mb-8">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <motion.button
-              key={cat}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                selectedCategory === cat
-                  ? "bg-moto-accent text-white"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-              }`}
-            >
-              {cat.charAt(0).toUpperCase() + cat.slice(1)}
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      {/* Parts Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {filteredParts.map((part, index) => (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Hero Section */}
+      <section className="relative w-full pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-800 to-transparent">
+        <div className="max-w-6xl mx-auto">
+          {/* Hero Content */}
           <motion.div
-            key={part.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            onMouseEnter={() => setHoveredPart(part.id)}
-            onMouseLeave={() => setHoveredPart(null)}
-            className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-slate-600 transition group"
+            transition={{ duration: 0.6 }}
+            className="mb-12"
           >
-            {/* Image Container */}
-            <div className="relative h-56 overflow-hidden bg-slate-900">
-              <motion.img
-                src={part.image}
-                alt={part.name}
-                className="w-full h-full object-cover"
-                animate={{ scale: hoveredPart === part.id ? 1.08 : 1 }}
-                transition={{ duration: 0.4 }}
+            <div className="flex items-center gap-3 mb-4">
+              <Package className="w-8 h-8 text-moto-accent" />
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white">
+                Quality <span className="text-moto-accent">Parts</span>
+              </h1>
+            </div>
+            <p className="text-lg text-slate-300 max-w-2xl">
+              Genuine motorcycle parts and accessories for your bike. Fast
+              delivery, competitive prices, and expert support.
+            </p>
+          </motion.div>
+
+          {/* Search & Filter Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="space-y-4"
+          >
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search parts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-700/50 text-white px-12 py-3 rounded-lg border border-slate-600 focus:border-moto-accent focus:outline-none transition-colors placeholder-slate-500"
               />
-
-              {/* Category Badge */}
-              <div className="absolute top-3 right-3">
-                <span className="bg-moto-accent text-white text-xs font-bold px-3 py-1 rounded-full">
-                  {part.category}
-                </span>
-              </div>
-
-              {/* Stock Indicator */}
-              {part.quantity < 10 && (
-                <div className="absolute bottom-3 left-3 bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-1 rounded">
-                  Only {part.quantity} left
-                </div>
-              )}
             </div>
 
-            {/* Content */}
-            <div className="p-5">
-              {/* Product Name */}
-              <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
-                {part.name}
-              </h3>
-
-              {/* Rating */}
-              <div className="mb-3">
-                {renderStars(part.rating)}
-                <p className="text-xs text-slate-400 mt-1">
-                  {part.reviews} reviews
-                </p>
-              </div>
-
-              {/* Price */}
-              <div className="mb-4">
-                <p className="text-2xl font-bold text-moto-accent">
-                  ₱{part.price.toLocaleString()}
-                </p>
-              </div>
-
-              {/* Reserve Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleReservePart(part.id)}
-                className={`w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-                  reservedParts.has(part.id)
-                    ? "bg-green-600 text-white"
-                    : "bg-moto-accent hover:bg-moto-accent-dark text-white"
-                }`}
-              >
-                <Clock size={18} />
-                {reservedParts.has(part.id) ? "Reserved ✓" : "Reserve Now"}
-              </motion.button>
-
-              <p className="text-xs text-slate-400 mt-3 text-center">
-                {reservedParts.has(part.id)
-                  ? "Please visit the shop to confirm"
-                  : "Visit shop to complete"}
-              </p>
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <motion.button
+                  key={cat.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-full font-semibold transition-all ${
+                    selectedCategory === cat.id
+                      ? "bg-moto-accent text-white shadow-lg shadow-moto-accent/50"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                  }`}
+                >
+                  {cat.label}
+                </motion.button>
+              ))}
             </div>
           </motion.div>
-        ))}
-      </div>
+        </div>
+      </section>
 
-      {/* Reserved Summary */}
-      {reservedParts.size > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-green-500/20 border border-green-500/30 rounded-lg p-6 mt-8"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-green-300 font-bold text-lg mb-2">
-                {reservedParts.size} part{reservedParts.size > 1 ? "s" : ""}{" "}
-                reserved
-              </h3>
-              <p className="text-green-200 text-sm">
-                Your reservations are pending. Please visit our shop with your
-                customer ID to confirm availability and complete your purchase.
+      {/* Parts Grid */}
+      <section className="px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-6xl mx-auto">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin w-12 h-12 border-4 border-slate-600 border-t-moto-accent rounded-full mx-auto"></div>
+              <p className="text-slate-400 mt-4">Loading parts...</p>
+            </div>
+          ) : filteredParts.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400 text-lg">
+                No parts found in this category
               </p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setReservedParts(new Set())}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium whitespace-nowrap"
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              Clear All
-            </motion.button>
-          </div>
-        </motion.div>
-      )}
+              {filteredParts.map((part) => (
+                <motion.div
+                  key={part.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -8 }}
+                  className="group bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl border border-slate-600 overflow-hidden hover:border-moto-accent/50 transition-all"
+                >
+                  {/* Part Header with Image or Icon */}
+                  <div className="h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center relative overflow-hidden">
+                    {part.image || part.image_url ? (
+                      <img
+                        src={part.image || part.image_url}
+                        alt={part.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                          className="absolute opacity-10"
+                        >
+                          <Package className="w-32 h-32 text-moto-accent" />
+                        </motion.div>
+                        <Zap className="w-16 h-16 text-moto-accent-neon relative z-10" />
+                      </>
+                    )}
+                  </div>
 
-      {/* Empty State */}
-      {filteredParts.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12"
-        >
-          <p className="text-slate-400 text-lg">
-            No parts found in this category
-          </p>
-        </motion.div>
-      )}
+                  {/* Part Info */}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-white text-lg mb-2 group-hover:text-moto-accent transition-colors">
+                          {part.name}
+                        </h3>
+                        <p className="text-sm text-slate-400 capitalize">
+                          {part.category}
+                        </p>
+                      </div>
+                      <div className="ml-3">
+                        {(part.inStock ??
+                        (part.quantity ?? part.quantity_in_stock ?? 0) > 0) ? (
+                          <span className="inline-flex items-center gap-1 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-semibold">
+                            In Stock
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-semibold">
+                            Out of Stock
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Rating */}
+                    {part.rating && (
+                      <div className="mb-4">
+                        <div className="flex items-center gap-1 mb-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              className={
+                                i < Math.round(part.rating!)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-slate-600"
+                              }
+                            />
+                          ))}
+                          <span className="text-xs text-slate-400 ml-2">
+                            {part.rating}
+                          </span>
+                        </div>
+                        {part.reviews && (
+                          <p className="text-xs text-slate-500">
+                            ({part.reviews} reviews)
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Price and Action */}
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold text-moto-accent">
+                        ₱{part.price.toLocaleString()}
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={
+                          !(
+                            part.inStock ??
+                            (part.quantity ?? part.quantity_in_stock ?? 0) > 0
+                          )
+                        }
+                        className={`p-2.5 rounded-lg transition-all ${
+                          (part.inStock ??
+                          (part.quantity ?? part.quantity_in_stock ?? 0) > 0)
+                            ? "bg-moto-accent hover:bg-moto-accent-dark text-white"
+                            : "bg-slate-600 text-slate-400 cursor-not-allowed"
+                        }`}
+                      >
+                        <ShoppingCart size={20} />
+                      </motion.button>
+                    </div>
+
+                    {/* Stock Count */}
+                    <p className="text-xs text-slate-500 mt-3">
+                      {part.quantity ?? part.quantity_in_stock ?? 0} units
+                      available
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

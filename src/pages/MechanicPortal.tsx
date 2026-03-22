@@ -18,14 +18,12 @@ interface AppointmentData {
   scheduled_time: string;
   service_type: string;
   status: string;
-  customers?: Array<{
-    id: string;
+  customer: Array<{
+    name: string;
+    email: string;
     phone: string;
-    users: Array<{
-      name: string;
-    }>;
   }>;
-  vehicles?: Array<{
+  vehicles: Array<{
     make: string;
     model: string;
     plate_number: string;
@@ -61,7 +59,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
             scheduled_time,
             service_type,
             status,
-            customers(id, phone, users(name)),
+            customer:users(name, email, phone),
             vehicles(make, model, plate_number)
           `,
           )
@@ -70,7 +68,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
 
         if (fetchError) throw fetchError;
 
-        setAppointments((data as AppointmentData[]) || []);
+        setAppointments(data || []);
       } catch (err) {
         console.error("Error fetching appointments:", err);
         setError("Failed to load appointments");
@@ -291,20 +289,20 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                       <div className="bg-slate-700/50 rounded p-4">
                         <p className="text-slate-400 text-sm mb-2">Customer</p>
                         <p className="text-white font-semibold">
-                          {apt.customers?.[0]?.users?.[0]?.name || "N/A"}
+                          {apt.customer[0]?.name}
                         </p>
                         <p className="text-slate-400 text-sm">
-                          {apt.customers?.[0]?.phone || "N/A"}
+                          {apt.customer[0]?.phone}
                         </p>
                       </div>
 
                       <div className="bg-slate-700/50 rounded p-4">
                         <p className="text-slate-400 text-sm mb-2">Vehicle</p>
                         <p className="text-white font-semibold">
-                          {apt.vehicles?.[0]?.make} {apt.vehicles?.[0]?.model}
+                          {apt.vehicles[0]?.make} {apt.vehicles[0]?.model}
                         </p>
                         <p className="text-slate-400 text-sm">
-                          Plate: {apt.vehicles?.[0]?.plate_number}
+                          Plate: {apt.vehicles[0]?.plate_number}
                         </p>
                       </div>
                     </div>
@@ -365,8 +363,8 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                       {apt.service_type}
                     </p>
                     <p className="text-slate-400 text-sm mt-1">
-                      {apt.customers?.[0]?.users?.[0]?.name || "Customer"} •{" "}
-                      {apt.vehicles?.[0]?.make} {apt.vehicles?.[0]?.model}
+                      {apt.customer[0]?.name} • {apt.vehicles[0]?.make}{" "}
+                      {apt.vehicles[0]?.model}
                     </p>
                   </div>
                   <span

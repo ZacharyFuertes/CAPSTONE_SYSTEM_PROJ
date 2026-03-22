@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Zap, Menu, X } from "lucide-react";
+import { Zap, Menu, X, User, LogOut, ChevronDown } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface NavbarProps {
   onShowAppointments?: () => void;
   onBrowseParts?: () => void;
   onBookAppointment?: () => void;
   onJoinSignIn?: () => void;
+  onViewAccount?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -14,8 +16,11 @@ const Navbar: React.FC<NavbarProps> = ({
   onBrowseParts,
   onBookAppointment,
   onJoinSignIn,
+  onViewAccount,
 }) => {
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const navItems = [
     { label: "Browse Parts", href: "#parts", onClick: onBrowseParts },
@@ -76,15 +81,53 @@ const Navbar: React.FC<NavbarProps> = ({
             ))}
           </div>
 
-          {/* Sign In / Join Button */}
-          <motion.button
-            onClick={onJoinSignIn}
-            className="hidden md:flex items-center gap-2 px-6 py-2.5 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide text-sm hover:shadow-lg hover:shadow-moto-accent/50"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Join / Sign In
-          </motion.button>
+          {/* Sign In / Join or Profile Menu */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileMenuOpen((prev) => !prev)}
+                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-800/80 rounded-lg font-bold text-white text-sm hover:bg-slate-700 transition"
+              >
+                <div className="w-7 h-7 rounded-full bg-moto-accent-neon/20 text-moto-accent-neon flex items-center justify-center">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="truncate max-w-[120px]">{user.name}</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      if (onViewAccount) onViewAccount();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 transition"
+                  >
+                    <User className="inline w-4 h-4 mr-2" /> View Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      logout().catch(() => window.location.reload());
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700 transition"
+                  >
+                    <LogOut className="inline w-4 h-4 mr-2" /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <motion.button
+              onClick={onJoinSignIn}
+              className="hidden md:flex items-center gap-2 px-6 py-2.5 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide text-sm hover:shadow-lg hover:shadow-moto-accent/50"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Join / Sign In
+            </motion.button>
+          )}
 
           {/* Mobile Menu Toggle */}
           <button
@@ -115,15 +158,38 @@ const Navbar: React.FC<NavbarProps> = ({
                 {item.label}
               </button>
             ))}
-            <button
-              onClick={() => {
-                onJoinSignIn?.();
-                setIsOpen(false);
-              }}
-              className="w-full mt-4 px-6 py-2.5 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide text-sm"
-            >
-              Join / Sign In
-            </button>
+            {user ? (
+              <>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onViewAccount) onViewAccount();
+                  }}
+                  className="w-full px-6 py-2.5 bg-blue-600 rounded-lg font-bold text-white uppercase tracking-wide text-sm"
+                >
+                  View Account
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    logout().catch(() => window.location.reload());
+                  }}
+                  className="w-full mt-2 px-6 py-2.5 bg-red-600 rounded-lg font-bold text-white uppercase tracking-wide text-sm"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  onJoinSignIn?.();
+                  setIsOpen(false);
+                }}
+                className="w-full mt-4 px-6 py-2.5 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide text-sm"
+              >
+                Join / Sign In
+              </button>
+            )}
           </div>
         </motion.div>
       </div>

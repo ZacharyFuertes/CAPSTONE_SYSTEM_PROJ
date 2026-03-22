@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, ArrowLeft, Lock, Info, Wrench } from "lucide-react";
+import { Clock, Lock, Info, Wrench } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
-import AccessDenied from "../components/AccessDenied";
 import { Appointment, AppointmentStatus } from "../types";
 
 interface Mechanic {
@@ -39,47 +38,13 @@ const statusConfig: Record<
   },
 };
 
-interface TimeSlot {
-  time: string;
-  available: boolean;
-  appointment?: Appointment;
-}
-
-const generateTimeSlots = (
-  date: string,
-  appointments: Appointment[],
-): TimeSlot[] => {
-  const slots: TimeSlot[] = [];
-  for (let hour = 8; hour < 18; hour++) {
-    const time = `${String(hour).padStart(2, "0")}:00`;
-    const appointment = appointments.find(
-      (apt) => apt.scheduled_date === date && apt.scheduled_time === time,
-    );
-    slots.push({
-      time,
-      available: !appointment,
-      appointment,
-    });
-  }
-  return slots;
-};
-
 interface AppointmentCalendarPageProps {
   onNavigate?: (page: string) => void;
 }
 
-const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({
-  onNavigate,
-}) => {
+const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
-
-  if (user && !["customer", "mechanic", "owner", "admin"].includes(user.role)) {
-    return (
-      <AccessDenied requestedPage="appointments" onNavigate={onNavigate} />
-    );
-  }
-
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [selectedDate, setSelectedDate] = useState(
@@ -88,6 +53,8 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [loadingMechanics, setLoadingMechanics] = useState(false);
+  const fetchAbortRef = React.useRef<AbortController | null>(null);
+  const fetchedAppointmentsRef = React.useRef(false);
   const [formData, setFormData] = useState({
     customer_name: "",
     customer_phone: "",
@@ -99,21 +66,52 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({
   // Fetch appointments from Supabase
   useEffect(() => {
     const fetchAppointments = async () => {
+      // Skip if we've already fetched
+      if (fetchedAppointmentsRef.current) {
+        return;
+      }
+
+      // Cancel any previous fetch
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort();
+      }
+
+      // Create new abort controller for this fetch
+      fetchAbortRef.current = new AbortController();
+
       try {
         const { data, error } = await supabase
           .from("appointments")
           .select("*")
           .order("scheduled_date", { ascending: true });
 
+        if (fetchAbortRef.current?.signal.aborted) return;
+
         if (error) throw error;
+
+        // Mark that we've fetched
+        fetchedAppointmentsRef.current = true;
         setAppointments(data || []);
       } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
         console.error("Error fetching appointments:", err);
-        setAppointments([]);
+        if (!fetchAbortRef.current?.signal.aborted) {
+          setAppointments([]);
+        }
       }
     };
 
     fetchAppointments();
+
+    // Cleanup: abort fetch if component unmounts
+    return () => {
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort();
+      }
+    };
   }, []);
 
   // Fetch available mechanics when booking form opens
@@ -157,7 +155,6 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({
   };
 
   const filteredAppointments = getFilteredAppointments();
-  const timeSlots = generateTimeSlots(selectedDate, filteredAppointments);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -269,236 +266,215 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = ({
   const canUpdateStatus = isOwner || isMechanic;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      {/* Back Button */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={() => onNavigate && onNavigate("dashboard")}
-        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
-      >
-        <ArrowLeft size={20} />
-        <span>Back</span>
-      </motion.button>
-
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <h1 className="text-4xl font-bold text-white mb-2">
-          {t("appointments.title")}
-        </h1>
-        <p className="text-slate-400">
-          {isMechanic
-            ? `View your assigned appointments (${filteredAppointments.length} total)`
-            : isCustomer
-              ? `View your appointments (${filteredAppointments.length} total)`
-              : `View and manage ${filteredAppointments.length} appointments`}
-        </p>
-      </motion.div>
-
-      {/* Role Info Banner */}
-      {isMechanic && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3"
-        >
-          <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="font-semibold text-blue-300 mb-1">Mechanic View</h3>
-            <p className="text-blue-200 text-sm">
-              You can only see appointments assigned to you. Update appointment
-              status to track service progress.
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Hero Section */}
+      <section className="relative w-full pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-800 to-transparent">
+        <div className="max-w-6xl mx-auto">
+          {/* Hero Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <Clock className="w-8 h-8 text-moto-accent" />
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white">
+                Your <span className="text-moto-accent">Appointments</span>
+              </h1>
+            </div>
+            <p className="text-lg text-slate-300 max-w-2xl">
+              Schedule service appointments, track your booking status, and
+              select your preferred mechanic. Professional service at your
+              convenience.
             </p>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar Sidebar */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-slate-800 rounded-lg p-6 border border-slate-700 h-fit"
-        >
-          <h2 className="text-xl font-bold text-white mb-6">Calendar</h2>
-
-          {/* Mini Calendar */}
-          <div className="mb-8 space-y-4">
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div
-                  key={day}
-                  className="text-xs font-semibold text-slate-400 py-2"
-                >
-                  {day.slice(0, 1)}
-                </div>
-              ))}
-              {calendarDays.map((day, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    if (day) {
-                      const newDate = new Date();
-                      newDate.setDate(day);
-                      setSelectedDate(newDate.toISOString().split("T")[0]);
-                    }
-                  }}
-                  className={`p-2 rounded text-sm transition ${
-                    day === null
-                      ? ""
-                      : selectedDate.endsWith(
-                            `-${String(day).padStart(2, "0")}`,
-                          )
-                        ? "bg-blue-600 text-white font-bold"
-                        : "hover:bg-slate-700 text-slate-300"
-                  }`}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Booking Button - Only for Owners and Customers */}
-          {canBookAppointments ? (
-            <button
-              onClick={() => setShowBookingForm(true)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+      {/* Main Content */}
+      <section className="px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-6xl mx-auto">
+          {/* Role Info Banner */}
+          {isMechanic && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3"
             >
-              {t("appointments.new")}
-            </button>
-          ) : (
-            <button
-              disabled
-              className="w-full bg-slate-600 text-slate-400 font-semibold py-2 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-              title="Only owners and customers can book appointments"
-            >
-              <Lock className="w-4 h-4" />
-              {t("appointments.new")}
-            </button>
-          )}
-        </motion.div>
-
-        {/* Time Slots & Appointments */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-2 space-y-6"
-        >
-          {/* Time Slots */}
-          {isOwner && (
-            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h2 className="text-xl font-bold text-white mb-4">
-                Available Slots - {selectedDate}
-              </h2>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                {timeSlots.map((slot) => (
-                  <button
-                    key={slot.time}
-                    onClick={() => {
-                      if (slot.available) {
-                        setSelectedSlot(slot.time);
-                        setShowBookingForm(true);
-                      }
-                    }}
-                    disabled={!slot.available}
-                    className={`p-3 rounded-lg font-semibold transition ${
-                      slot.available
-                        ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 cursor-pointer"
-                        : "bg-red-500/20 text-red-400 cursor-not-allowed opacity-50"
-                    } ${selectedSlot === slot.time ? "ring-2 ring-blue-500" : ""}`}
-                  >
-                    {slot.time}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Appointments List */}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4">
-              Appointments for {selectedDate}
-            </h2>
-            <div className="space-y-3">
-              <AnimatePresence>
-                {filteredAppointments
-                  .filter((apt) => apt.scheduled_date === selectedDate)
-                  .map((apt, index) => (
-                    <motion.div
-                      key={apt.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-slate-700 rounded-lg p-4 border border-slate-600 hover:border-slate-500 transition"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2 flex-wrap">
-                            <Clock className="w-4 h-4 text-blue-400" />
-                            <span className="text-white font-semibold">
-                              {apt.scheduled_time}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-1 rounded border ${statusConfig[apt.status].color}`}
-                            >
-                              {statusConfig[apt.status].label}
-                            </span>
-                          </div>
-                          <p className="text-slate-300">{apt.service_type}</p>
-                          <p className="text-slate-400 text-sm mt-1">
-                            {apt.notes}
-                          </p>
-                        </div>
-                        {/* Status Change - Only for Owners and Mechanics */}
-                        {canUpdateStatus && (
-                          <select
-                            value={apt.status}
-                            onChange={(e) =>
-                              handleStatusChange(
-                                apt.id,
-                                e.target.value as AppointmentStatus,
-                              )
-                            }
-                            className="bg-slate-600 text-white text-sm px-2 py-1 rounded border border-slate-500 focus:outline-none"
-                          >
-                            {Object.entries(statusConfig).map(
-                              ([status, config]) => (
-                                <option key={status} value={status}>
-                                  {config.label}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        )}
-                        {/* Disabled Status for Customers */}
-                        {isCustomer && (
-                          <span
-                            className={`text-xs px-2 py-1 rounded border ${statusConfig[apt.status].color}`}
-                          >
-                            {statusConfig[apt.status].label}
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-              </AnimatePresence>
-              {filteredAppointments.filter(
-                (apt) => apt.scheduled_date === selectedDate,
-              ).length === 0 && (
-                <p className="text-slate-400 text-center py-4">
-                  No appointments scheduled for this date
+              <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-blue-300 mb-1">
+                  Mechanic View
+                </h3>
+                <p className="text-blue-200 text-sm">
+                  You can only see appointments assigned to you. Update
+                  appointment status to track service progress.
                 </p>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar with Calendar and Booking */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-1 space-y-6"
+            >
+              {/* Calendar Card */}
+              <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 border border-slate-600">
+                <h2 className="text-lg font-bold text-white mb-4">Calendar</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day) => (
+                        <div
+                          key={day}
+                          className="text-xs font-semibold text-slate-400 py-2"
+                        >
+                          {day.slice(0, 1)}
+                        </div>
+                      ),
+                    )}
+                    {calendarDays.map((day, index) => (
+                      <motion.button
+                        key={index}
+                        whileHover={day !== null ? { scale: 1.1 } : {}}
+                        onClick={() => {
+                          if (day) {
+                            const newDate = new Date();
+                            newDate.setDate(day);
+                            setSelectedDate(
+                              newDate.toISOString().split("T")[0],
+                            );
+                          }
+                        }}
+                        className={`p-2 rounded text-sm transition font-medium ${
+                          day === null
+                            ? ""
+                            : selectedDate.endsWith(
+                                  `-${String(day).padStart(2, "0")}`,
+                                )
+                              ? "bg-gradient-to-br from-moto-accent to-moto-accent-dark text-white font-bold shadow-lg shadow-moto-accent/50"
+                              : "hover:bg-slate-600 text-slate-300"
+                        }`}
+                      >
+                        {day}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Book Button */}
+              {canBookAppointments ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowBookingForm(true)}
+                  className="w-full bg-gradient-to-r from-moto-accent to-moto-accent-dark hover:shadow-lg hover:shadow-moto-accent/50 text-white font-bold py-3 rounded-lg transition-all"
+                >
+                  {t("appointments.new")}
+                </motion.button>
+              ) : (
+                <button
+                  disabled
+                  className="w-full bg-slate-600 text-slate-400 font-semibold py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                  title="Only owners and customers can book appointments"
+                >
+                  <Lock className="w-4 h-4" />
+                  {t("appointments.new")}
+                </button>
               )}
-            </div>
+            </motion.div>
+
+            {/* Appointments List */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="lg:col-span-3"
+            >
+              <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 border border-slate-600">
+                <h2 className="text-xl font-bold text-white mb-6">
+                  📅 {selectedDate}
+                </h2>
+
+                {filteredAppointments.filter(
+                  (apt) => apt.scheduled_date === selectedDate,
+                ).length === 0 ? (
+                  <div className="text-center py-12">
+                    <Clock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400">
+                      No appointments scheduled for this date
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <AnimatePresence>
+                      {filteredAppointments
+                        .filter((apt) => apt.scheduled_date === selectedDate)
+                        .map((apt, index) => (
+                          <motion.div
+                            key={apt.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ delay: index * 0.05 }}
+                            whileHover={{ x: 4 }}
+                            className="bg-slate-700/50 hover:bg-slate-700 rounded-lg p-5 border border-slate-600 hover:border-moto-accent/30 transition-all cursor-pointer"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                  <span className="text-xl font-bold text-moto-accent">
+                                    {apt.scheduled_time}
+                                  </span>
+                                  <span
+                                    className={`text-xs px-2 py-1 rounded-full font-semibold ${statusConfig[apt.status].color}`}
+                                  >
+                                    {statusConfig[apt.status].label}
+                                  </span>
+                                </div>
+                                <p className="text-white font-semibold mb-1">
+                                  {apt.service_type}
+                                </p>
+                                <p className="text-slate-300 text-sm">
+                                  {apt.notes}
+                                </p>
+                              </div>
+                              {canUpdateStatus && (
+                                <select
+                                  value={apt.status}
+                                  onChange={(e) =>
+                                    handleStatusChange(
+                                      apt.id,
+                                      e.target.value as AppointmentStatus,
+                                    )
+                                  }
+                                  className="ml-4 bg-slate-600 text-white text-sm px-2 py-1 rounded border border-slate-500 hover:border-moto-accent/50 focus:border-moto-accent focus:outline-none transition-colors"
+                                >
+                                  {Object.entries(statusConfig).map(
+                                    ([status, config]) => (
+                                      <option key={status} value={status}>
+                                        {config.label}
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </section>
 
       {/* Booking Form Modal */}
       <AnimatePresence>

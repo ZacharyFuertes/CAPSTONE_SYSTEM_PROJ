@@ -1,11 +1,23 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  ReactNode,
+} from "react";
 import { User, UserRole } from "../types";
 import { supabase } from "../services/supabaseClient";
 import { formatDatabaseError } from "../services/dbHelper";
 
+/**
+ * Auth Context Type
+ * Provides session management and authentication methods
+ */
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isLoading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signup: (
@@ -14,8 +26,7 @@ interface AuthContextType {
     name: string,
     role: UserRole,
   ) => Promise<void>;
-  isAuthenticated: boolean;
-  hasRole: (role: UserRole | UserRole[]) => boolean;
+  hasRole: (roles: UserRole | UserRole[]) => boolean;
   // RBAC permission methods
   canManageInventory: () => boolean;
   canViewInventory: () => boolean;
@@ -30,186 +41,193 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+/**
+ * AuthProvider - Manages authentication state and session persistence
+ *
+ * KEY FEATURES for fixing reload bug:
+ * 1. On mount: calls supabase.auth.getSession() → restores persisted session from localStorage
+ * 2. Subscribes to supabase.auth.onAuthStateChange() → syncs live auth changes
+ * 3. Manages isLoading properly → loading=true until initial session check completes
+ * 4. Fetches user profile from DB based on auth session
+ * 5. Cleans up subscription on unmount
+ *
+ * This pattern ensures that:
+ * - Browser refresh → getSession() restores session from localStorage → user stays logged in
+ * - Login → auth state change fires → listener updates state
+ * - Logout → auth state change fires → listener clears state
+ */
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    // Restore user from localStorage on initial load
-    const savedUser = localStorage.getItem("cachedUser");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const subscriptionRef = useRef<
+    | ReturnType<typeof supabase.auth.onAuthStateChange>["data"]["subscription"]
+    | null
+  >(null);
 
-  // Clear stale localStorage if session did not survive (common Vercel edge-case)
-  useEffect(() => {
-    const checkAuthSession = async () => {
-      const { data: sessionData, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Auth session check error:", error);
+  /**
+   * Fetch and set user profile from database
+   * Creates profile if it doesn't exist
+   */
+  const setUserProfileFromSession = async (userId: string, email?: string) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (userData) {
+        console.log("✅ [Auth] User profile loaded from DB");
+        setUser(userData as User);
+        return;
       }
 
-      const cachedUser = localStorage.getItem("cachedUser");
-      if (!sessionData?.session && cachedUser) {
-        localStorage.removeItem("cachedUser");
-        localStorage.removeItem("lastVisitedPage");
-        setUser(null);
+      // User doesn't exist in DB - create profile
+      if (error?.code === "PGRST116") {
+        console.log("📝 [Auth] Creating user profile");
+        const { data: newUser } = await supabase
+          .from("users")
+          .insert({
+            id: userId,
+            email: email || "unknown",
+            name: email?.split("@")[0] || "User",
+            role: "customer",
+          })
+          .select()
+          .single();
+
+        if (newUser) {
+          console.log("✅ [Auth] User profile created");
+          setUser(newUser as User);
+        }
+      } else if (error) {
+        console.error("❌ [Auth] Error fetching user profile:", error);
       }
-    };
+    } catch (err) {
+      console.error("❌ [Auth] Error setting user profile:", err);
+    }
+  };
 
-    checkAuthSession();
-  }, []);
-
+  /**
+   * CRITICAL: On mount, restore session from localStorage
+   * This is THE FIX for the reload bug
+   */
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-
+    const restoreSession = async () => {
       try {
-        if (session?.user) {
-          // Fetch user profile from database
-          const { data: userData, error: selectError } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
+        console.log("📋 [Auth] Restoring session from storage...");
 
-          if (!isMounted) return;
+        // This retrieves the persisted session from localStorage
+        // Supabase automatically stores the session in localStorage when user logs in
+        const { data, error } = await supabase.auth.getSession();
 
-          // If user not found in database, create a minimal record
-          if (selectError?.code === "PGRST116" || !userData) {
-            console.log(
-              "User record not found, creating default user record...",
-            );
-            const { data: newUser, error: insertError } = await supabase
-              .from("users")
-              .insert({
-                id: session.user.id,
-                email: session.user.email || "unknown",
-                name:
-                  session.user.user_metadata?.name ||
-                  session.user.email?.split("@")[0] ||
-                  "User",
-                role: "customer",
-              })
-              .select()
-              .single();
+        if (!isMounted) return;
 
-            if (!insertError && newUser && isMounted) {
-              setUser(newUser);
-              localStorage.setItem("cachedUser", JSON.stringify(newUser));
-            }
-          } else if (isMounted && userData) {
-            setUser(userData);
-            localStorage.setItem("cachedUser", JSON.stringify(userData));
-          }
+        if (error) {
+          console.error("❌ [Auth] Error getting session:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.session?.user?.id) {
+          console.log("✅ [Auth] Session restored from storage");
+          await setUserProfileFromSession(
+            data.session.user.id,
+            data.session.user.email,
+          );
         } else {
-          if (isMounted) setUser(null);
-          localStorage.removeItem("cachedUser");
+          console.log("ℹ️ [Auth] No persisted session found");
+          setUser(null);
         }
       } catch (err) {
-        console.error("Error updating user on auth state change:", err);
+        console.error("❌ [Auth] Session restoration error:", err);
+        setUser(null);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    });
+    };
+
+    restoreSession();
 
     return () => {
       isMounted = false;
-      subscription?.unsubscribe();
+    };
+  }, []);
+
+  /**
+   * Listen for auth state changes (login, logout, session refresh)
+   * This keeps state in sync with Supabase Auth
+   */
+  useEffect(() => {
+    console.log("🔔 [Auth] Setting up auth state listener");
+
+    // Subscribe to auth changes
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("📡 [Auth] Auth event:", event, !!session?.user?.id);
+
+      if (session?.user?.id) {
+        // User is/remains logged in
+        await setUserProfileFromSession(session.user.id, session.user.email);
+      } else {
+        // User is logged out or no session
+        console.log("🚪 [Auth] No active session");
+        setUser(null);
+      }
+
+      // Ensure loading is false after first event
+      setIsLoading(false);
+    });
+
+    subscriptionRef.current = data.subscription;
+
+    return () => {
+      // Clean up subscription on unmount
+      if (subscriptionRef.current) {
+        console.log("🧹 [Auth] Cleaning up auth listener");
+        subscriptionRef.current.unsubscribe();
+      }
     };
   }, []);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
+    console.log("🔐 [Auth] Login attempt:", email);
+    setIsLoading(true);
     try {
-      // Sign in with auth
-      const {
-        data: { user: authUser },
-        error: signInError,
-      } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (signInError) {
-        throw new Error(signInError.message);
-      }
+      if (error) throw error;
+      if (!data?.user?.id) throw new Error("Login failed");
 
-      if (authUser?.id) {
-        // Fetch user data
-        let { data: userData, error: selectError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", authUser.id)
-          .single();
-
-        // If user not found in database, create a minimal record
-        if (selectError?.code === "PGRST116" || !userData) {
-          console.log("User record not found in database, creating one...");
-          const { data: newUser, error: insertError } = await supabase
-            .from("users")
-            .insert({
-              id: authUser.id,
-              email: authUser.email || email,
-              name: authUser.user_metadata?.name || email.split("@")[0],
-              role: "customer",
-            })
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error("Failed to create user record:", insertError);
-            throw new Error(
-              "Account created but profile setup failed. Please contact support.",
-            );
-          }
-
-          userData = newUser;
-        }
-
-        if (userData) {
-          setUser(userData);
-          localStorage.setItem("cachedUser", JSON.stringify(userData));
-        }
-      }
+      console.log("✅ [Auth] Login successful");
+      // Auth state listener will automatically fetch user profile and update state
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("❌ [Auth] Login error:", err);
+      setIsLoading(false);
       throw new Error(formatDatabaseError(err));
-    } finally {
-      setLoading(false);
     }
   };
 
   const logout = async () => {
-    console.log("🔴 Logout initiated");
+    console.log("🚪 [Auth] Logout initiated");
     try {
-      console.log("🔴 Calling supabase.auth.signOut()");
-
-      // Add timeout detection
-      const signOutPromise = supabase.auth.signOut();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("signOut timed out after 5s")), 5000),
-      );
-
-      await Promise.race([signOutPromise, timeoutPromise]);
-
-      console.log("🔴 signOut successful");
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      console.log("✅ [Auth] Logged out successfully");
+      // Auth state listener will automatically clear user state
+    } catch (err) {
+      console.error("❌ [Auth] Logout error:", err);
+      // Force clear state even if error occurs
       setUser(null);
-      console.log("🔴 User state cleared");
-      // Clear all cached user data from localStorage
-      localStorage.removeItem("cachedUser");
-      localStorage.removeItem("lastVisitedPage");
-      console.log("🔴 localStorage cleared");
-    } catch (error) {
-      console.error("🔴 Logout error:", error);
-      console.error("🔴 Error details:", {
-        message: error instanceof Error ? error.message : "Unknown error",
-        type: typeof error,
-      });
-      // Even if signOut fails, still clear local state and cache
-      setUser(null);
-      localStorage.removeItem("cachedUser");
-      localStorage.removeItem("lastVisitedPage");
-      console.log("🔴 Cache cleared after error");
+      throw new Error(formatDatabaseError(err));
     }
   };
 
@@ -219,110 +237,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     name: string,
     role: UserRole,
   ) => {
-    setLoading(true);
+    console.log("📝 [Auth] Signup attempt:", email, "role:", role);
+    setIsLoading(true);
     try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp(
-        { email, password },
-      );
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-      if (signUpError) {
-        console.error("Supabase signup error:", signUpError);
-        if (signUpError.message.includes("already registered")) {
-          throw new Error(
-            "This email is already registered. Please login instead or use a different email.",
-          );
-        }
-        throw new Error(signUpError.message);
-      }
+      if (error) throw error;
+      if (!data?.user?.id) throw new Error("Signup failed");
 
-      if (!authData.user) {
-        throw new Error("User creation failed - no user returned");
-      }
-
-      console.log("Auth user created:", authData.user.id);
-
-      // Check if user profile already exists
-      const { data: existingUser, error: checkError } = await supabase
+      // Create user profile in database
+      const { data: newUser, error: profileError } = await supabase
         .from("users")
-        .select("*")
-        .eq("id", authData.user.id)
+        .insert({
+          id: data.user.id,
+          email,
+          name,
+          role,
+          shop_id:
+            role === "customer"
+              ? null
+              : crypto.randomUUID?.() || Date.now().toString(),
+        })
+        .select()
         .single();
 
-      let userData = existingUser;
+      if (profileError) throw profileError;
 
-      if (checkError?.code === "PGRST116" || !existingUser) {
-        // User doesn't exist, create them
-        // Generate a proper UUID for shop_id
-        const generateUUID = () => {
-          return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-            /[xy]/g,
-            function (c) {
-              const r = (Math.random() * 16) | 0;
-              const v = c === "x" ? r : (r & 0x3) | 0x8;
-              return v.toString(16);
-            },
-          );
-        };
-
-        const { data: insertData, error: insertError } = await supabase
-          .from("users")
-          .insert({
-            id: authData.user.id,
-            email,
-            name,
-            role,
-            shop_id: role === "customer" ? null : generateUUID(),
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Users table insert error:", insertError);
-          throw new Error(
-            `Failed to create user profile: ${insertError.message}`,
-          );
-        }
-
-        userData = insertData;
-      } else if (existingUser) {
-        // User exists, update their role if different
-        if (existingUser.role !== role) {
-          const { data: updateData, error: updateError } = await supabase
-            .from("users")
-            .update({ role, name })
-            .eq("id", authData.user.id)
-            .select()
-            .single();
-
-          if (updateError) {
-            console.error("Users table update error:", updateError);
-            throw new Error(
-              `Failed to update user profile: ${updateError.message}`,
-            );
-          }
-
-          userData = updateData;
-        }
+      console.log("✅ [Auth] Signup successful");
+      if (newUser) {
+        setUser(newUser as User);
       }
-
-      console.log("User profile ready:", userData);
-
-      // Create app user object
-      const appUser: User = {
-        id: authData.user.id,
-        email,
-        name,
-        role,
-        shop_id: role === "customer" ? undefined : userData?.shop_id,
-      };
-
-      setUser(appUser);
-      localStorage.setItem("cachedUser", JSON.stringify(appUser));
-    } catch (error) {
-      console.error("Full signup error:", error);
-      throw new Error(formatDatabaseError(error));
-    } finally {
-      setLoading(false);
+      // Auth state listener will also sync the session
+    } catch (err) {
+      console.error("❌ [Auth] Signup error:", err);
+      setIsLoading(false);
+      throw new Error(formatDatabaseError(err));
     }
   };
 
@@ -332,7 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return roleArray.includes(user.role);
   };
 
-  // RBAC Permission Methods based on capstone requirements
+  // RBAC Permission Methods
   const canManageInventory = (): boolean => user?.role === "owner";
   const canViewInventory = (): boolean =>
     user?.role === "owner" || user?.role === "mechanic";
@@ -346,36 +298,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const canRecordServiceProgress = (): boolean => user?.role === "mechanic";
   const canAccessCustomerPortal = (): boolean => user?.role === "customer";
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        logout,
-        signup,
-        isAuthenticated: !!user,
-        hasRole,
-        canManageInventory,
-        canViewInventory,
-        canManageAppointments,
-        canViewOwnAppointments,
-        canManageUsers,
-        canViewReports,
-        canAccessAdminDashboard,
-        canRecordServiceProgress,
-        canAccessCustomerPortal,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    signup,
+    hasRole,
+    canManageInventory,
+    canViewInventory,
+    canManageAppointments,
+    canViewOwnAppointments,
+    canManageUsers,
+    canViewReports,
+    canAccessAdminDashboard,
+    canRecordServiceProgress,
+    canAccessCustomerPortal,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
+/**
+ * Hook to use auth context
+ * Usage: const { user, isLoading, login, logout } = useAuth()
+ */
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
