@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, Search, ShoppingCart, Zap, Package } from "lucide-react";
-import { useLanguage } from "../contexts/LanguageContext";
+
 import { supabase } from "../services/supabaseClient";
 
 interface Part {
@@ -25,7 +25,7 @@ interface BrowsePartsPageProps {
 }
 
 const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) => {
-  const {} = useLanguage();
+
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
+import usersIcon from "../icons/users.png";
 
 interface CustomerLoginPageProps {
   onLoginSuccess: () => void;
@@ -191,7 +192,7 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-3xl">👤</span>
+            <img src={usersIcon} alt="Customer Icon" className="w-10 h-10 object-contain brightness-0 invert drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
             Customer Portal

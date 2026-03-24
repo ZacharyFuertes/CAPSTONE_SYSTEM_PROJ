@@ -7,7 +7,7 @@ import {
   Car,
   Home,
 } from "lucide-react";
-import { useLanguage } from "../contexts/LanguageContext";
+
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import AccessDenied from "../components/AccessDenied";
@@ -26,7 +26,7 @@ interface CustomerPortalProps {
 }
 
 const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
-  const {} = useLanguage();
+
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [totalAppointments, setTotalAppointments] = useState(0);

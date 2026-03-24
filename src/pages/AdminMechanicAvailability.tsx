@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Clock, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
+
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabaseClient'
 
@@ -28,7 +28,7 @@ interface AdminMechanicAvailabilityProps {
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ onNavigate }) => {
-  const { } = useLanguage()
+
   const { user } = useAuth()
   const [mechanics, setMechanics] = useState<Mechanic[]>([])
   const [availability, setAvailability] = useState<Availability[]>([])

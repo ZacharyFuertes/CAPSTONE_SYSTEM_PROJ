@@ -7,7 +7,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { useLanguage } from "../contexts/LanguageContext";
+
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import AccessDenied from "../components/AccessDenied";
@@ -35,7 +35,7 @@ interface MechanicPortalProps {
 }
 
 const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
-  const {} = useLanguage();
+
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(true);
