@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Wrench,
   XCircle,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
@@ -27,47 +28,53 @@ interface ViewAppointmentsModalProps {
   onClose: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
+const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode; label: string }> = {
   pending: {
-    color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    icon: <Clock size={14} />,
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/10 border-yellow-500/20",
+    icon: <Clock size={13} />,
     label: "Pending",
   },
   confirmed: {
-    color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    icon: <CheckCircle size={14} />,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    icon: <CheckCircle size={13} />,
     label: "Confirmed",
   },
   in_progress: {
-    color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-    icon: <Wrench size={14} />,
+    color: "text-purple-400",
+    bg: "bg-purple-500/10 border-purple-500/20",
+    icon: <Wrench size={13} />,
     label: "In Progress",
   },
   completed: {
-    color: "bg-green-500/20 text-green-400 border-green-500/30",
-    icon: <CheckCircle size={14} />,
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+    icon: <CheckCircle size={13} />,
     label: "Completed",
   },
   cancelled: {
-    color: "bg-red-500/20 text-red-400 border-red-500/30",
-    icon: <XCircle size={14} />,
+    color: "text-red-400",
+    bg: "bg-red-500/10 border-red-500/20",
+    icon: <XCircle size={13} />,
     label: "Cancelled",
   },
 };
 
-const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+const FILTER_TABS = [
+  { key: "upcoming" as const, label: "Upcoming" },
+  { key: "past" as const, label: "Past" },
+  { key: "all" as const, label: "All" },
+];
+
+const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
 
   useEffect(() => {
-    if (isOpen && user?.id) {
-      fetchAppointments();
-    }
+    if (isOpen && user?.id) fetchAppointments();
   }, [isOpen, user?.id]);
 
   const fetchAppointments = async () => {
@@ -79,19 +86,16 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
         .select("id, scheduled_date, scheduled_time, service_type, status, notes, description")
         .eq("customer_id", user.id)
         .order("scheduled_date", { ascending: false });
-
       if (error) throw error;
       setAppointments(data || []);
-    } catch (err) {
-      console.error("Error fetching appointments:", err);
+    } catch {
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const now = new Date();
-  const today = now.toISOString().split("T")[0];
-
+  const today = new Date().toISOString().split("T")[0];
   const filteredAppointments = appointments.filter((apt) => {
     if (filter === "upcoming") return apt.scheduled_date >= today && apt.status !== "cancelled";
     if (filter === "past") return apt.scheduled_date < today || apt.status === "cancelled" || apt.status === "completed";
@@ -99,8 +103,7 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
   });
 
   const formatTime = (time: string) => {
-    const [h] = time.split(":");
-    const hour = parseInt(h);
+    const hour = parseInt(time.split(":")[0]);
     return hour >= 12 ? `${hour === 12 ? 12 : hour - 12}:00 PM` : `${hour}:00 AM`;
   };
 
@@ -112,51 +115,62 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-3 z-50"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          initial={{ scale: 0.95, opacity: 0, y: 30 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-slate-700 shadow-2xl"
+          exit={{ scale: 0.95, opacity: 0, y: 30 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-700">
-            <h2 className="text-2xl font-black text-white">My Appointments</h2>
-            <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition text-slate-400 hover:text-white">
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <CalendarDays size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">My Appointments</h2>
+                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">View and track your service history</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
               <X size={20} />
             </button>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-2 px-6 py-3 border-b border-slate-700/50">
-            {(["upcoming", "past", "all"] as const).map((f) => (
+          {/* ── Filter Tabs ── */}
+          <div className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 flex-shrink-0">
+            {FILTER_TABS.map((tab) => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all ${
-                  filter === f
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  filter === tab.key
+                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    : "text-slate-500 hover:text-slate-300 border border-transparent hover:bg-slate-800/40"
                 }`}
               >
-                {f}
+                {tab.label}
               </button>
             ))}
+            <div className="ml-auto text-xs text-slate-600">
+              {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? "s" : ""}
+            </div>
           </div>
 
-          {/* Appointments List */}
-          <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 160px)" }}>
+          {/* ── Appointments List ── */}
+          <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6">
             {loading ? (
-              <div className="text-center py-12">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-slate-400 mt-3 text-sm">Loading appointments...</p>
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredAppointments.length === 0 ? (
-              <div className="text-center py-12">
-                <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm">
+              <div className="flex flex-col items-center justify-center py-20">
+                <AlertCircle className="w-14 h-14 text-slate-700 mb-4" />
+                <p className="text-slate-500 text-sm">
                   {filter === "upcoming" ? "No upcoming appointments" : filter === "past" ? "No past appointments" : "No appointments found"}
                 </p>
               </div>
@@ -167,38 +181,47 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                   return (
                     <motion.div
                       key={apt.id}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-slate-700/50 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition"
+                      transition={{ delay: index * 0.04 }}
+                      className="bg-slate-800/30 rounded-2xl p-3 sm:p-5 border border-slate-700/20 hover:border-slate-600/40 transition-all group"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="text-white font-bold">{apt.service_type}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="flex items-center gap-1.5 text-slate-400 text-xs">
-                              <Calendar size={12} />
-                              {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                          {/* Date Badge */}
+                          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/60 border border-slate-700/30 flex flex-col items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] text-slate-500 font-semibold leading-none">
+                              {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
                             </span>
-                            <span className="flex items-center gap-1.5 text-slate-400 text-xs">
-                              <Clock size={12} />
-                              {formatTime(apt.scheduled_time)}
+                            <span className="text-base sm:text-lg font-black text-white leading-tight">
+                              {new Date(apt.scheduled_date + "T00:00:00").getDate()}
                             </span>
                           </div>
+
+                          <div>
+                            <h4 className="text-white font-bold text-sm mb-1">{apt.service_type}</h4>
+                              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                              <span className="flex items-center gap-1.5 text-slate-500 text-xs">
+                                <Calendar size={11} />
+                                {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-slate-500 text-xs">
+                                <Clock size={11} />
+                                {formatTime(apt.scheduled_time)}
+                              </span>
+                            </div>
+                            {apt.description && (
+                              <p className="text-slate-600 text-xs mt-2">{apt.description}</p>
+                            )}
+                          </div>
                         </div>
-                        <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
+
+                        {/* Status Badge */}
+                        <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border font-bold flex-shrink-0 ${status.bg} ${status.color}`}>
                           {status.icon}
                           {status.label}
                         </span>
                       </div>
-                      {apt.description && (
-                        <p className="text-slate-400 text-xs mt-2">{apt.description}</p>
-                      )}
                     </motion.div>
                   );
                 })}

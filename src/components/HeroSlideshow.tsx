@@ -73,7 +73,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
   }, [isAutoPlay]);
 
   return (
-    <div className="relative w-full h-screen mt-20 overflow-hidden group">
+    <div className="relative w-full h-screen mt-16 overflow-hidden group">
       <AnimatePresence mode="wait">
         <motion.div
           key={current}

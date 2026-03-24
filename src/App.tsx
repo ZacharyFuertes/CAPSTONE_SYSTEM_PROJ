@@ -15,7 +15,7 @@ import AccessDenied from "./components/AccessDenied";
 import Dashboard from "./pages/Dashboard";
 import InventoryPage from "./pages/InventoryPage";
 import AppointmentCalendarPage from "./pages/AppointmentCalendarPage";
-import CustomerPortal from "./pages/CustomerPortal";
+
 import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
 import MechanicDashboard from "./pages/MechanicDashboard";
@@ -37,6 +37,10 @@ import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
 import ViewAppointmentsModal from "./components/ViewAppointmentsModal";
+import BrowsePartsModal from "./components/BrowsePartsModal";
+import CustomerPortalModal from "./components/CustomerPortalModal";
+import CustomerSettingsModal from "./components/CustomerSettingsModal";
+import ServiceHistoryModal from "./components/ServiceHistoryModal";
 
 type PageType = AppPage;
 
@@ -54,6 +58,10 @@ const AppContent: React.FC = () => {
     useState<LoginType>("landing");
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
+  const [showPartsModal, setShowPartsModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   /**
    * Wrapper around setCurrentPage that persists to localStorage
@@ -192,17 +200,21 @@ const AppContent: React.FC = () => {
           <>
             <Navbar
               onBookAppointment={handleOpenLogin}
+              onBrowseParts={() => setShowPartsModal(true)}
               onJoinSignIn={handleOpenLogin}
-              onViewAccount={() => handlePageChange("customer-portal")}
+              onViewAccount={handleOpenLogin}
             />
             <HeroSlideshow
               onBookNow={handleOpenLogin}
-              onShopNow={handleOpenLogin}
+              onShopNow={() => setShowPartsModal(true)}
             />
             <ChatAssistantWidget />
-            <BrowsePartsPage embedded />
             <TrustSection />
             <Footer />
+            <BrowsePartsModal
+              isOpen={showPartsModal}
+              onClose={() => setShowPartsModal(false)}
+            />
           </>
         ) : currentLoginType === "choice" ? (
           <LoginChoicePage
@@ -256,18 +268,17 @@ const AppContent: React.FC = () => {
         <Navbar
           onBookAppointment={() => setShowBookingModal(true)}
           onShowAppointments={() => setShowAppointmentsModal(true)}
+          onBrowseParts={() => setShowPartsModal(true)}
           onJoinSignIn={() => handleBackToLanding()}
-          onViewAccount={() => handlePageChange("customer-portal")}
+          onViewAccount={() => setShowAccountModal(true)}
+          onSettings={() => setShowSettingsModal(true)}
+          onServiceHistory={() => setShowHistoryModal(true)}
         />
         <HeroSlideshow
           onBookNow={() => setShowBookingModal(true)}
-          onShopNow={() => {
-            const el = document.getElementById("browse-parts-section");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
+          onShopNow={() => setShowPartsModal(true)}
         />
         <ChatAssistantWidget />
-        <BrowsePartsPage embedded />
         <TrustSection />
         <Footer />
         <BookAppointmentModal
@@ -277,6 +288,22 @@ const AppContent: React.FC = () => {
         <ViewAppointmentsModal
           isOpen={showAppointmentsModal}
           onClose={() => setShowAppointmentsModal(false)}
+        />
+        <BrowsePartsModal
+          isOpen={showPartsModal}
+          onClose={() => setShowPartsModal(false)}
+        />
+        <CustomerPortalModal
+          isOpen={showAccountModal}
+          onClose={() => setShowAccountModal(false)}
+        />
+        <CustomerSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+        />
+        <ServiceHistoryModal
+          isOpen={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
         />
       </div>
     );
@@ -341,11 +368,7 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
-        {currentPage === "customer-portal" && (
-          <CustomerPortal
-            onNavigate={(page: string) => handlePageChange(page as PageType)}
-          />
-        )}
+
         {currentPage === "mechanic-portal" && (
           <MechanicPortal
             onNavigate={(page: string) => handlePageChange(page as PageType)}

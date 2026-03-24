@@ -35,6 +35,7 @@ interface AuthContextType {
   canAccessAdminDashboard: () => boolean;
   canRecordServiceProgress: () => boolean;
   canAccessCustomerPortal: () => boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -262,6 +263,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const canRecordServiceProgress = (): boolean => user?.role === "mechanic";
   const canAccessCustomerPortal = (): boolean => user?.role === "customer";
 
+  const refreshUser = async () => {
+    if (user?.id) {
+      await setUserProfileFromSession(user.id, user.email);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -279,6 +286,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     canAccessAdminDashboard,
     canRecordServiceProgress,
     canAccessCustomerPortal,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
