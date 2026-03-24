@@ -10,14 +10,20 @@ export type AppPage =
   | "browse-parts"
   | "products"
   | "mechanic-portal"
+  | "mechanic-dashboard"
   | "mechanic-availability"
   | "reports"
   | "settings";
 
 // Role-based mapping (central source of truth for allowed pages per role)
 export const rolePagesMapping: Record<UserRole, AppPage[]> = {
-  customer: ["appointments", "customer-portal", "browse-parts"],
-  mechanic: ["dashboard", "appointments", "inventory", "mechanic-portal"],
+  customer: ["landing", "customer-portal"],
+  mechanic: [
+    "mechanic-dashboard",
+    "appointments",
+    "inventory",
+    "mechanic-portal",
+  ],
   owner: [
     "dashboard",
     "inventory",

@@ -5,7 +5,6 @@ import { useAuth } from "../contexts/AuthContext";
 
 interface NavbarProps {
   onShowAppointments?: () => void;
-  onBrowseParts?: () => void;
   onBookAppointment?: () => void;
   onJoinSignIn?: () => void;
   onViewAccount?: () => void;
@@ -13,7 +12,6 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({
   onShowAppointments,
-  onBrowseParts,
   onBookAppointment,
   onJoinSignIn,
   onViewAccount,
@@ -22,18 +20,28 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
+  // Only show My Appointments when user is logged in
+  const scrollToParts = () => {
+    const el = document.getElementById("browse-parts-section");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   const navItems = [
-    { label: "Browse Parts", href: "#parts", onClick: onBrowseParts },
+    { label: "Browse Parts", href: "#parts", onClick: scrollToParts },
     {
       label: "Book Appointment",
       href: "#appointments",
       onClick: onBookAppointment,
     },
-    {
-      label: "My Appointments",
-      href: "#my-appointments",
-      onClick: onShowAppointments,
-    },
+    ...(user
+      ? [
+          {
+            label: "My Appointments",
+            href: "#my-appointments",
+            onClick: onShowAppointments,
+          },
+        ]
+      : []),
   ];
 
   return (

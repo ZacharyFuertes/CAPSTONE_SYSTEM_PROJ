@@ -1,50 +1,56 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, Lock, Loader, ArrowLeft, Home } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Mail, Lock, Loader, ArrowLeft } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface OwnerLoginPageProps {
-  onLoginSuccess: () => void
-  onBack: () => void
-  onHome?: () => void
+  onLoginSuccess: () => void;
+  onBack: () => void;
+  onHome?: () => void;
 }
 
-const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack, onHome }) => {
-  const { login, signup } = useAuth()
-  const [isSignup, setIsSignup] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
+  onLoginSuccess,
+  onBack,
+}) => {
+  const { login, signup } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-  })
+    email: "",
+    password: "",
+    name: "",
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       if (isSignup) {
-        await signup(formData.email, formData.password, formData.name, 'owner')
+        await signup(formData.email, formData.password, formData.name, "owner");
       } else {
-        await login(formData.email, formData.password)
+        await login(formData.email, formData.password);
       }
-      onLoginSuccess()
+      onLoginSuccess();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed. Please try again.'
-      setError(errorMessage)
-      console.error('Auth error:', err)
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please try again.";
+      setError(errorMessage);
+      console.error("Auth error:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -61,18 +67,6 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
       </motion.button>
 
       {/* Home Button */}
-      {onHome && (
-        <motion.button
-          onClick={onHome}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="fixed top-6 right-6 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
-          whileHover={{ scale: 1.05, x: 4 }}
-        >
-          <span className="hidden sm:inline text-sm font-medium">Home</span>
-          <Home size={18} />
-        </motion.button>
-      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -85,7 +79,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
             <span className="text-white font-bold text-3xl">🏢</span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
-          <p className="text-slate-400">{isSignup ? 'Create your account' : 'Sign in to your account'}</p>
+          <p className="text-slate-400">
+            {isSignup ? "Create your account" : "Sign in to your account"}
+          </p>
         </div>
 
         {/* Error Message */}
@@ -103,9 +99,14 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Email
+            </label>
             <div className="relative">
-              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Mail
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
               <input
                 type="email"
                 name="email"
@@ -120,9 +121,14 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Password
+            </label>
             <div className="relative">
-              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Lock
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
               <input
                 type="password"
                 name="password"
@@ -138,7 +144,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
           {/* Name (Signup only) */}
           {isSignup && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Full Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -160,30 +168,30 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({ onLoginSuccess, onBack,
             className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
           >
             {loading && <Loader size={18} className="animate-spin" />}
-            {isSignup ? 'Create Account' : 'Sign In'}
+            {isSignup ? "Create Account" : "Sign In"}
           </motion.button>
         </form>
 
         {/* Toggle */}
         <div className="mt-6 text-center">
           <p className="text-slate-400 text-sm">
-            {isSignup ? 'Already have an account?' : "Don't have an account?"}
+            {isSignup ? "Already have an account?" : "Don't have an account?"}
             <button
               type="button"
               onClick={() => {
-                setIsSignup(!isSignup)
-                setError('')
-                setFormData({ email: '', password: '', name: '' })
+                setIsSignup(!isSignup);
+                setError("");
+                setFormData({ email: "", password: "", name: "" });
               }}
               className="ml-2 text-red-400 hover:text-red-300 font-semibold transition"
             >
-              {isSignup ? 'Sign In' : 'Create Account'}
+              {isSignup ? "Sign In" : "Create Account"}
             </button>
           </p>
         </div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default OwnerLoginPage
+export default OwnerLoginPage;

@@ -18,6 +18,7 @@ import AppointmentCalendarPage from "./pages/AppointmentCalendarPage";
 import CustomerPortal from "./pages/CustomerPortal";
 import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
+import MechanicDashboard from "./pages/MechanicDashboard";
 import BrowsePartsPage from "./pages/BrowsePartsPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -32,9 +33,10 @@ import AdminProductsPage from "./pages/AdminProductsPage";
 import Navbar from "./components/Navbar";
 import HeroSlideshow from "./components/HeroSlideshow";
 import ChatAssistantWidget from "./components/ChatAssistantWidget";
-import FeaturedSection from "./components/FeaturedSection";
 import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
+import BookAppointmentModal from "./components/BookAppointmentModal";
+import ViewAppointmentsModal from "./components/ViewAppointmentsModal";
 
 type PageType = AppPage;
 
@@ -50,6 +52,8 @@ const AppContent: React.FC = () => {
   });
   const [currentLoginType, setCurrentLoginType] =
     useState<LoginType>("landing");
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
 
   /**
    * Wrapper around setCurrentPage that persists to localStorage
@@ -130,9 +134,19 @@ const AppContent: React.FC = () => {
   // Ensure the current page is valid for the current role whenever auth / role / page changes
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (!user?.role) return;
 
-    const allowedPages = getPagesByRole(user?.role);
-    const defaultPage = getDefaultPageByRole(user?.role);
+    const allowedPages = getPagesByRole(user.role);
+    const defaultPage = getDefaultPageByRole(user.role);
+
+    // Customers are allowed on the landing page (their default)
+    if (user.role === "customer" && currentPage === "landing") return;
+
+    // Non-customers on landing should go to their default page
+    if (user.role !== "customer" && currentPage === "landing") {
+      navigateTo(defaultPage);
+      return;
+    }
 
     if (!allowedPages.includes(currentPage)) {
       navigateTo(defaultPage);
@@ -162,10 +176,9 @@ const AppContent: React.FC = () => {
   // If not authenticated, show landing page or login
   if (!isAuthenticated) {
     const handleLoginSuccess = () => {
-      // All roles can access appointments, so redirect there
-      // Customers will stay there (it's in their allowed pages)
-      // Mechanics/owners can navigate to other pages from the navbar
-      handlePageChange("appointments");
+      // Customers go to the splash/landing page
+      // Mechanics/owners go to their default dashboard via the role validation useEffect
+      navigateTo("landing");
     };
 
     const handleOpenLogin = () => {
@@ -178,7 +191,6 @@ const AppContent: React.FC = () => {
         {currentLoginType === "landing" ? (
           <>
             <Navbar
-              onBrowseParts={handleOpenLogin}
               onBookAppointment={handleOpenLogin}
               onJoinSignIn={handleOpenLogin}
               onViewAccount={() => handlePageChange("customer-portal")}
@@ -188,7 +200,7 @@ const AppContent: React.FC = () => {
               onShopNow={handleOpenLogin}
             />
             <ChatAssistantWidget />
-            <FeaturedSection />
+            <BrowsePartsPage embedded />
             <TrustSection />
             <Footer />
           </>
@@ -242,19 +254,30 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-moto-dark overflow-x-hidden">
         <DatabaseStatus />
         <Navbar
-          onBrowseParts={() => handlePageChange("products")}
-          onBookAppointment={() => handlePageChange("appointments")}
+          onBookAppointment={() => setShowBookingModal(true)}
+          onShowAppointments={() => setShowAppointmentsModal(true)}
           onJoinSignIn={() => handleBackToLanding()}
           onViewAccount={() => handlePageChange("customer-portal")}
         />
         <HeroSlideshow
-          onBookNow={() => handlePageChange("appointments")}
-          onShopNow={() => handlePageChange("products")}
+          onBookNow={() => setShowBookingModal(true)}
+          onShopNow={() => {
+            const el = document.getElementById("browse-parts-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
         />
         <ChatAssistantWidget />
-        <FeaturedSection />
+        <BrowsePartsPage embedded />
         <TrustSection />
         <Footer />
+        <BookAppointmentModal
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+        />
+        <ViewAppointmentsModal
+          isOpen={showAppointmentsModal}
+          onClose={() => setShowAppointmentsModal(false)}
+        />
       </div>
     );
   }
@@ -283,12 +306,21 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <DatabaseStatus />
-      <SystemNavbar
-        currentPage={currentPage}
-        onNavigate={(page: string) => handlePageChange(page as PageType)}
-      />
+      {/* Hide SystemNavbar for mechanic-dashboard as it has its own sidebar */}
+      {currentPage !== "mechanic-dashboard" && (
+        <SystemNavbar
+          currentPage={currentPage}
+          onNavigate={(page: string) => handlePageChange(page as PageType)}
+        />
+      )}
 
-      <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-12">
+      <main
+        className={
+          currentPage !== "mechanic-dashboard"
+            ? "pt-20 px-4 sm:px-6 lg:px-8 pb-12"
+            : ""
+        }
+      >
         {currentPage === "dashboard" && (
           <Dashboard
             onNavigate={(page: string) => handlePageChange(page as PageType)}
@@ -319,6 +351,7 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
+        {currentPage === "mechanic-dashboard" && <MechanicDashboard />}
         {currentPage === "mechanic-availability" && (
           <AdminMechanicAvailability
             onNavigate={(page: string) => handlePageChange(page as PageType)}

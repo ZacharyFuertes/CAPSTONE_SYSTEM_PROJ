@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader,
+  ArrowLeft,
+  Home,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 
@@ -175,7 +181,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
           onClick={onHome}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="fixed top-6 right-6 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
+          className="fixed top-6 right-12 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
           whileHover={{ scale: 1.05, x: 4 }}
         >
           <span className="hidden sm:inline text-sm font-medium">Home</span>
@@ -183,119 +189,121 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
         </motion.button>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-3xl">⚙️</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Mechanic Portal
-          </h1>
-          <p className="text-slate-400">
-            {isSignup ? "Create your account" : "Sign in to your account"}
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Email
-            </label>
-            <div className="relative">
-              <Mail
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="mechanic@motoshop.com"
-                required
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-              />
+      {!user && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <span className="text-white font-bold text-3xl">⚙️</span>
             </div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Mechanic Portal
+            </h1>
+            <p className="text-slate-400">
+              {isSignup ? "Create your account" : "Sign in to your account"}
+            </p>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                required
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-              />
-            </div>
-          </div>
-
-          {/* Name (Signup only) */}
-          {isSignup && (
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Full Name
+                Email
               </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="John Doe"
-                required
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-              />
+              <div className="relative">
+                <Mail
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="mechanic@motoshop.com"
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
             </div>
-          )}
 
-          {/* Submit Button */}
-          <motion.button
-            type="submit"
-            disabled={loading}
-            whileHover={{ scale: loading ? 1 : 1.02 }}
-            whileTap={{ scale: loading ? 1 : 0.98 }}
-            className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loading && <Loader size={18} className="animate-spin" />}
-            {isSignup ? "Create Account" : "Sign In"}
-          </motion.button>
-        </form>
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            </div>
 
-        {/* Toggle */}
-        <div className="mt-6 text-center">
-          <p className="text-slate-400 text-sm">
-            {isSignup ? "Already have an account?" : "Don't have an account?"}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignup(!isSignup);
-                setError("");
-                setFormData({ email: "", password: "", name: "" });
-              }}
-              className="ml-2 text-blue-400 hover:text-blue-300 font-semibold transition"
+            {/* Name (Signup only) */}
+            {isSignup && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  required
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
             >
-              {isSignup ? "Sign In" : "Create Account"}
-            </button>
-          </p>
-        </div>
-      </motion.div>
+              {loading && <Loader size={18} className="animate-spin" />}
+              {isSignup ? "Create Account" : "Sign In"}
+            </motion.button>
+          </form>
+
+          {/* Toggle */}
+          <div className="mt-6 text-center">
+            <p className="text-slate-400 text-sm">
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setError("");
+                  setFormData({ email: "", password: "", name: "" });
+                }}
+                className="ml-2 text-blue-400 hover:text-blue-300 font-semibold transition"
+              >
+                {isSignup ? "Sign In" : "Create Account"}
+              </button>
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

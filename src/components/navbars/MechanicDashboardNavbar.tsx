@@ -8,149 +8,57 @@ import {
   BarChart3,
   Package,
   Calendar,
-  Users,
   Lock,
   Wrench,
-  Clock,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useLanguage } from "../contexts/LanguageContext";
-import { AppPage, getPagesByRole } from "../utils/roleAccess";
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 
-interface NavbarProps {
-  currentPage: string;
-  onNavigate: (page: string) => void;
+interface MechanicDashboardNavbarProps {
+  currentPage?: string;
+  onNavigate?: (page: string) => void;
 }
 
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  requiredRole?: string[];
-  tooltip?: string;
-}
-
-const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
+const MechanicDashboardNavbar: React.FC<MechanicDashboardNavbarProps> = ({
+  currentPage = "mechanic-dashboard",
+  onNavigate = () => {},
+}) => {
   const { user, logout } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [disabledTooltip, setDisabledTooltip] = useState<string | null>(null);
+  const [disabledTooltip] = useState<string | null>(null);
 
-  // Define all available menu items with role requirements
-  const allMenuItems: MenuItem[] = [
-    {
-      id: "dashboard",
-      label: t("nav.dashboard"),
-      icon: BarChart3,
-      requiredRole: ["owner", "mechanic"],
-      tooltip: "Owners and Mechanics only",
-    },
+  // Menu items specific to mechanic
+  const menuItems = [
     {
       id: "mechanic-dashboard",
       label: "Dashboard",
       icon: BarChart3,
-      requiredRole: ["mechanic"],
-      tooltip: "View your performance and customer metrics",
-    },
-    {
-      id: "inventory",
-      label: "Inventory",
-      icon: Package,
-      requiredRole: ["owner", "mechanic"],
-      tooltip: "Owners and Mechanics only (read-only for Mechanics)",
-    },
-    {
-      id: "appointments",
-      label: "Appointments",
-      icon: Calendar,
-      requiredRole: ["owner", "mechanic", "customer"],
+      tooltip: "View your performance dashboard",
     },
     {
       id: "mechanic-portal",
       label: "My Appointments",
       icon: Wrench,
-      requiredRole: ["mechanic"],
       tooltip: "View your assigned appointments",
     },
     {
-      id: "customer-portal",
-      label: "My Portal",
-      icon: Users,
-      requiredRole: ["customer"],
-      tooltip: "View your service history and profile",
-    },
-    {
-      id: "customers",
-      label: "Customers",
-      icon: Users,
-      requiredRole: ["owner"],
-      tooltip: "Owner only",
-    },
-    {
-      id: "reports",
-      label: "Reports",
-      icon: BarChart3,
-      requiredRole: ["owner"],
-      tooltip: "Owner only",
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Lock,
-      requiredRole: ["owner"],
-      tooltip: "Owner only",
-    },
-    {
-      id: "mechanic-availability",
-      label: "Manage Mechanics",
-      icon: Clock,
-      requiredRole: ["owner"],
-      tooltip: "Set mechanic availability",
-    },
-    {
-      id: "browse-parts",
-      label: "Browse Parts",
+      id: "inventory",
+      label: "Inventory",
       icon: Package,
-      requiredRole: ["customer"],
-      tooltip: "Browse available parts to reserve",
+      tooltip: "View available parts (read-only)",
+    },
+    {
+      id: "appointments",
+      label: "Appointments",
+      icon: Calendar,
+      tooltip: "Manage appointments",
     },
   ];
 
-  // Filter menu items based on role-based access control mapping
-  const getMenuItems = (): MenuItem[] => {
-    if (!user) return [];
-
-    const allowedPages = getPagesByRole(user.role);
-    return allMenuItems.filter((item) => {
-      if (!item.requiredRole) return true;
-      // Allow menu items only if they are part of role's allowed pages
-      return allowedPages.includes(item.id as AppPage);
-    });
-  };
-
-  // Get custom label for customer portal
-  const getMenuItemLabel = (item: MenuItem): string => {
-    if (user?.role === "customer" && item.id === "appointments") {
-      return "My Appointments";
-    }
-    if (user?.role === "customer" && item.id === "browse-parts") {
-      return "Browse Parts";
-    }
-    return item.label;
-  };
-
-  const menuItems = getMenuItems();
-
   const handleMenuItemClick = (itemId: string) => {
-    const item = allMenuItems.find((m) => m.id === itemId);
-    const allowedPages = getPagesByRole(user?.role);
-
-    if (!allowedPages.includes(itemId as AppPage)) {
-      setDisabledTooltip(item?.tooltip || "Access denied");
-      setTimeout(() => setDisabledTooltip(null), 3000);
-    } else {
-      onNavigate(itemId);
-    }
+    onNavigate(itemId);
+    setIsMenuOpen(false);
   };
 
   return (
@@ -162,24 +70,14 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
-            onClick={() =>
-              onNavigate(
-                user?.role === "customer" ? "appointments" : "dashboard",
-              )
-            }
+            onClick={() => onNavigate("mechanic-dashboard")}
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">M</span>
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">MotoShop</h1>
-              <p className="text-xs text-slate-400">
-                {user?.role === "customer"
-                  ? "Customer Portal"
-                  : user?.role === "mechanic"
-                    ? "Mechanic Dashboard"
-                    : "Management System"}
-              </p>
+              <p className="text-xs text-slate-400">Mechanic Dashboard</p>
             </div>
           </motion.div>
 
@@ -202,9 +100,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {getMenuItemLabel(item)}
-                  </span>
+                  <span className="text-sm font-medium">{item.label}</span>
                 </motion.button>
               );
             })}
@@ -252,11 +148,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 <div className="text-sm">
                   <p className="text-white font-semibold">{user.name}</p>
                   <p className="text-slate-400 text-xs capitalize bg-slate-800 px-2 py-1 rounded mt-1">
-                    {user.role === "owner"
-                      ? "Owner"
-                      : user.role === "mechanic"
-                        ? "Mechanic"
-                        : "Customer"}
+                    Mechanic
                   </p>
                 </div>
               </div>
@@ -267,10 +159,8 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                console.log("🔴 Logout button clicked");
                 logout().catch((error) => {
-                  console.error("🔴 Logout failed:", error);
-                  // Even if logout fails, force redirect to landing
+                  console.error("Logout failed:", error);
                   window.location.href = "/";
                 });
               }}
@@ -304,33 +194,30 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-slate-700 py-4 space-y-2"
+              className="md:hidden border-t border-slate-700 bg-slate-800/50 backdrop-blur"
             >
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
-                return (
-                  <motion.button
-                    key={item.id}
-                    whileHover={{ x: 4 }}
-                    onClick={() => {
-                      handleMenuItemClick(item.id);
-                      setIsMenuOpen(false);
-                    }}
-                    title={item.tooltip}
-                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
-                      isActive
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-                        : "text-slate-300 hover:text-white hover:bg-slate-700"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">
-                      {getMenuItemLabel(item)}
-                    </span>
-                  </motion.button>
-                );
-              })}
+              <div className="px-4 py-4 space-y-2">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentPage === item.id;
+                  return (
+                    <motion.button
+                      key={item.id}
+                      whileHover={{ x: 4 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleMenuItemClick(item.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-300 hover:text-white hover:bg-slate-700"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -339,4 +226,4 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   );
 };
 
-export default SystemNavbar;
+export default MechanicDashboardNavbar;

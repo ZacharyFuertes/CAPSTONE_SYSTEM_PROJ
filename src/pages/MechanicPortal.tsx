@@ -50,25 +50,44 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
         setLoading(true);
         setError(null);
 
-        const { data, error: fetchError } = await supabase
-          .from("appointments")
+        // Fetch job orders assigned to this mechanic
+        const { data: jobOrders, error: fetchError } = await supabase
+          .from("job_orders")
           .select(
             `
             id,
-            scheduled_date,
-            scheduled_time,
-            service_type,
+            appointment_id,
+            customer_id,
+            vehicle_id,
+            title,
+            description,
             status,
-            customer:users(name, email, phone),
-            vehicles(make, model, plate_number)
+            created_at,
+            total_cost
           `,
           )
           .eq("mechanic_id", user.id)
-          .order("scheduled_date", { ascending: true });
+          .order("created_at", { ascending: false });
 
         if (fetchError) throw fetchError;
 
-        setAppointments(data || []);
+        // Format data for display
+        const formattedData =
+          jobOrders?.map((job) => ({
+            id: job.id,
+            scheduled_date: new Date(job.created_at)
+              .toISOString()
+              .split("T")[0],
+            scheduled_time: new Date(job.created_at).toLocaleTimeString(),
+            service_type: job.title || "Service",
+            status: job.status || "pending",
+            customer: [{ name: "Customer", email: "N/A", phone: "N/A" }],
+            vehicles: [
+              { make: "Unknown", model: "Vehicle", plate_number: "N/A" },
+            ],
+          })) || [];
+
+        setAppointments(formattedData);
       } catch (err) {
         console.error("Error fetching appointments:", err);
         setError("Failed to load appointments");
