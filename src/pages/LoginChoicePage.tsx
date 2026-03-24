@@ -151,15 +151,6 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
         </div>
 
         {/* Back Button */}
-        <motion.button
-          onClick={onBack}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="w-full py-3 text-slate-400 hover:text-slate-300 font-semibold transition"
-        >
-          ← Back to Home
-        </motion.button>
       </motion.div>
     </div>
   )
