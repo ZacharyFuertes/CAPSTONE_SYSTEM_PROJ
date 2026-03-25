@@ -6,6 +6,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  address?: string;
   role: UserRole;
   shop_id?: string;
   created_at?: string;

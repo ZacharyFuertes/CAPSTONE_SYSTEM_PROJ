@@ -73,7 +73,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
   }, [isAutoPlay]);
 
   return (
-    <div className="relative w-full h-screen mt-16 overflow-hidden group">
+    <div className="relative w-full h-screen overflow-hidden group">
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
@@ -178,7 +178,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
       </div>
 
       {/* Auto-play indicator */}
-      <div className="absolute top-8 right-8 z-40 text-sm text-gray-400 flex items-center gap-2">
+      <div className="absolute top-24 right-8 z-40 text-sm text-gray-400 flex items-center gap-2">
         <div
           className={`w-2 h-2 rounded-full ${isAutoPlay ? "bg-moto-accent-neon animate-pulse" : "bg-gray-600"}`}
         />

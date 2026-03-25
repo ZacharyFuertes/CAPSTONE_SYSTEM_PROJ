@@ -24,6 +24,8 @@ interface AuthContextType {
     password: string,
     name: string,
     role: UserRole,
+    phone?: string,
+    address?: string,
   ) => Promise<void>;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
   canManageInventory: () => boolean;
@@ -209,6 +211,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     password: string,
     name: string,
     role: UserRole,
+    phone?: string,
+    address?: string,
   ) => {
     console.log("📝 [Auth] Signup attempt:", email, "role:", role);
     setIsLoading(true);
@@ -227,6 +231,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         email,
         name,
         role,
+        phone: phone || null,
+        address: address || null,
         shop_id:
           role === "customer"
             ? null
