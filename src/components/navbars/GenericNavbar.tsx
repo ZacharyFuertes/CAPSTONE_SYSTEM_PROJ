@@ -27,7 +27,7 @@ const GenericNavbar: React.FC<GenericNavbarProps> = ({
   menuItems,
   onNavigate,
   onLogo,
-  logoLabel = "MotoShop",
+  logoLabel = "JSBM MotoShop",
   userRole = "customer",
 }) => {
   const { user, logout } = useAuth();
@@ -61,7 +61,7 @@ const GenericNavbar: React.FC<GenericNavbarProps> = ({
             <img
               src="/logo.png"
               alt="Logo"
-              className="w-10 h-10 object-contain"
+              className="w-10 h-10 object-contain rounded-full"
             />
             <div>
               <h1 className="text-xl font-bold text-white">{logoLabel}</h1>

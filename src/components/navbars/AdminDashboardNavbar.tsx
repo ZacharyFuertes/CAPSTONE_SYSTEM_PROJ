@@ -85,11 +85,11 @@ const AdminDashboardNavbar: React.FC<AdminDashboardNavbarProps> = ({
           >
             <img
               src="/logo.png"
-              alt="MotoShop Logo"
-              className="w-10 h-10 object-contain"
+              alt="JSBM MotoShop Logo"
+              className="w-10 h-10 object-contain rounded-full"
             />
             <div>
-              <h1 className="text-xl font-bold text-white">MotoShop</h1>
+              <h1 className="text-xl font-bold text-white">JSBM MotoShop</h1>
               <p className="text-xs text-slate-400">Management System</p>
             </div>
           </motion.div>
