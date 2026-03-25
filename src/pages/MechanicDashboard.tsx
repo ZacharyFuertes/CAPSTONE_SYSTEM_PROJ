@@ -106,8 +106,8 @@ const MechanicDashboard: React.FC = () => {
             completed_at,
             customer_id,
             vehicle_id,
-            customers (name, contact_info),
-            vehicles (make, model, license_plate)
+            customer:users!customer_id (name, phone),
+            vehicle:vehicles!vehicle_id (make, model, plate_number)
           `,
           )
           .eq("mechanic_id", user.id)
@@ -122,7 +122,7 @@ const MechanicDashboard: React.FC = () => {
             scheduled_date,
             scheduled_time,
             status,
-            customers (name)
+            customer:users!customer_id (name)
           `,
           )
           .eq("mechanic_id", user.id)
@@ -154,11 +154,11 @@ const MechanicDashboard: React.FC = () => {
             customer_id: job.customer_id,
             vehicle_id: job.vehicle_id,
             completed_at: job.completed_at,
-            customer_name: job.customers?.name,
-            customer_contact: job.customers?.contact_info,
-            vehicle_make: job.vehicles?.make,
-            vehicle_model: job.vehicles?.model,
-            vehicle_plate: job.vehicles?.license_plate,
+            customer_name: job.customer?.name,
+            customer_contact: job.customer?.phone,
+            vehicle_make: job.vehicle?.make,
+            vehicle_model: job.vehicle?.model,
+            vehicle_plate: job.vehicle?.plate_number,
           })) || [];
 
         // Format appointments
@@ -166,7 +166,7 @@ const MechanicDashboard: React.FC = () => {
           appts?.map((appt: any) => ({
             id: appt.id,
             customer_id: appt.customer_id,
-            customer_name: appt.customers?.name || "Unknown Customer",
+            customer_name: appt.customer?.name || "Unknown Customer",
             date: appt.scheduled_date,
             time: appt.scheduled_time,
             status: appt.status,
@@ -186,7 +186,7 @@ const MechanicDashboard: React.FC = () => {
         setAppointments(formattedAppts);
         setInventory(formattedInv);
 
-        // Calculate metrics from actual data
+        // Calculate metrics from jobs + appointments combined
         const completedJobs = formattedJobs.filter(
           (j) => j.status === "completed",
         );
@@ -194,35 +194,27 @@ const MechanicDashboard: React.FC = () => {
         const inProgressJobs = formattedJobs.filter(
           (j) => j.status === "in_progress",
         );
-        const totalCustomers = new Set(formattedJobs.map((j) => j.customer_id))
-          .size;
 
-        // Calculate average completion time
-        const completionTimes = completedJobs
-          .filter((j) => j.completed_at)
-          .map((j) => {
-            const created = new Date(j.created_at);
-            const completed = new Date(j.completed_at!);
-            return (completed.getTime() - created.getTime()) / (1000 * 60 * 60);
-          });
-        const avgCompletionTime =
-          completionTimes.length > 0
-            ? (
-                completionTimes.reduce((a, b) => a + b) / completionTimes.length
-              ).toFixed(1)
-            : 0;
+        // Also count appointments as pending/total work
+        const pendingAppts = formattedAppts.filter((a) => a.status === "pending" || a.status === "confirmed");
+        const completedAppts = formattedAppts.filter((a) => a.status === "completed");
 
-        // Build performance metrics
+        const totalCustomers = new Set([
+          ...formattedJobs.map((j) => j.customer_id),
+          ...formattedAppts.map((a) => a.customer_id),
+        ]).size;
+
+        // Build performance metrics (combining jobs + appointments)
         const newMetrics: PerformanceMetric[] = [
           {
             label: "Total Jobs",
-            value: formattedJobs.length,
+            value: formattedJobs.length + formattedAppts.length,
             icon: <Wrench className="w-6 h-6" />,
             color: "bg-blue-500",
           },
           {
-            label: "Pending Jobs",
-            value: pendingJobs.length,
+            label: "Pending",
+            value: pendingJobs.length + pendingAppts.length,
             icon: <AlertCircle className="w-6 h-6" />,
             color: "bg-yellow-500",
           },
@@ -234,7 +226,7 @@ const MechanicDashboard: React.FC = () => {
           },
           {
             label: "Completed",
-            value: completedJobs.length,
+            value: completedJobs.length + completedAppts.length,
             icon: <CheckCircle className="w-6 h-6" />,
             color: "bg-green-500",
           },
@@ -245,9 +237,9 @@ const MechanicDashboard: React.FC = () => {
             color: "bg-pink-500",
           },
           {
-            label: "Avg Completion Time",
-            value: `${avgCompletionTime} hrs`,
-            icon: <Clock className="w-6 h-6" />,
+            label: "Upcoming Appts",
+            value: formattedAppts.length,
+            icon: <Calendar className="w-6 h-6" />,
             color: "bg-blue-400",
           },
         ];

@@ -16,6 +16,7 @@ import {
   Hammer,
   Car,
   FileText,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
@@ -24,6 +25,15 @@ interface Mechanic {
   id: string;
   name: string;
   email: string;
+  shop_id?: string;
+}
+
+interface VehicleData {
+  id: string;
+  make: string;
+  model: string;
+  year: number | string;
+  plate_number: string;
 }
 
 interface BookAppointmentModalProps {
@@ -54,15 +64,24 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
   const [selectedMechanic, setSelectedMechanic] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [vehicleInfo, setVehicleInfo] = useState("");
   const [notes, setNotes] = useState("");
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleData[]>([]);
+  const [defaultShopId, setDefaultShopId] = useState<string>("");
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingMechanics, setLoadingMechanics] = useState(false);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    if (isOpen) fetchMechanics();
+    if (isOpen) {
+      fetchMechanics();
+      fetchVehicles();
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -73,23 +92,80 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
         setSelectedMechanic("");
         setSelectedDate("");
         setSelectedTime("");
+        setSelectedVehicleId("");
         setVehicleInfo("");
         setNotes("");
         setSuccess(false);
+        setErrorMsg("");
+        setBookedSlots([]);
       }, 300);
     }
   }, [isOpen]);
 
+  // Fetch booked slots when date or mechanic changes
+  useEffect(() => {
+    if (selectedDate) {
+      fetchBookedSlots();
+    }
+  }, [selectedDate, selectedMechanic]);
+
   const fetchMechanics = async () => {
     try {
       setLoadingMechanics(true);
-      const { data, error } = await supabase.from("users").select("id, name, email").eq("role", "mechanic");
+      const { data, error } = await supabase.from("users").select("id, name, email, role, shop_id").in("role", ["mechanic", "owner"]);
       if (error) throw error;
-      setMechanics(data || []);
+      
+      const mechanicsList = (data || []).filter((u: any) => u.role === "mechanic");
+      setMechanics(mechanicsList);
+
+      const owner = (data || []).find((u: any) => u.role === "owner" && u.shop_id);
+      if (owner) {
+        setDefaultShopId(owner.shop_id);
+      } else if (mechanicsList.length > 0 && mechanicsList[0].shop_id) {
+        setDefaultShopId(mechanicsList[0].shop_id);
+      }
     } catch {
       setMechanics([]);
     } finally {
       setLoadingMechanics(false);
+    }
+  };
+
+  const fetchVehicles = async () => {
+    if (!user?.id) return;
+    try {
+      setLoadingVehicles(true);
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, make, model, year, plate_number")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setVehicles(data || []);
+    } catch {
+      setVehicles([]);
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
+  const fetchBookedSlots = async () => {
+    try {
+      let query = supabase
+        .from("appointments")
+        .select("scheduled_time")
+        .eq("scheduled_date", selectedDate)
+        .in("status", ["pending", "confirmed", "in_progress"]);
+
+      if (selectedMechanic) {
+        query = query.eq("mechanic_id", selectedMechanic);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setBookedSlots((data || []).map((a: any) => a.scheduled_time));
+    } catch {
+      setBookedSlots([]);
     }
   };
 
@@ -98,7 +174,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
       case 0: return !!selectedService;
       case 1: return !!selectedMechanic;
       case 2: return !!selectedDate && !!selectedTime;
-      case 3: return !!vehicleInfo;
+      case 3: return !!(selectedVehicleId || vehicleInfo.trim());
       default: return false;
     }
   };
@@ -107,21 +183,40 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
     if (!user?.id) return;
     try {
       setSubmitting(true);
+      setErrorMsg("");
       const serviceLabel = SERVICE_TYPES.find((s) => s.id === selectedService)?.label || selectedService;
+
+      // Build vehicle description
+      let vehicleDesc = vehicleInfo;
+      if (selectedVehicleId) {
+        const v = vehicles.find((veh) => veh.id === selectedVehicleId);
+        if (v) vehicleDesc = `${v.make} ${v.model} (${v.year}) - ${v.plate_number}`;
+      }
+
+      // Determine shop_id
+      let shopIdToUse = defaultShopId;
+      if (selectedMechanic) {
+        const mech = mechanics.find((m) => m.id === selectedMechanic);
+        if (mech && mech.shop_id) shopIdToUse = mech.shop_id;
+      }
+      if (!shopIdToUse) shopIdToUse = "default-shop-id"; // fallback if no owner/mechanic has shop_id
+
       const { error } = await supabase.from("appointments").insert([{
         customer_id: user.id,
+        shop_id: shopIdToUse,
         scheduled_date: selectedDate,
         scheduled_time: selectedTime,
         service_type: serviceLabel,
-        description: `${vehicleInfo} - ${serviceLabel}`,
+        description: `${vehicleDesc} - ${serviceLabel}`,
         status: "pending",
         mechanic_id: selectedMechanic || null,
         notes: notes || null,
       }]);
       if (error) throw error;
       setSuccess(true);
-    } catch {
-      alert("Failed to book appointment. Please try again.");
+    } catch (err: any) {
+      console.error("Error booking appointment:", err);
+      setErrorMsg(err?.message || "Failed to book appointment. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -210,6 +305,18 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                   </React.Fragment>
                 ))}
               </div>
+
+              {/* ── Error Message ── */}
+              <AnimatePresence>
+                {errorMsg && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                    className="mx-4 sm:mx-8 mt-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-xs sm:text-sm font-semibold"
+                  >
+                    <AlertTriangle size={16} /> {errorMsg}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* ── Step Content (scrollable) ── */}
               <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
@@ -306,7 +413,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                               key={date}
                               whileHover={{ y: -2 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedDate(date)}
+                              onClick={() => { setSelectedDate(date); setSelectedTime(""); }}
                               className={`flex-shrink-0 w-[68px] py-3 rounded-2xl border text-center transition-all ${
                                 isActive
                                   ? "border-blue-500/50 bg-blue-500/15 shadow-lg shadow-blue-500/10"
@@ -325,23 +432,37 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                       <div className="grid grid-cols-5 sm:grid-cols-5 gap-2 sm:gap-2.5">
                         {TIME_SLOTS.map((time) => {
                           const isActive = selectedTime === time;
+                          const isBooked = bookedSlots.includes(time);
                           return (
                             <motion.button
                               key={time}
-                              whileHover={{ y: -1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedTime(time)}
-                              className={`py-3 rounded-xl border text-sm font-bold transition-all ${
-                                isActive
-                                  ? "border-blue-500/50 bg-blue-500/15 text-blue-400 shadow-lg shadow-blue-500/10"
-                                  : "border-slate-700/30 bg-slate-800/30 text-slate-400 hover:border-slate-600/50"
+                              whileHover={!isBooked ? { y: -1 } : undefined}
+                              whileTap={!isBooked ? { scale: 0.95 } : undefined}
+                              onClick={() => { if (!isBooked) setSelectedTime(time); }}
+                              disabled={isBooked}
+                              className={`py-3 rounded-xl border text-sm font-bold transition-all relative ${
+                                isBooked
+                                  ? "border-red-500/20 bg-red-500/5 text-red-400/50 cursor-not-allowed line-through"
+                                  : isActive
+                                    ? "border-blue-500/50 bg-blue-500/15 text-blue-400 shadow-lg shadow-blue-500/10"
+                                    : "border-slate-700/30 bg-slate-800/30 text-slate-400 hover:border-slate-600/50"
                               }`}
                             >
                               {formatTime(time)}
+                              {isBooked && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 rounded-full flex items-center justify-center">
+                                  <X size={8} className="text-white" />
+                                </span>
+                              )}
                             </motion.button>
                           );
                         })}
                       </div>
+                      {bookedSlots.length > 0 && (
+                        <p className="text-xs text-slate-600 mt-3 flex items-center gap-1.5">
+                          <AlertTriangle size={11} /> Crossed-out slots are already booked
+                        </p>
+                      )}
                     </motion.div>
                   )}
 
@@ -374,17 +495,68 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                       </div>
 
                       <div className="space-y-4">
+                        {/* Vehicle Selection */}
                         <div>
                           <label className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5 font-semibold">
-                            <Car size={12} /> Vehicle (Make / Model) *
+                            <Car size={12} /> Select Vehicle *
                           </label>
-                          <input
-                            type="text"
-                            value={vehicleInfo}
-                            onChange={(e) => setVehicleInfo(e.target.value)}
-                            placeholder="e.g. Honda Click 150i"
-                            className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
-                          />
+                          {loadingVehicles ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : vehicles.length > 0 ? (
+                            <div className="space-y-2 mb-3">
+                              {vehicles.map((v) => {
+                                const isActive = selectedVehicleId === v.id;
+                                return (
+                                  <button
+                                    key={v.id}
+                                    onClick={() => {
+                                      setSelectedVehicleId(v.id);
+                                      setVehicleInfo(`${v.make} ${v.model} (${v.year})`);
+                                    }}
+                                    className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all ${
+                                      isActive
+                                        ? "border-blue-500/50 bg-blue-500/10"
+                                        : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <Car size={16} className={isActive ? "text-blue-400" : "text-slate-500"} />
+                                      <div>
+                                        <p className="text-white font-semibold text-sm">{v.make} {v.model}</p>
+                                        <p className="text-slate-500 text-xs">{v.year} • {v.plate_number}</p>
+                                      </div>
+                                    </div>
+                                    {isActive && <CheckCircle size={16} className="text-blue-400" />}
+                                  </button>
+                                );
+                              })}
+                              <button
+                                onClick={() => { setSelectedVehicleId("manual"); setVehicleInfo(""); }}
+                                className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 transition-all text-sm ${
+                                  selectedVehicleId === "manual"
+                                    ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
+                                    : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50 text-slate-400"
+                                }`}
+                              >
+                                <FileText size={14} /> Enter vehicle info manually
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-600 mb-2">No saved vehicles. Enter your vehicle details below.</p>
+                          )}
+
+                          {/* Manual input - show if no saved vehicles or manual mode selected */}
+                          {(vehicles.length === 0 || selectedVehicleId === "manual") && (
+                            <input
+                              type="text"
+                              value={vehicleInfo}
+                              onChange={(e) => setVehicleInfo(e.target.value)}
+                              placeholder="e.g. Honda Click 150i"
+                              className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
+                            />
+                          )}
                         </div>
                         <div>
                           <label className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5 font-semibold">

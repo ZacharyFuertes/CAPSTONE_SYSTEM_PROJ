@@ -10,6 +10,8 @@ import {
   Phone,
   Shield,
   Clock,
+  MapPin,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
@@ -32,13 +34,15 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [totalAppointments, setTotalAppointments] = useState(0);
+  const [pendingAppointments, setPendingAppointments] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [memberSince, setMemberSince] = useState("");
   const [loading, setLoading] = useState(true);
-  const fetchedRef = React.useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Always re-fetch when modal opens
   useEffect(() => {
-    if (isOpen && user?.id && !fetchedRef.current) {
+    if (isOpen && user?.id) {
       fetchPortalData();
     }
   }, [isOpen, user?.id]);
@@ -48,12 +52,16 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
     try {
       setLoading(true);
 
-      // Fetch appointment count
+      // Fetch all appointment data
       const { data: appointments, error: aptError } = await supabase
         .from("appointments")
-        .select("id")
+        .select("id, status")
         .eq("customer_id", user.id);
-      if (!aptError) setTotalAppointments(appointments?.length || 0);
+
+      if (!aptError && appointments) {
+        setTotalAppointments(appointments.length);
+        setPendingAppointments(appointments.filter((a: any) => a.status === "pending" || a.status === "confirmed").length);
+      }
 
       // Fetch total spent from invoices
       const { data: invoices, error: invError } = await supabase
@@ -79,8 +87,6 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
           new Date(user.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
         );
       }
-
-      fetchedRef.current = true;
     } catch (err) {
       console.error("Error fetching portal data:", err);
     } finally {
@@ -88,19 +94,28 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPortalData();
+    setRefreshing(false);
+  };
+
   if (!isOpen) return null;
 
   const STATS = [
     { icon: Calendar, label: "Total Appointments", value: totalAppointments.toString(), color: "from-blue-500 to-indigo-600" },
-    { icon: Wallet, label: "Total Spent", value: `₱${totalSpent.toFixed(2)}`, color: "from-emerald-500 to-emerald-600" },
-    { icon: Clock, label: "Member Since", value: memberSince || "N/A", color: "from-purple-500 to-purple-600" },
+    { icon: Clock, label: "Pending", value: pendingAppointments.toString(), color: "from-yellow-500 to-amber-600" },
+    { icon: Wallet, label: "Total Spent", value: `₱${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`, color: "from-emerald-500 to-emerald-600" },
+    { icon: Car, label: "Vehicles", value: vehicles.length.toString(), color: "from-purple-500 to-purple-600" },
   ];
 
   const ACCOUNT_FIELDS = [
     { icon: UserCircle, label: "Name", value: user?.name || "N/A" },
     { icon: Mail, label: "Email", value: user?.email || "N/A" },
     { icon: Phone, label: "Phone", value: user?.phone || "Not provided" },
-    { icon: Shield, label: "Role", value: (user?.role || "Customer"), capitalize: true },
+    { icon: MapPin, label: "Address", value: user?.address || "Not provided" },
+    { icon: Shield, label: "Role", value: user?.role || "Customer", capitalize: true },
+    { icon: Clock, label: "Member Since", value: memberSince || "N/A" },
   ];
 
   return (
@@ -130,9 +145,19 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                 <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">Welcome, {user?.name || "Customer"}</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white"
+                title="Refresh"
+              >
+                <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+              </button>
+              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* ── Content ── */}
@@ -144,7 +169,7 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
             ) : (
               <div className="space-y-6">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   {STATS.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
@@ -153,15 +178,15 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="bg-slate-800/30 rounded-2xl p-5 border border-slate-700/20"
+                        className="bg-slate-800/30 rounded-2xl p-4 sm:p-5 border border-slate-700/20"
                       >
-                        <div className="flex items-center gap-2.5 mb-3">
-                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
-                            <Icon size={14} className="text-white" />
+                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
+                            <Icon size={13} className="text-white" />
                           </div>
-                          <span className="text-slate-500 text-xs font-semibold">{stat.label}</span>
+                          <span className="text-slate-500 text-[10px] sm:text-xs font-semibold">{stat.label}</span>
                         </div>
-                        <p className="text-2xl font-black text-white">{stat.value}</p>
+                        <p className="text-xl sm:text-2xl font-black text-white">{stat.value}</p>
                       </motion.div>
                     );
                   })}
@@ -212,6 +237,7 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                     <div className="text-center py-8">
                       <Car className="w-10 h-10 text-slate-700 mx-auto mb-3" />
                       <p className="text-slate-500 text-sm">No vehicles registered yet.</p>
+                      <p className="text-slate-600 text-xs mt-1">Add vehicles in Settings</p>
                     </div>
                   ) : (
                     <div className="space-y-3">

@@ -54,7 +54,6 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [loadingMechanics, setLoadingMechanics] = useState(false);
   const fetchAbortRef = React.useRef<AbortController | null>(null);
-  const fetchedAppointmentsRef = React.useRef(false);
   const [formData, setFormData] = useState({
     customer_name: "",
     customer_phone: "",
@@ -64,46 +63,42 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   });
 
   // Fetch appointments from Supabase
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      // Skip if we've already fetched
-      if (fetchedAppointmentsRef.current) {
+  const fetchAppointments = async () => {
+    // Cancel any previous fetch
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort();
+    }
+
+    // Create new abort controller for this fetch
+    fetchAbortRef.current = new AbortController();
+
+    try {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(`
+            *,
+            customer:users!customer_id (name, phone)
+          `)
+        .order("scheduled_date", { ascending: true });
+
+      if (fetchAbortRef.current?.signal.aborted) return;
+
+      if (error) throw error;
+
+      setAppointments(data || []);
+    } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === "AbortError") {
         return;
       }
-
-      // Cancel any previous fetch
-      if (fetchAbortRef.current) {
-        fetchAbortRef.current.abort();
+      console.error("Error fetching appointments:", err);
+      if (!fetchAbortRef.current?.signal.aborted) {
+        setAppointments([]);
       }
+    }
+  };
 
-      // Create new abort controller for this fetch
-      fetchAbortRef.current = new AbortController();
-
-      try {
-        const { data, error } = await supabase
-          .from("appointments")
-          .select("*")
-          .order("scheduled_date", { ascending: true });
-
-        if (fetchAbortRef.current?.signal.aborted) return;
-
-        if (error) throw error;
-
-        // Mark that we've fetched
-        fetchedAppointmentsRef.current = true;
-        setAppointments(data || []);
-      } catch (err) {
-        // Ignore abort errors
-        if (err instanceof Error && err.name === "AbortError") {
-          return;
-        }
-        console.error("Error fetching appointments:", err);
-        if (!fetchAbortRef.current?.signal.aborted) {
-          setAppointments([]);
-        }
-      }
-    };
-
+  useEffect(() => {
     fetchAppointments();
 
     // Cleanup: abort fetch if component unmounts
@@ -141,8 +136,8 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
   // Filter appointments based on user role
   const getFilteredAppointments = (): Appointment[] => {
-    if (user?.role === "owner") {
-      // Owners see all appointments
+    if (user?.role === "owner" || user?.role === "admin") {
+      // Owners and admins see all appointments
       return appointments;
     } else if (user?.role === "mechanic") {
       // Mechanics see only appointments assigned to them
@@ -181,23 +176,35 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
     return days;
   };
 
-  const handleStatusChange = (
+  const handleStatusChange = async (
     appointmentId: string,
     newStatus: AppointmentStatus,
   ) => {
-    // Only owners and mechanics can change status, and mechanics can only update their own appointments
-    if (user?.role === "owner" || user?.role === "mechanic") {
-      setAppointments(
-        appointments.map((apt) =>
-          apt.id === appointmentId
-            ? {
-                ...apt,
-                status: newStatus,
-                updated_at: new Date().toISOString(),
-              }
-            : apt,
-        ),
-      );
+    // Only owners/admins and mechanics can change status
+    if (user?.role === "owner" || user?.role === "admin" || user?.role === "mechanic") {
+      try {
+        const { error } = await supabase
+          .from("appointments")
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq("id", appointmentId);
+
+        if (error) throw error;
+
+        setAppointments(
+          appointments.map((apt) =>
+            apt.id === appointmentId
+              ? {
+                  ...apt,
+                  status: newStatus,
+                  updated_at: new Date().toISOString(),
+                }
+              : apt,
+          ),
+        );
+      } catch (err) {
+        console.error("Error updating appointment status:", err);
+        alert("Failed to update status. Please try again.");
+      }
     }
   };
 
@@ -259,7 +266,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   };
 
   const calendarDays = renderCalendarDays();
-  const isOwner = user?.role === "owner";
+  const isOwner = user?.role === "owner" || user?.role === "admin";
   const isMechanic = user?.role === "mechanic";
   const isCustomer = user?.role === "customer";
   const canBookAppointments = isOwner || isCustomer;
@@ -440,7 +447,12 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
                                 <p className="text-white font-semibold mb-1">
                                   {apt.service_type}
                                 </p>
-                                <p className="text-slate-300 text-sm">
+                                {(apt as any).customer && (apt as any).customer.name && (
+                                  <p className="text-indigo-300 text-sm font-semibold mt-1">
+                                    Customer: {(apt as any).customer.name} {(apt as any).customer.phone ? `(${(apt as any).customer.phone})` : ''}
+                                  </p>
+                                )}
+                                <p className="text-slate-300 text-sm mt-1">
                                   {apt.notes}
                                 </p>
                               </div>

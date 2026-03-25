@@ -175,11 +175,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           jobOrders?.filter((j: any) => j.status === "completed").length || 0;
         const pendingJobs =
           jobOrders?.filter((j: any) => j.status === "pending").length || 0;
+
+        // Also fetch pending appointments to include in stats
+        const { data: pendingAppointments } = await supabase
+          .from("appointments")
+          .select("id, status")
+          .in("status", ["pending", "confirmed"]);
+
+        const pendingApptCount = pendingAppointments?.length || 0;
+        const totalPending = pendingJobs + pendingApptCount;
+
         const totalCustomers = await supabase
           .from("users")
           .select("id")
-          .eq("role", "customer")
-          .eq("shop_id", user?.shop_id);
+          .eq("role", "customer");
 
         setStats([
           {
@@ -198,8 +207,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           },
           {
             label: t("dashboard.pending"),
-            value: pendingJobs,
-            change: `${pendingJobs} need attention`,
+            value: totalPending,
+            change: `${totalPending} need attention`,
             icon: <Clock className="w-8 h-8" />,
             color: "from-orange-500 to-red-600",
           },

@@ -50,40 +50,42 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
         setLoading(true);
         setError(null);
 
-        // Fetch job orders assigned to this mechanic
-        const { data: jobOrders, error: fetchError } = await supabase
-          .from("job_orders")
+        // Fetch appointments assigned to this mechanic
+        const { data: mechanicAppointments, error: fetchError } = await supabase
+          .from("appointments")
           .select(
             `
             id,
-            appointment_id,
-            customer_id,
-            vehicle_id,
-            title,
-            description,
+            scheduled_date,
+            scheduled_time,
+            service_type,
             status,
             created_at,
-            total_cost
+            customer:users!customer_id (name, email, phone)
           `,
           )
           .eq("mechanic_id", user.id)
-          .order("created_at", { ascending: false });
+          .order("scheduled_date", { ascending: false });
 
         if (fetchError) throw fetchError;
 
         // Format data for display
         const formattedData =
-          jobOrders?.map((job) => ({
-            id: job.id,
-            scheduled_date: new Date(job.created_at)
-              .toISOString()
-              .split("T")[0],
-            scheduled_time: new Date(job.created_at).toLocaleTimeString(),
-            service_type: job.title || "Service",
-            status: job.status || "pending",
-            customer: [{ name: "Customer", email: "N/A", phone: "N/A" }],
+          mechanicAppointments?.map((apt) => ({
+            id: apt.id,
+            scheduled_date: apt.scheduled_date,
+            scheduled_time: apt.scheduled_time,
+            service_type: apt.service_type || "Service",
+            status: apt.status || "pending",
+            customer: [
+              {
+                name: (apt as any).customer?.name || "Customer",
+                email: (apt as any).customer?.email || "N/A",
+                phone: (apt as any).customer?.phone || "N/A"
+              }
+            ],
             vehicles: [
-              { make: "Unknown", model: "Vehicle", plate_number: "N/A" },
+              { make: "Customer", model: "Vehicle", plate_number: "N/A" },
             ],
           })) || [];
 

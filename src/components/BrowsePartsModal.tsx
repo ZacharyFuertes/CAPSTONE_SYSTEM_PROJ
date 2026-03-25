@@ -14,6 +14,10 @@ import {
   Cable,
   SlidersHorizontal,
   Info,
+  ArrowLeft,
+  Tag,
+  Box,
+  CheckCircle,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 
@@ -30,6 +34,7 @@ interface Part {
   quantity?: number;
   quantity_in_stock?: number;
   description?: string;
+  sku?: string;
 }
 
 interface BrowsePartsModalProps {
@@ -38,18 +43,18 @@ interface BrowsePartsModalProps {
 }
 
 const demoParts: Part[] = [
-  { id: "1", name: "Oil Filter", category: "Filters", price: 450, image: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcSaLUpmocducA385wmGWxMjj3NPopkQ6ohCtaadIqbJhyWyWrUDlcSud2WkG-tsCPmVggaeav2-Osl6wYxlVyrnOj-OrUCoOejrYKpIaeFb_3R3n0tJhqgxqA", rating: 4.8, reviews: 234, inStock: true, quantity: 45 },
-  { id: "2", name: "Air Filter", category: "Filters", price: 650, image: "https://m.media-amazon.com/images/I/81EQio4lHlL.jpg", rating: 4.9, reviews: 189, inStock: true, quantity: 32 },
-  { id: "3", name: "Brake Pads Set", category: "Brakes", price: 1200, image: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQOWVt03NPiiV-eZ4ryoT4G4hNrQRVqxxU-SBYZH3bWbpGLHw3YoUY0Byi-w5ILYVRoXUfmJdQ_uzLgMOr68YonTVqiRUUM9GP20rKb2oNL6NiGxy4G7qqhItw", rating: 4.7, reviews: 156, inStock: true, quantity: 28 },
-  { id: "4", name: "Spark Plugs (Set of 4)", category: "Electrical", price: 800, image: "https://www.partspro.ph/cdn/shop/files/IridiumIX-B_700x.jpg?v=1742352489", rating: 4.6, reviews: 142, inStock: true, quantity: 55 },
-  { id: "5", name: "Wiper Blade Set", category: "Accessories", price: 550, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbj-BCKrR5JBP-OQHvaGHqHQj3coychNZaEg&s", rating: 4.5, reviews: 98, inStock: true, quantity: 40 },
-  { id: "6", name: "Car Battery 40Ah", category: "Electrical", price: 2800, image: "https://img.lazcdn.com/g/p/11b752fe5ed0a26a8cbe7421207456b0.jpg_960x960q80.jpg_.webp", rating: 4.8, reviews: 267, inStock: true, quantity: 12 },
-  { id: "7", name: "Engine Oil 5L (Synthetic)", category: "Fluids", price: 1800, image: "https://m.media-amazon.com/images/I/61ep7z3yB3L._AC_UF1000,1000_QL80_.jpg", rating: 4.7, reviews: 201, inStock: true, quantity: 38 },
-  { id: "8", name: "Coolant Antifreeze 1L", category: "Fluids", price: 320, image: "https://down-ph.img.susercontent.com/file/ph-11134207-7ra0n-mb3ucjswkpyp17", rating: 4.6, reviews: 124, inStock: true, quantity: 50 },
-  { id: "9", name: "Transmission Fluid 1L", category: "Fluids", price: 480, image: "https://www.partspro.ph/cdn/shop/files/MultiATFN.jpg?v=1691041651", rating: 4.5, reviews: 89, inStock: true, quantity: 25 },
-  { id: "10", name: "Brake Fluid DOT 4", category: "Fluids", price: 380, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRE-UzVnvRXIJTichfwrz26Z2QxCtCO7qiSQ&s", rating: 4.7, reviews: 156, inStock: true, quantity: 42 },
-  { id: "11", name: "Serpentine Belt", category: "Belts", price: 650, image: "https://img.lazcdn.com/g/p/c28725e1bcf0458b7a6ba7e4fe0ba0b5.jpg_720x720q80.jpg", rating: 4.4, reviews: 76, inStock: true, quantity: 18 },
-  { id: "12", name: "Radiator Hose Kit", category: "Cooling", price: 1100, image: "https://img.lazcdn.com/g/ff/kf/S1d3152de25664de9a5288107f3506f55d.jpg_720x720q80.jpg", rating: 4.6, reviews: 112, inStock: true, quantity: 22 },
+  { id: "1", name: "Oil Filter", category: "Filters", price: 450, image: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcSaLUpmocducA385wmGWxMjj3NPopkQ6ohCtaadIqbJhyWyWrUDlcSud2WkG-tsCPmVggaeav2-Osl6wYxlVyrnOj-OrUCoOejrYKpIaeFb_3R3n0tJhqgxqA", rating: 4.8, reviews: 234, inStock: true, quantity: 45, description: "High-quality oil filter compatible with most motorcycle engines. Provides superior filtration to protect your engine from harmful contaminants." },
+  { id: "2", name: "Air Filter", category: "Filters", price: 650, image: "https://m.media-amazon.com/images/I/81EQio4lHlL.jpg", rating: 4.9, reviews: 189, inStock: true, quantity: 32, description: "Premium air filter for optimal airflow and engine protection. Designed for easy installation and long service life." },
+  { id: "3", name: "Brake Pads Set", category: "Brakes", price: 1200, image: "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQOWVt03NPiiV-eZ4ryoT4G4hNrQRVqxxU-SBYZH3bWbpGLHw3YoUY0Byi-w5ILYVRoXUfmJdQ_uzLgMOr68YonTVqiRUUM9GP20rKb2oNL6NiGxy4G7qqhItw", rating: 4.7, reviews: 156, inStock: true, quantity: 28, description: "High-performance brake pads set. Semi-metallic compound for excellent stopping power and durability, with low noise and dust." },
+  { id: "4", name: "Spark Plugs (Set of 4)", category: "Electrical", price: 800, image: "https://www.partspro.ph/cdn/shop/files/IridiumIX-B_700x.jpg?v=1742352489", rating: 4.6, reviews: 142, inStock: true, quantity: 55, description: "Iridium spark plugs for improved ignition performance and fuel efficiency. Long-lasting and reliable in all conditions." },
+  { id: "5", name: "Wiper Blade Set", category: "Accessories", price: 550, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbj-BCKrR5JBP-OQHvaGHqHQj3coychNZaEg&s", rating: 4.5, reviews: 98, inStock: true, quantity: 40, description: "Premium wiper blades with natural rubber for streak-free wiping. Easy installation and fits most vehicle models." },
+  { id: "6", name: "Car Battery 40Ah", category: "Electrical", price: 2800, image: "https://img.lazcdn.com/g/p/11b752fe5ed0a26a8cbe7421207456b0.jpg_960x960q80.jpg_.webp", rating: 4.8, reviews: 267, inStock: true, quantity: 12, description: "Maintenance-free 40Ah battery with superior starting power. Calcium-calcium technology for longer life and better performance." },
+  { id: "7", name: "Engine Oil 5L (Synthetic)", category: "Fluids", price: 1800, image: "https://m.media-amazon.com/images/I/61ep7z3yB3L._AC_UF1000,1000_QL80_.jpg", rating: 4.7, reviews: 201, inStock: true, quantity: 38, description: "Full synthetic engine oil 5W-30. Provides exceptional engine protection, fuel economy, and performance in all driving conditions." },
+  { id: "8", name: "Coolant Antifreeze 1L", category: "Fluids", price: 320, image: "https://down-ph.img.susercontent.com/file/ph-11134207-7ra0n-mb3ucjswkpyp17", rating: 4.6, reviews: 124, inStock: true, quantity: 50, description: "All-season coolant antifreeze. Protects engines from overheating in summer and freezing in winter with anti-corrosion additives." },
+  { id: "9", name: "Transmission Fluid 1L", category: "Fluids", price: 480, image: "https://www.partspro.ph/cdn/shop/files/MultiATFN.jpg?v=1691041651", rating: 4.5, reviews: 89, inStock: true, quantity: 25, description: "Multi-vehicle automatic transmission fluid. Ensures smooth shifting and protects transmission components from wear." },
+  { id: "10", name: "Brake Fluid DOT 4", category: "Fluids", price: 380, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRE-UzVnvRXIJTichfwrz26Z2QxCtCO7qiSQ&s", rating: 4.7, reviews: 156, inStock: true, quantity: 42, description: "DOT 4 brake fluid with high boiling point. Compatible with all DOT 3 and DOT 4 brake systems for reliable braking performance." },
+  { id: "11", name: "Serpentine Belt", category: "Belts", price: 650, image: "https://img.lazcdn.com/g/p/c28725e1bcf0458b7a6ba7e4fe0ba0b5.jpg_720x720q80.jpg", rating: 4.4, reviews: 76, inStock: true, quantity: 18, description: "Premium serpentine belt with reinforced fiber construction. Quiet operation and extended service life for your vehicle." },
+  { id: "12", name: "Radiator Hose Kit", category: "Cooling", price: 1100, image: "https://img.lazcdn.com/g/ff/kf/S1d3152de25664de9a5288107f3506f55d.jpg_720x720q80.jpg", rating: 4.6, reviews: 112, inStock: true, quantity: 22, description: "Complete radiator hose kit with upper and lower hoses. Heat-resistant construction with reinforced clamps included." },
 ];
 
 const CATEGORIES = [
@@ -69,6 +74,8 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<"all" | "instock" | "outofstock">("all");
+  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+  const [inquirySent, setInquirySent] = useState<string | null>(null);
   const fetchedRef = React.useRef(false);
 
   useEffect(() => {
@@ -107,7 +114,154 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
     setFilteredParts(result);
   }, [parts, selectedCategory, searchQuery, stockFilter]);
 
+  const handleInquiry = (partId: string) => {
+    setInquirySent(partId);
+    setTimeout(() => setInquirySent(null), 3000);
+  };
+
   if (!isOpen) return null;
+
+  // Part detail view
+  if (selectedPart) {
+    const isInStock = selectedPart.inStock ?? (selectedPart.quantity ?? selectedPart.quantity_in_stock ?? 0) > 0;
+    const stockQty = selectedPart.quantity ?? selectedPart.quantity_in_stock ?? 0;
+
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-3 z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 30 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[700px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
+              <button
+                onClick={() => setSelectedPart(null)}
+                className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-semibold"
+              >
+                <ArrowLeft size={18} /> Back to Parts
+              </button>
+              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Image */}
+                <div className="w-full sm:w-64 flex-shrink-0">
+                  <div className="aspect-square bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden border border-slate-700/30">
+                    {selectedPart.image || selectedPart.image_url ? (
+                      <img
+                        src={selectedPart.image || selectedPart.image_url}
+                        alt={selectedPart.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Zap className="w-16 h-16 text-slate-700" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs bg-slate-800/60 text-slate-400 px-2.5 py-1 rounded-lg border border-slate-700/30 font-semibold">
+                      {selectedPart.category}
+                    </span>
+                    {isInStock ? (
+                      <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold flex items-center gap-1">
+                        <CheckCircle size={10} /> In Stock ({stockQty})
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-red-500/10 text-red-400 px-2.5 py-1 rounded-lg border border-red-500/20 font-semibold">
+                        Out of Stock
+                      </span>
+                    )}
+                  </div>
+
+                  <h2 className="text-2xl font-black text-white mb-1">{selectedPart.name}</h2>
+
+                  {/* Rating */}
+                  {selectedPart.rating && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={14}
+                            className={i < Math.round(selectedPart.rating!) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-slate-500">{selectedPart.rating} ({selectedPart.reviews} reviews)</span>
+                    </div>
+                  )}
+
+                  {/* Price */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <Tag size={18} className="text-orange-400" />
+                    <span className="text-3xl font-black text-orange-400">₱{selectedPart.price.toLocaleString()}</span>
+                  </div>
+
+                  {/* Description */}
+                  {selectedPart.description && (
+                    <div className="mb-6">
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Description</h4>
+                      <p className="text-slate-400 text-sm leading-relaxed">{selectedPart.description}</p>
+                    </div>
+                  )}
+
+                  {/* SKU */}
+                  {selectedPart.sku && (
+                    <div className="flex items-center gap-2 mb-6">
+                      <Box size={13} className="text-slate-500" />
+                      <span className="text-xs text-slate-500">SKU: {selectedPart.sku}</span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleInquiry(selectedPart.id)}
+                      disabled={!isInStock || inquirySent === selectedPart.id}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                        inquirySent === selectedPart.id
+                          ? "bg-emerald-600 text-white"
+                          : isInStock
+                            ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25"
+                            : "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/30"
+                      }`}
+                    >
+                      {inquirySent === selectedPart.id ? (
+                        <><CheckCircle size={16} /> Inquiry Sent!</>
+                      ) : (
+                        <><ShoppingCart size={16} /> Inquire Now</>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -154,7 +308,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
             </div>
           </div>
 
-          {/* ── Category Icons Row (inspired by template) ── */}
+          {/* ── Category Icons Row ── */}
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 px-3 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 overflow-x-auto flex-shrink-0">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
@@ -195,7 +349,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
             </div>
           </div>
 
-          {/* ── Mobile Search (shown for sm) ── */}
+          {/* ── Mobile Search ── */}
           <div className="sm:hidden px-4 py-2.5 border-b border-slate-700/30 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
@@ -209,7 +363,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
             </div>
           </div>
 
-          {/* ── Product Grid (template-style cards) ── */}
+          {/* ── Product Grid ── */}
           <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6">
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -233,7 +387,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
                       className="group bg-slate-800/40 rounded-2xl border border-slate-700/30 hover:border-orange-500/30 transition-all duration-300 overflow-hidden hover:shadow-lg hover:shadow-orange-500/5"
                     >
                       {/* Product Image */}
-                      <div className="relative aspect-square bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
+                      <div className="relative aspect-square bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden cursor-pointer" onClick={() => setSelectedPart(part)}>
                         {part.image || part.image_url ? (
                           <img
                             src={part.image || part.image_url}
@@ -259,7 +413,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
                         </div>
                       </div>
 
-                      {/* Product Info (template-style: price → name → rating) */}
+                      {/* Product Info */}
                       <div className="p-2.5 sm:p-4">
                         <p className="text-sm sm:text-lg font-black text-orange-400 mb-0.5 sm:mb-1">
                           ₱{part.price.toLocaleString()}
@@ -288,20 +442,26 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
 
                         {/* Action Row */}
                         <div className="flex items-center justify-between">
-                          <button className="text-[11px] text-slate-400 hover:text-orange-400 transition flex items-center gap-1 font-medium">
+                          <button
+                            onClick={() => setSelectedPart(part)}
+                            className="text-[11px] text-slate-400 hover:text-orange-400 transition flex items-center gap-1 font-medium"
+                          >
                             <Info size={12} /> More Info
                           </button>
                           <motion.button
                             whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.9 }}
                             disabled={!isInStock}
+                            onClick={() => handleInquiry(part.id)}
                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                              isInStock
-                                ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30"
-                                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                              inquirySent === part.id
+                                ? "bg-emerald-500 text-white"
+                                : isInStock
+                                  ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30"
+                                  : "bg-slate-700 text-slate-500 cursor-not-allowed"
                             }`}
                           >
-                            <ShoppingCart size={14} />
+                            {inquirySent === part.id ? <CheckCircle size={14} /> : <ShoppingCart size={14} />}
                           </motion.button>
                         </div>
                       </div>

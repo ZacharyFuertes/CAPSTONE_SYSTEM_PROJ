@@ -115,7 +115,6 @@ const AppContent: React.FC = () => {
     }
 
     if (!user?.role) {
-      // role is still resolving (network/role fetch in progress)
       navigateTo("dashboard");
       return;
     }
