@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X, User, LogOut, Settings, ChevronDown, CalendarDays, History } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Settings,
+  ChevronDown,
+  CalendarDays,
+  History,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 interface NavbarProps {
@@ -38,7 +47,10 @@ const Navbar: React.FC<NavbarProps> = ({
   // Close profile dropdown when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
+      ) {
         setProfileOpen(false);
       }
     };
@@ -49,7 +61,9 @@ const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { label: "Browse Parts", onClick: onBrowseParts },
     { label: "Book Appointment", onClick: onBookAppointment },
-    ...(user ? [{ label: "My Appointments", onClick: onShowAppointments }] : []),
+    ...(user
+      ? [{ label: "My Appointments", onClick: onShowAppointments }]
+      : []),
   ];
 
   return (
@@ -78,14 +92,17 @@ const Navbar: React.FC<NavbarProps> = ({
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="flex items-center justify-between h-[72px]">
-
           {/* ── Logo ── */}
           <motion.div
             className="flex items-center gap-3 cursor-pointer select-none"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
           >
-            <img src="/logo.png" alt="MotoShop Logo" className="w-10 h-10 object-contain" />
+            <img
+              src="/logo.png"
+              alt="MotoShop Logo"
+              className="w-10 h-10 object-contain"
+            />
             <span className="text-xl font-black tracking-tight text-white">
               MOTOSHOP
             </span>
@@ -131,14 +148,21 @@ const Navbar: React.FC<NavbarProps> = ({
                         "0 4px 14px rgba(59,130,246,0.2)",
                       ],
                     }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   >
                     {user.name.charAt(0).toUpperCase()}
                   </motion.div>
                   <span className="text-sm font-semibold text-slate-300 group-hover:text-white truncate max-w-[120px] transition-colors">
                     {user.name}
                   </span>
-                  <ChevronDown size={15} className={`text-slate-500 transition-transform duration-300 ${profileOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    size={15}
+                    className={`text-slate-500 transition-transform duration-300 ${profileOpen ? "rotate-180" : ""}`}
+                  />
                 </motion.button>
 
                 {/* Dropdown */}
@@ -153,42 +177,68 @@ const Navbar: React.FC<NavbarProps> = ({
                     >
                       {/* User info */}
                       <div className="px-4 py-3.5 border-b border-slate-700/30">
-                        <p className="text-white font-bold text-sm truncate">{user.name}</p>
-                        <p className="text-slate-500 text-xs truncate mt-0.5">{user.email}</p>
+                        <p className="text-white font-bold text-sm truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-slate-500 text-xs truncate mt-0.5">
+                          {user.email}
+                        </p>
                       </div>
 
                       <div className="py-1.5">
                         <button
-                          onClick={() => { setProfileOpen(false); onViewAccount?.(); }}
+                          onClick={() => {
+                            setProfileOpen(false);
+                            onViewAccount?.();
+                          }}
                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
                         >
-                          <User size={16} className="text-slate-500" /> View Account
+                          <User size={16} className="text-slate-500" /> View
+                          Account
                         </button>
                         {user && (
                           <button
-                            onClick={() => { setProfileOpen(false); onShowAppointments?.(); }}
+                            onClick={() => {
+                              setProfileOpen(false);
+                              onShowAppointments?.();
+                            }}
                             className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
                           >
-                            <CalendarDays size={16} className="text-slate-500" /> My Appointments
+                            <CalendarDays
+                              size={16}
+                              className="text-slate-500"
+                            />{" "}
+                            My Appointments
                           </button>
                         )}
                         <button
-                          onClick={() => { setProfileOpen(false); onSettings?.(); }}
+                          onClick={() => {
+                            setProfileOpen(false);
+                            onSettings?.();
+                          }}
                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
                         >
-                          <Settings size={16} className="text-slate-500" /> Settings
+                          <Settings size={16} className="text-slate-500" />{" "}
+                          Settings
                         </button>
                         <button
-                          onClick={() => { setProfileOpen(false); onServiceHistory?.(); }}
+                          onClick={() => {
+                            setProfileOpen(false);
+                            onServiceHistory?.();
+                          }}
                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
                         >
-                          <History size={16} className="text-slate-500" /> Service History
+                          <History size={16} className="text-slate-500" />{" "}
+                          Service History
                         </button>
                       </div>
 
                       <div className="border-t border-slate-700/30 py-1.5">
                         <button
-                          onClick={() => { setProfileOpen(false); logout().catch(() => window.location.reload()); }}
+                          onClick={() => {
+                            setProfileOpen(false);
+                            logout().catch(() => window.location.reload());
+                          }}
                           className="w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition flex items-center gap-3"
                         >
                           <LogOut size={16} /> Logout
@@ -209,7 +259,12 @@ const Navbar: React.FC<NavbarProps> = ({
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
                   animate={{ x: ["-200%", "200%"] }}
-                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatDelay: 2,
+                    ease: "easeInOut",
+                  }}
                 />
                 <span className="relative z-10">Sign In</span>
               </motion.button>
@@ -240,7 +295,10 @@ const Navbar: React.FC<NavbarProps> = ({
                 {navItems.map((item, idx) => (
                   <button
                     key={idx}
-                    onClick={() => { item.onClick?.(); setMobileOpen(false); }}
+                    onClick={() => {
+                      item.onClick?.();
+                      setMobileOpen(false);
+                    }}
                     className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
                   >
                     {item.label}
@@ -250,25 +308,37 @@ const Navbar: React.FC<NavbarProps> = ({
                   {user ? (
                     <>
                       <button
-                        onClick={() => { setMobileOpen(false); onViewAccount?.(); }}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          onViewAccount?.();
+                        }}
                         className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
                       >
                         View Account
                       </button>
                       <button
-                        onClick={() => { setMobileOpen(false); onSettings?.(); }}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          onSettings?.();
+                        }}
                         className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
                       >
                         Settings
                       </button>
                       <button
-                        onClick={() => { setMobileOpen(false); onServiceHistory?.(); }}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          onServiceHistory?.();
+                        }}
                         className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
                       >
                         Service History
                       </button>
                       <button
-                        onClick={() => { setMobileOpen(false); logout().catch(() => window.location.reload()); }}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          logout().catch(() => window.location.reload());
+                        }}
                         className="w-full text-left px-4 py-3 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition"
                       >
                         Logout
@@ -276,7 +346,10 @@ const Navbar: React.FC<NavbarProps> = ({
                     </>
                   ) : (
                     <button
-                      onClick={() => { onJoinSignIn?.(); setMobileOpen(false); }}
+                      onClick={() => {
+                        onJoinSignIn?.();
+                        setMobileOpen(false);
+                      }}
                       className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl font-bold text-white text-sm"
                     >
                       Sign In

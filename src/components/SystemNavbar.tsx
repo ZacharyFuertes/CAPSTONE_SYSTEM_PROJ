@@ -168,7 +168,11 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               )
             }
           >
-            <img src="/logo.png" alt="MotoShop Logo" className="w-10 h-10 object-contain" />
+            <img
+              src="/logo.png"
+              alt="MotoShop Logo"
+              className="w-10 h-10 object-contain"
+            />
             <div>
               <h1 className="text-xl font-bold text-white">MotoShop</h1>
               <p className="text-xs text-slate-400">
