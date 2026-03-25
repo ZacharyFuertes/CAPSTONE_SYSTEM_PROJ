@@ -85,19 +85,7 @@ const Navbar: React.FC<NavbarProps> = ({
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
           >
-            <motion.div
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30"
-              animate={{
-                boxShadow: [
-                  "0 4px 14px rgba(249,115,22,0.3)",
-                  "0 4px 20px rgba(249,115,22,0.5)",
-                  "0 4px 14px rgba(249,115,22,0.3)",
-                ],
-              }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Zap size={20} className="text-white" fill="currentColor" />
-            </motion.div>
+            <img src="/logo.png" alt="MotoShop Logo" className="w-10 h-10 object-contain" />
             <span className="text-xl font-black tracking-tight text-white">
               MOTOSHOP
             </span>
