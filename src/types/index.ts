@@ -1,5 +1,5 @@
 // User & Auth Types
-export type UserRole = "admin" | "owner" | "mechanic" | "customer";
+export type UserRole = "owner" | "mechanic" | "customer";
 
 export interface User {
   id: string;
@@ -133,6 +133,29 @@ export interface FeaturedProduct {
   product?: Product;
   created_at: string;
   updated_at: string;
+}
+
+// Staff Invitation Types
+export interface StaffInvitation {
+  id: string;
+  token: string;
+  email: string;
+  role: "mechanic";
+  invited_by: string;
+  status: "pending" | "redeemed" | "revoked";
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Audit Log Types
+export interface AuditLogEntry {
+  id: string;
+  user_id?: string;
+  action: string;
+  details?: string;
+  ip_address?: string;
+  created_at: string;
 }
 
 // Invoice/Billing Types

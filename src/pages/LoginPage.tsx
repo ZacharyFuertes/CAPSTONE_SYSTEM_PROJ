@@ -68,7 +68,6 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
           formData.email,
           formData.password,
           formData.name,
-          "customer",
           formData.phone,
           formData.address,
         );
@@ -125,7 +124,7 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
       if (user.role === "mechanic") {
         portalURL =
           "Your account is registered as a Mechanic. Please use the Mechanic Portal to login.";
-      } else if (user.role === "admin" || user.role === "owner") {
+      } else if (user.role === "owner") {
         portalURL =
           "Your account is registered as Admin/Owner. Please use the Admin Portal to login.";
       }
