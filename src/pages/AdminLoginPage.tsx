@@ -125,7 +125,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
     }
 
     // User profile is loaded and role is available from AuthContext
-    if (user.role !== "admin" && user.role !== "owner") {
+    if (user.role !== "owner") {
       let portalURL = "";
 
       if (user.role === "customer") {

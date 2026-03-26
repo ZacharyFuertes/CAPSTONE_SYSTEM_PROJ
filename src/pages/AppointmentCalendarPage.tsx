@@ -136,7 +136,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
   // Filter appointments based on user role
   const getFilteredAppointments = (): Appointment[] => {
-    if (user?.role === "owner" || user?.role === "admin") {
+    if (user?.role === "owner") {
       // Owners and admins see all appointments
       return appointments;
     } else if (user?.role === "mechanic") {
@@ -181,7 +181,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
     newStatus: AppointmentStatus,
   ) => {
     // Only owners/admins and mechanics can change status
-    if (user?.role === "owner" || user?.role === "admin" || user?.role === "mechanic") {
+    if (user?.role === "owner" || user?.role === "mechanic") {
       try {
         const { error } = await supabase
           .from("appointments")
@@ -266,7 +266,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   };
 
   const calendarDays = renderCalendarDays();
-  const isOwner = user?.role === "owner" || user?.role === "admin";
+  const isOwner = user?.role === "owner";
   const isMechanic = user?.role === "mechanic";
   const isCustomer = user?.role === "customer";
   const canBookAppointments = isOwner || isCustomer;

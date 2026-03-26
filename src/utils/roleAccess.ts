@@ -34,15 +34,6 @@ export const rolePagesMapping: Record<UserRole, AppPage[]> = {
     "reports",
     "settings",
   ],
-  // Admin behaves like owner for now (future extension)
-  admin: [
-    "dashboard",
-    "inventory",
-    "appointments",
-    "customers",
-    "products",
-    "mechanic-availability",
-  ],
 };
 
 export const getPagesByRole = (role?: string): AppPage[] => {
