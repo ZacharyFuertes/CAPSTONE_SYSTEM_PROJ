@@ -263,7 +263,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }, [user?.shop_id, t]);
 
   // Role-based access control: Only admin and owner can access the dashboard
-  if (user && user.role !== "admin" && user.role !== "owner") {
+  if (user && user.role !== "owner") {
     return <AccessDenied requestedPage="dashboard" onNavigate={onNavigate} />;
   }
 
