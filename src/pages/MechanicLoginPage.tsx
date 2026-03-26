@@ -127,7 +127,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
       if (user.role === "customer") {
         portalURL =
           "Your account is registered as a Customer. Please use the Customer Portal to login.";
-      } else if (user.role === "admin" || user.role === "owner") {
+      } else if (user.role === "owner") {
         portalURL =
           "Your account is registered as Admin/Owner. Please use the Admin Portal to login.";
       }

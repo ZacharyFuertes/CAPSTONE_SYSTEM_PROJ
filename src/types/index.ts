@@ -1,5 +1,5 @@
 // User & Auth Types
-export type UserRole = "admin" | "owner" | "mechanic" | "customer";
+export type UserRole = "owner" | "mechanic" | "customer";
 
 export interface User {
   id: string;

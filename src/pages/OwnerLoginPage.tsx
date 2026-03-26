@@ -95,7 +95,7 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
       return;
     }
 
-    if (user.role !== "owner" && user.role !== "admin") {
+    if (user.role !== "owner") {
       let portalURL = "";
 
       if (user.role === "customer") {
