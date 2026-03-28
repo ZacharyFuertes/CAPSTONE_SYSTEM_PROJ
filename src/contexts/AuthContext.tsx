@@ -23,7 +23,6 @@ interface AuthContextType {
     email: string,
     password: string,
     name: string,
-    role: UserRole,
     phone?: string,
     address?: string,
   ) => Promise<void>;
@@ -171,7 +170,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     };
   }, []);
 
+  // Client-side rate limiting for login attempts
+  const loginAttemptsRef = useRef<{ count: number; firstAttemptTime: number }>({ count: 0, firstAttemptTime: Date.now() });
+
+  const checkRateLimit = () => {
+    const now = Date.now();
+    const attempts = loginAttemptsRef.current;
+    
+    // Reset window after 2 minutes (120000ms)
+    if (now - attempts.firstAttemptTime > 120000) {
+      loginAttemptsRef.current = { count: 1, firstAttemptTime: now };
+      return true;
+    }
+    
+    if (attempts.count >= 5) {
+      return false;
+    }
+    
+    attempts.count += 1;
+    return true;
+  };
+
   const login = async (email: string, password: string) => {
+    if (!checkRateLimit()) {
+      setIsLoading(false);
+      throw new Error("Too many login attempts. Please try again in 2 minutes.");
+    }
     console.log("🔐 [Auth] Login attempt:", email);
     setIsLoading(true);
     try {
@@ -210,10 +234,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     email: string,
     password: string,
     name: string,
-    role: UserRole,
     phone?: string,
     address?: string,
   ) => {
+    const role: UserRole = "customer"; // Hardcoded for security
     console.log("📝 [Auth] Signup attempt:", email, "role:", role);
     setIsLoading(true);
     try {

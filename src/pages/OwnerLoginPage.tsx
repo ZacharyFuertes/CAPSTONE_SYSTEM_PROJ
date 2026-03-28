@@ -15,15 +15,13 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
   onLoginSuccess,
   onBack,
 }) => {
-  const { login, signup, user, isLoading } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
+  const { login, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loginAttempted, setLoginAttempted] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,46 +36,14 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
     setLoginAttempted(false);
 
     try {
-      if (isSignup) {
-        // Check if email already exists with a different role
-        const { data: existingUser } = await supabase
-          .from("users")
-          .select("email, role")
-          .eq("email", formData.email)
-          .single();
-
-        if (existingUser && existingUser.role !== "owner" && existingUser.role !== "admin") {
-          const portalMap: { [key: string]: string } = {
-            customer: "Customer Portal",
-            mechanic: "Mechanic Portal",
-          };
-          const correctPortal =
-            portalMap[existingUser.role] || "appropriate portal";
-          setError(
-            `❌ This email is registered as a ${existingUser.role}. Please use the ${correctPortal} instead.`,
-          );
-          setLoading(false);
-          return;
-        }
-
-        await signup(formData.email, formData.password, formData.name, "owner");
-      } else {
-        await login(formData.email, formData.password);
-      }
+      await login(formData.email, formData.password);
       setLoginAttempted(true);
     } catch (err) {
       let errorMessage = "Authentication failed. Please try again.";
-
       if (err instanceof Error) {
         const message = err.message.toLowerCase();
-
         if (message.includes("invalid login credentials")) {
-          errorMessage = isSignup
-            ? "Email already registered or invalid credentials."
-            : "❌ Invalid email or password. Please check and try again.";
-        } else if (message.includes("user already registered")) {
-          errorMessage =
-            "This email is already registered. Please sign in instead.";
+          errorMessage = "❌ Invalid email or password. Please check and try again.";
         } else {
           errorMessage = err.message;
         }
@@ -99,11 +65,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
       let portalURL = "";
 
       if (user.role === "customer") {
-        portalURL =
-          "Your account is registered as a Customer. Please use the Customer Portal to login.";
+        portalURL = "Your account is registered as a Customer. Please use the Customer Portal to login.";
       } else if (user.role === "mechanic") {
-        portalURL =
-          "Your account is registered as a Mechanic. Please use the Mechanic Portal to login.";
+        portalURL = "Your account is registered as a Mechanic. Please use the Mechanic Portal to login.";
       }
 
       setError(`❌ Wrong Portal! ${portalURL}`);
@@ -150,8 +114,6 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
         <span className="hidden sm:inline text-sm font-medium">Back</span>
       </motion.button>
 
-      {/* Home Button */}
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -163,9 +125,7 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
             <img src={adminIcon} alt="Admin Icon" className="w-10 h-10 object-contain brightness-0 invert drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Admin Portal</h1>
-          <p className="text-slate-400">
-            {isSignup ? "Create your account" : "Sign in to your account"}
-          </p>
+          <p className="text-slate-400">Sign in to your account</p>
         </div>
 
         {/* Error Message */}
@@ -183,14 +143,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
             <div className="relative">
-              <Mail
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
+              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="email"
                 name="email"
@@ -205,14 +160,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
             <div className="relative">
-              <Lock
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
+              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="password"
                 name="password"
@@ -225,24 +175,6 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
             </div>
           </div>
 
-          {/* Name (Signup only) */}
-          {isSignup && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Shop Owner Name"
-                required
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition"
-              />
-            </div>
-          )}
-
           {/* Submit Button */}
           <motion.button
             type="submit"
@@ -252,27 +184,9 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
             className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
           >
             {loading && <Loader size={18} className="animate-spin" />}
-            {isSignup ? "Create Account" : "Sign In"}
+            Sign In
           </motion.button>
         </form>
-
-        {/* Toggle */}
-        <div className="mt-6 text-center">
-          <p className="text-slate-400 text-sm">
-            {isSignup ? "Already have an account?" : "Don't have an account?"}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignup(!isSignup);
-                setError("");
-                setFormData({ email: "", password: "", name: "" });
-              }}
-              className="ml-2 text-red-400 hover:text-red-300 font-semibold transition"
-            >
-              {isSignup ? "Sign In" : "Create Account"}
-            </button>
-          </p>
-        </div>
       </motion.div>
     </div>
   );

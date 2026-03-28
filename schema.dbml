@@ -6,7 +6,7 @@ Table users {
   id uuid [primary key]
   email varchar [unique, not null]
   name varchar [not null]
-  role varchar [not null, note: 'admin, mechanic, customer']
+  role varchar [not null, note: 'owner, mechanic, customer']
   phone varchar
   address varchar
   created_at timestamp
@@ -114,6 +114,17 @@ Table mechanic_availability {
   updated_at timestamp
 }
 
+
+
+Table audit_logs {
+  id uuid [primary key]
+  user_id uuid
+  action varchar [not null]
+  details text
+  ip_address varchar
+  created_at timestamp [not null]
+}
+
 // Relationships
 Ref customers_users: customers.user_id > users.id
 Ref mechanic_availability_mechanic: mechanic_availability.mechanic_id > users.id
@@ -126,6 +137,7 @@ Ref job_orders_appointment: job_orders.appointment_id > appointments.id
 Ref job_orders_mechanic: job_orders.mechanic_id > users.id
 Ref job_orders_vehicle: job_orders.vehicle_id > vehicles.id
 Ref featured_products_products: featured_products.product_id > products.id
+Ref audit_logs_users: audit_logs.user_id > users.id
 
 // Sample Data
 Records users(id, email, name, role) {

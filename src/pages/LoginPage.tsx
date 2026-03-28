@@ -68,7 +68,6 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
           formData.email,
           formData.password,
           formData.name,
-          "customer",
           formData.phone,
           formData.address,
         );

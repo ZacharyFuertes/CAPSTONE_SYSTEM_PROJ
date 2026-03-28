@@ -22,6 +22,8 @@ import {
   LogOut,
   Globe,
   AlertCircle,
+  User,
+  KeyRound,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -85,6 +87,13 @@ const MechanicDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+
+  // Profile update state
+  const [phoneInput, setPhoneInput] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState({ text: "", type: "" });
 
   // Fetch all mechanic data
   useEffect(() => {
@@ -275,6 +284,18 @@ const MechanicDashboard: React.FC = () => {
           });
         }
         setPerformanceData(last7Days);
+
+        // Map existing phone user data if available
+        if (user && user.phone) {
+          setPhoneInput(user.phone.includes('@') ? '' : user.phone);
+        } else {
+          // If the auth context doesn't have it, try fetching it
+          const { data: userData } = await supabase.from("users").select("phone").eq("id", user.id).single();
+          if (userData?.phone && !userData.phone.includes('@')) {
+            setPhoneInput(userData.phone);
+          }
+        }
+
       } catch (error) {
         console.error("Error fetching mechanic data:", error);
       } finally {
@@ -325,6 +346,50 @@ const MechanicDashboard: React.FC = () => {
     }
   };
 
+  // Handle Profile Update
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    setProfileSaving(true);
+    setProfileMsg({ text: "", type: "" });
+
+    try {
+      // 1. Update phone in users table
+      if (phoneInput) {
+        const { error: phoneError } = await supabase
+          .from("users")
+          .update({ phone: phoneInput })
+          .eq("id", user.id);
+        
+        if (phoneError) throw new Error("Failed to update phone number.");
+      }
+
+      // 2. Update password if provided
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+        if (newPassword.length < 6) {
+          throw new Error("Password must be at least 6 characters.");
+        }
+
+        const { error: passError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (passError) throw new Error("Failed to update password: " + passError.message);
+      }
+
+      setProfileMsg({ text: "Profile updated successfully!", type: "success" });
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      setProfileMsg({ text: err.message || "Failed to update profile", type: "error" });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900">
@@ -338,6 +403,7 @@ const MechanicDashboard: React.FC = () => {
     { id: "jobs", label: "JOBS", icon: Wrench },
     { id: "appointments", label: "APPOINTMENTS", icon: Calendar },
     { id: "inventory", label: "INVENTORY", icon: Package },
+    { id: "profile", label: "PROFILE", icon: User },
   ];
 
   return (
@@ -429,7 +495,7 @@ const MechanicDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="ml-56 w-full">
-        <div className="min-h-screen bg-slate-900 p-8">
+        <div className="min-h-screen bg-slate-900 p-8 custom-scrollbar h-screen overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {/* Dashboard Tab Content */}
             {activeTab === "dashboard" && (
@@ -816,6 +882,102 @@ const MechanicDashboard: React.FC = () => {
                     })}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Profile Tab Content */}
+            {activeTab === "profile" && (
+              <motion.div
+                className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 max-w-2xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="mb-8">
+                  <h2 className="text-white font-black text-3xl mb-2 flex items-center gap-3">
+                    <User className="text-blue-500 w-8 h-8" /> MY PROFILE
+                  </h2>
+                  <p className="text-slate-400 text-sm">
+                    Manage your personal details and security settings
+                  </p>
+                </div>
+
+                {profileMsg.text && (
+                  <div
+                    className={`p-4 rounded-lg flex items-center gap-3 mb-6 ${
+                      profileMsg.type === "error"
+                        ? "bg-red-500/10 border border-red-500/30 text-red-400"
+                        : "bg-green-500/10 border border-green-500/30 text-green-400"
+                    }`}
+                  >
+                    {profileMsg.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+                    <span className="text-sm font-medium">{profileMsg.text}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdateProfile} className="space-y-6">
+                  {/* Hidden email field to trick password managers from filling the phone field */}
+                  <input type="text" autoComplete="username" value={user?.email || ""} className="hidden" readOnly />
+
+                  <div className="space-y-4 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+                    <h3 className="text-white font-semibold flex items-center gap-2 mb-2">
+                      <User size={18} className="text-slate-400" /> Personal Information
+                    </h3>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">Phone Number (For SMS Notifications)</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        autoComplete="off"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="+63 900 000 0000"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+                    <h3 className="text-white font-semibold flex items-center gap-2 mb-2">
+                      <KeyRound size={18} className="text-slate-400" /> Security
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4">Leave fields blank if you don't want to change your password.</p>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">New Password</label>
+                      <input
+                        type="password"
+                        name="new-password"
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">Confirm New Password</label>
+                      <input
+                        type="password"
+                        name="confirm-password"
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition"
+                  >
+                    {profileSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </form>
               </motion.div>
             )}
           </div>

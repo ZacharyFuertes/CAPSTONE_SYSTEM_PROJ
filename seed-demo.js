@@ -5,8 +5,11 @@
  * Run with: node seed-demo.js
  * 
  * This creates:
- * - Demo Auth user: demo@motoshop.com / demo123
- * - Demo user profile in users table
+ * - Demo Owner: demo@motoshop.com / demo123 (role: owner)
+ * - Demo Mechanic: mechanic@motoshop.com / mechanic123 (role: mechanic)
+ * 
+ * IMPORTANT: This seed script is the ONLY way to create Owner/Admin accounts.
+ * Self-registration for Owner and Mechanic roles is disabled for security.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -42,6 +45,10 @@ const DEMO_EMAIL = 'demo@motoshop.com'
 const DEMO_PASSWORD = 'demo123'
 const DEMO_NAME = 'Demo Owner'
 const DEMO_SHOP_ID = 'a0000000-0000-0000-0000-000000000001' // Valid UUID for demo shop
+
+const DEMO_MECHANIC_EMAIL = 'mechanic@motoshop.com'
+const DEMO_MECHANIC_PASSWORD = 'mechanic123'
+const DEMO_MECHANIC_NAME = 'Demo Mechanic'
 
 // Simple UUID v4 generator
 function generateUUID() {
@@ -123,13 +130,60 @@ async function seedDatabase() {
 
       console.log(`✅ User profile created: ${newUser.id}`)
     } else if (existingUser) {
-      console.log(`ℹ️  User profile already exists (Name: ${existingUser.name}, Role: ${existingUser.role})`)
+      console.log(`ℹ️  Owner profile already exists (Name: ${existingUser.name}, Role: ${existingUser.role})`)
+    }
+
+    // Step 2: Create Demo Mechanic
+    console.log(`\n🔑 Testing login with ${DEMO_MECHANIC_EMAIL}...`)
+    const { data: mechLoginData, error: mechLoginError } = await supabase.auth.signInWithPassword({
+      email: DEMO_MECHANIC_EMAIL,
+      password: DEMO_MECHANIC_PASSWORD,
+    })
+
+    let mechUserId = mechLoginData?.user?.id
+
+    if (mechLoginError) {
+      console.log(`\n📝 Creating demo mechanic auth user: ${DEMO_MECHANIC_EMAIL}`)
+      const { data: mechAuthData, error: mechSignUpError } = await supabase.auth.signUp({
+        email: DEMO_MECHANIC_EMAIL,
+        password: DEMO_MECHANIC_PASSWORD,
+      })
+
+      if (mechSignUpError) throw new Error(`Mechanic auth signup failed: ${mechSignUpError.message}`)
+      mechUserId = mechAuthData.user?.id
+      console.log(`✅ Mechanic Auth user created: ${mechUserId}`)
+    } else {
+      console.log(`✅ Mechanic login successful!`)
+    }
+
+    if (mechUserId) {
+      const { data: existingMech, error: mechSelectError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', mechUserId)
+        .single()
+
+      if (mechSelectError && mechSelectError.code === 'PGRST116') {
+        console.log('📝 Creating mechanic profile...')
+        await supabase.from('users').insert({
+          id: mechUserId,
+          email: DEMO_MECHANIC_EMAIL,
+          name: DEMO_MECHANIC_NAME,
+          role: 'mechanic',
+          shop_id: DEMO_SHOP_ID,
+          phone: '+63 912 000 0000',
+          created_at: new Date().toISOString(),
+        })
+        console.log(`✅ Mechanic profile created`)
+      } else if (existingMech) {
+        console.log(`ℹ️  Mechanic profile already exists`)
+      }
     }
 
     console.log(`\n🎉 Database seed complete!\n`)
     console.log('✅ You can now log in with:')
-    console.log(`   📧 Email: ${DEMO_EMAIL}`)
-    console.log(`   🔑 Password: ${DEMO_PASSWORD}\n`)
+    console.log(`   [OWNER]    📧 ${DEMO_EMAIL} / 🔑 ${DEMO_PASSWORD}`)
+    console.log(`   [MECHANIC] 📧 ${DEMO_MECHANIC_EMAIL} / 🔑 ${DEMO_MECHANIC_PASSWORD}\n`)
 
   } catch (error) {
     console.error('\n❌ Seed failed:', error.message)
