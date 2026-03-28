@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Mail,
-  Lock,
-  Loader,
-  ArrowLeft,
-  Home,
-} from "lucide-react";
+import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
-import mechanicIcon from "../icons/mechanic.png";
 
 interface MechanicLoginPageProps {
   onLoginSuccess: () => void;
@@ -127,7 +120,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
       if (user.role === "customer") {
         portalURL =
           "Your account is registered as a Customer. Please use the Customer Portal to login.";
-      } else if (user.role === "owner") {
+      } else if (user.role === "admin" || user.role === "owner") {
         portalURL =
           "Your account is registered as Admin/Owner. Please use the Admin Portal to login.";
       }
@@ -199,7 +192,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <img src={mechanicIcon} alt="Mechanic Icon" className="w-10 h-10 object-contain brightness-0 invert drop-shadow-md" />
+              <span className="text-white font-bold text-3xl">⚙️</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
               Mechanic Portal
