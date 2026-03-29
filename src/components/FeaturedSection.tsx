@@ -163,8 +163,8 @@ const FeaturedSection: React.FC = () => {
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-moto-dark relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 right-0 w-96 h-96 bg-moto-accent-orange/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-moto-accent/5 rounded-full blur-3xl" />
+        <div className="absolute top-20 right-0 w-96 h-96 bg-moto-accent-orange/5 rounded-full blur-2xl sm:blur-3xl opacity-50 sm:opacity-100" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-moto-accent/5 rounded-full blur-2xl sm:blur-3xl opacity-50 sm:opacity-100" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -268,7 +268,7 @@ const FeaturedSection: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-1"
           >
-            <div className="sticky top-32 bg-gradient-to-br from-moto-darker via-moto-darker to-moto-gray border border-moto-gray-light/30 rounded-2xl p-6 backdrop-blur-xl shadow-2xl">
+            <div className="sticky top-32 bg-gradient-to-br from-moto-darker via-moto-darker to-moto-gray border border-moto-gray-light/30 rounded-2xl p-6 backdrop-blur-md sm:backdrop-blur-xl shadow-xl sm:shadow-2xl">
               <div className="flex items-center gap-2 mb-6">
                 <Calendar className="text-moto-accent-orange" size={24} />
                 <h3 className="font-display text-2xl font-bold text-white">Book Now</h3>

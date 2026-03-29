@@ -128,7 +128,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
                 </motion.button>
                 <motion.button
                   onClick={onBookNow}
-                  className="px-8 py-3 border-2 border-moto-accent-neon rounded-lg font-bold text-moto-accent-neon uppercase tracking-wide flex items-center gap-2 hover:bg-moto-accent-neon/10 backdrop-blur-sm"
+                  className="px-8 py-3 border-2 border-moto-accent-neon rounded-lg font-bold text-moto-accent-neon uppercase tracking-wide flex items-center gap-2 hover:bg-moto-accent-neon/10 backdrop-blur-none sm:backdrop-blur-sm bg-moto-darker/60 sm:bg-transparent"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -145,7 +145,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
       <button
         onClick={prevSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
-        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/80 sm:bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-none sm:backdrop-blur-sm"
       >
         <ChevronLeft size={28} />
       </button>
@@ -153,7 +153,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
       <button
         onClick={nextSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
-        className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+        className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-moto-dark/80 sm:bg-moto-dark/60 hover:bg-moto-accent-orange text-white transition-all duration-300 opacity-0 group-hover:opacity-100 backdrop-blur-none sm:backdrop-blur-sm"
       >
         <ChevronRight size={28} />
       </button>

@@ -68,10 +68,10 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <motion.nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 will-change-transform ${
         scrolled
-          ? "bg-[#0f172a]/98 backdrop-blur-xl shadow-2xl shadow-black/30"
-          : "bg-[#0f172a]/80 backdrop-blur-md"
+          ? "bg-[#0f172a] sm:bg-[#0f172a]/98 backdrop-blur-none sm:backdrop-blur-xl shadow-xl sm:shadow-2xl shadow-black/30"
+          : "bg-[#0f172a]/95 sm:bg-[#0f172a]/80 backdrop-blur-none sm:backdrop-blur-md"
       }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -139,23 +139,26 @@ const Navbar: React.FC<NavbarProps> = ({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <motion.div
-                    className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black shadow-lg shadow-blue-500/20"
-                    animate={{
-                      boxShadow: [
-                        "0 4px 14px rgba(59,130,246,0.2)",
-                        "0 4px 20px rgba(59,130,246,0.35)",
-                        "0 4px 14px rgba(59,130,246,0.2)",
-                      ],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    {user.name.charAt(0).toUpperCase()}
-                  </motion.div>
+                  <div className="relative">
+                    {/* Hardware accelerated glowing ring */}
+                    <motion.div
+                      className="absolute inset-0 rounded-full bg-blue-500/30 blur-md pointer-events-none hidden sm:block"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.5, 0.8, 0.5],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <div
+                      className="relative z-10 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black shadow-lg shadow-blue-500/20"
+                    >
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
                   <span className="text-sm font-semibold text-slate-300 group-hover:text-white truncate max-w-[120px] transition-colors">
                     {user.name}
                   </span>
