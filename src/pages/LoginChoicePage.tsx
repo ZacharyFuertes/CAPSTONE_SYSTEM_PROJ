@@ -1,12 +1,12 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Users, Wrench, Building2, ChevronRight, Home } from 'lucide-react'
+import React from "react";
+import { motion } from "framer-motion";
+import { Users, Wrench, Building2, ChevronRight, Home } from "lucide-react";
 
 interface LoginChoicePageProps {
-  onChooseCustomer: () => void
-  onChooseMechanic: () => void
-  onChooseOwner: () => void
-  onBack: () => void
+  onChooseCustomer: () => void;
+  onChooseMechanic: () => void;
+  onChooseOwner: () => void;
+  onBack: () => void;
 }
 
 const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
@@ -36,15 +36,15 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
       >
         {/* Header */}
         <div className="text-center mb-12">
-          <motion.div
+          <motion.img
+            src="/logo.png"
+            alt="JSBM Autoshop Logo"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="w-16 h-16 bg-gradient-to-br from-moto-accent-orange to-moto-accent rounded-lg flex items-center justify-center mx-auto mb-4"
-          >
-            <span className="text-white font-bold text-3xl">M</span>
-          </motion.div>
-          <h1 className="text-4xl font-bold text-white mb-2">MotoShop</h1>
+            className="w-16 h-16 mx-auto mb-4 object-contain"
+          />
+          <h1 className="text-4xl font-bold text-white mb-2">JSBM AUTOSHOP</h1>
           <p className="text-slate-400">Select your login type</p>
         </div>
 
@@ -65,9 +65,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
 
             {/* Content */}
             <div className="relative z-10">
-              <motion.div
-                className="w-16 h-16 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/30 transition"
-              >
+              <motion.div className="w-16 h-16 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/30 transition">
                 <Users className="w-8 h-8 text-green-500" />
               </motion.div>
 
@@ -86,8 +84,8 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
           {/* Mechanic Login */}
           <motion.button
             onClick={onChooseMechanic}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -98,9 +96,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
 
             {/* Content */}
             <div className="relative z-10">
-              <motion.div
-                className="w-16 h-16 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/30 transition"
-              >
+              <motion.div className="w-16 h-16 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/30 transition">
                 <Wrench className="w-8 h-8 text-blue-500" />
               </motion.div>
 
@@ -119,7 +115,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
           {/* Owner/Admin Login */}
           <motion.button
             onClick={onChooseOwner}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
             whileHover={{ scale: 1.05 }}
@@ -131,9 +127,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
 
             {/* Content */}
             <div className="relative z-10">
-              <motion.div
-                className="w-16 h-16 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-red-500/30 transition"
-              >
+              <motion.div className="w-16 h-16 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-red-500/30 transition">
                 <Building2 className="w-8 h-8 text-red-500" />
               </motion.div>
 
@@ -153,7 +147,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
         {/* Back Button */}
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginChoicePage
+export default LoginChoicePage;

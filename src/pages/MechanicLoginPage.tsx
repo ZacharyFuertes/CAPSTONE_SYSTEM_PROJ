@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
   Lock,
   Loader,
   ArrowLeft,
   Home,
-  Info,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
+import mechanicIcon from "../icons/mechanic.png";
 
 interface MechanicLoginPageProps {
   onLoginSuccess: () => void;
@@ -90,31 +90,51 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
     onLoginSuccess();
   }, [loginAttempted, isLoading, user]);
 
+  // Input field style
+  const inputClass =
+    "w-full pl-11 pr-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/70 focus:bg-slate-800/80 transition-all duration-300 text-sm";
+
+  const iconClass = "absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Error Notification at Top */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-sm border border-red-400/50 rounded-lg shadow-lg"
-        >
-          <div className="flex items-start gap-3">
-            <div className="text-red-200 text-xl mt-0.5">⚠️</div>
-            <div>
-              <p className="text-white font-semibold text-sm">{error}</p>
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.95 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-md border border-red-400/50 rounded-xl shadow-2xl shadow-red-500/20"
+          >
+            <div className="flex items-start gap-3">
+              <div className="text-red-200 text-xl mt-0.5">⚠️</div>
+              <div>
+                <p className="text-white font-semibold text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError("")}
+                className="ml-2 text-red-200 hover:text-white transition text-lg leading-none"
+              >
+                ×
+              </button>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Back Button */}
       <motion.button
         onClick={onBack}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="fixed top-6 left-6 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
+        className="fixed top-6 left-6 flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 backdrop-blur-sm rounded-xl text-slate-300 hover:text-white transition-all z-30"
         whileHover={{ scale: 1.05, x: -4 }}
       >
         <ArrowLeft size={18} />
@@ -127,7 +147,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
           onClick={onHome}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="fixed top-6 right-12 flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition"
+          className="fixed top-6 right-6 flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 backdrop-blur-sm rounded-xl text-slate-300 hover:text-white transition-all z-30"
           whileHover={{ scale: 1.05, x: 4 }}
         >
           <span className="hidden sm:inline text-sm font-medium">Home</span>
@@ -135,93 +155,115 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
         </motion.button>
       )}
 
-      {!user && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+      {/* Main Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div
+          className="rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(145deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%)",
+            backdropFilter: "blur(20px)",
+          }}
         >
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-3xl">⚙️</span>
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Mechanic Portal
-            </h1>
-            <p className="text-slate-400">
-              Sign in to your account
-            </p>
-          </div>
+          {/* Card inner glow */}
+          <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
+            style={{
+              background: "radial-gradient(ellipse at top, rgba(59,130,246,0.08) 0%, transparent 60%)",
+            }}
+          />
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="mechanic@motoshop.com"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
+          <div className="relative p-8 sm:p-10">
+            {/* Logo */}
+            <motion.div
+              className="text-center mb-8"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
             >
-              {loading && <Loader size={18} className="animate-spin" />}
-              Sign In
-            </motion.button>
-          </form>
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-5 shadow-lg bg-gradient-to-br from-blue-600 to-blue-400 shadow-blue-500/20">
+                <img
+                  src={mechanicIcon}
+                  alt="Mechanic Icon"
+                  className="w-10 h-10 object-contain brightness-0 invert drop-shadow-md"
+                />
+              </div>
 
-          {/* Info Section for Registration */}
-          <div className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-200">
-              Mechanic accounts are invitation-only. Please contact your shop administrator to receive an invitation link if you don't have an account.
-            </p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                  Welcome back
+                </h1>
+                <p className="text-slate-400 text-sm">
+                  Sign in to your account
+                </p>
+              </motion.div>
+            </motion.div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+              >
+                <div className="relative">
+                  <Mail size={18} className={iconClass} />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Email"
+                    required
+                    className={inputClass}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Password */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="relative">
+                  <Lock size={18} className={iconClass} />
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Password"
+                    required
+                    className={inputClass}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                disabled={loading}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className="w-full mt-6 px-6 py-3.5 font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-base shadow-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading && <Loader size={18} className="animate-spin" />}
+                Sign In
+              </motion.button>
+            </form>
           </div>
-        </motion.div>
-      )}
+        </div>
+      </motion.div>
     </div>
   );
 };
