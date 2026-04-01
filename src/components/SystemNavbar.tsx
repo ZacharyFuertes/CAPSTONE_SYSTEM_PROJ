@@ -12,6 +12,7 @@ import {
   Lock,
   Wrench,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -20,6 +21,7 @@ import { AppPage, getPagesByRole } from "../utils/roleAccess";
 interface NavbarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
+  onAIChat?: () => void;
 }
 
 interface MenuItem {
@@ -30,7 +32,7 @@ interface MenuItem {
   tooltip?: string;
 }
 
-const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
+const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat }) => {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,6 +116,13 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
       requiredRole: ["customer"],
       tooltip: "Browse available parts to reserve",
     },
+    {
+      id: "ai-inquiries",
+      label: "AI Inquiries",
+      icon: MessageSquare,
+      requiredRole: ["owner"],
+      tooltip: "View booking requests from AI chat",
+    },
   ];
 
   // Filter menu items based on role-based access control mapping
@@ -154,14 +163,16 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 shadow-lg">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-[#222] shadow-2xl">
+      {/* Red accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#d63a2f]" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
+            className="flex items-center gap-3 cursor-pointer group"
             onClick={() =>
               onNavigate(
                 user?.role === "customer" ? "appointments" : "dashboard",
@@ -171,16 +182,18 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             <img
               src="/logo.png"
               alt="MotoShop Logo"
-              className="w-10 h-10 object-contain rounded-full"
+              className="w-10 h-10 lg:w-12 lg:h-12 object-contain rounded-full bg-white border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.15)]"
             />
-            <div>
-              <h1 className="text-xl font-bold text-white">JSBM MotoShop</h1>
-              <p className="text-xs text-slate-400">
+            <div className="flex flex-col">
+              <h1 className="text-lg lg:text-xl font-display font-black text-white uppercase tracking-wide leading-none mb-1">
+                JSBM MOTOSHOP
+              </h1>
+              <p className="text-[9px] text-[#d63a2f] font-bold tracking-[0.2em] uppercase leading-none">
                 {user?.role === "customer"
-                  ? "Customer Portal"
+                  ? "CUSTOMER PORTAL"
                   : user?.role === "mechanic"
-                    ? "Mechanic Dashboard"
-                    : "Management System"}
+                    ? "MECHANIC DASHBOARD"
+                    : "MANAGEMENT SYSTEM"}
               </p>
             </div>
           </motion.div>
@@ -197,14 +210,14 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleMenuItemClick(item.id)}
                   title={item.tooltip}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-none transition-all uppercase text-[10px] font-bold tracking-widest border ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-                      : "text-slate-300 hover:text-white hover:bg-slate-700"
+                      ? "bg-[#111111] text-white border-[#333]"
+                      : "text-white border-transparent hover:text-white hover:bg-[#111111] hover:border-[#333]"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">
+                  <Icon className={`w-3 h-3 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b]"}`} />
+                  <span>
                     {getMenuItemLabel(item)}
                   </span>
                 </motion.button>
@@ -221,7 +234,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-24 right-4 bg-red-600/90 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 whitespace-nowrap"
+                  className="absolute top-24 right-4 bg-[#d63a2f] border border-[#c0322a] text-white px-4 py-3 rounded-none text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 whitespace-nowrap shadow-2xl shadow-[#d63a2f]/20"
                 >
                   <Lock className="w-4 h-4" />
                   {disabledTooltip}
@@ -229,36 +242,44 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               )}
             </AnimatePresence>
 
+            {/* AI Chat Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onAIChat}
+              className="flex items-center gap-2 px-3 py-2 rounded-none bg-transparent border border-[#d63a2f] hover:bg-[#d63a2f] text-[#d63a2f] hover:text-white transition uppercase text-[10px] font-bold tracking-widest"
+              title="MotoMech AI Chat"
+            >
+              <MessageSquare className="w-3 h-3" />
+              <span className="hidden sm:inline">AI CHAT</span>
+            </motion.button>
+
             {/* Language Toggle */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setLanguage(language === "en" ? "tl" : "en")}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition"
+              className="flex items-center gap-2 px-3 py-2 rounded-none bg-transparent border border-[#333] hover:bg-[#111111] hover:border-[#666] text-[#6b6b6b] hover:text-white transition uppercase text-[10px] font-bold tracking-widest"
               title={
                 language === "en" ? "Switch to Tagalog" : "Switch to English"
               }
             >
-              <Globe className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {language.toUpperCase()}
+              <Globe className="w-3 h-3" />
+              <span>
+                {language === "en" ? "EN" : "TL"}
               </span>
             </motion.button>
 
             {/* User Info */}
             {user && (
-              <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-slate-700/50 rounded-lg border border-slate-600">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              <div className="hidden sm:flex items-center gap-3 px-3 py-2 bg-[#111111] border border-[#333] rounded-none">
+                <div className="w-8 h-8 bg-[#0a0a0a] border border-[#222] flex items-center justify-center text-[#d63a2f] font-display text-xl font-black leading-none">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="text-sm">
-                  <p className="text-white font-semibold">{user.name}</p>
-                  <p className="text-slate-400 text-xs capitalize bg-slate-800 px-2 py-1 rounded mt-1">
-                    {user.role === "owner"
-                      ? "Owner"
-                      : user.role === "mechanic"
-                        ? "Mechanic"
-                        : "Customer"}
+                <div className="flex flex-col">
+                  <p className="text-white text-[10px] uppercase font-bold tracking-widest leading-none mb-1">{user.name}</p>
+                  <p className="text-[#6b6b6b] text-[8px] uppercase font-bold tracking-widest leading-none">
+                    {user.role}
                   </p>
                 </div>
               </div>
@@ -272,16 +293,15 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 console.log("🔴 Logout button clicked");
                 logout().catch((error) => {
                   console.error("🔴 Logout failed:", error);
-                  // Even if logout fails, force redirect to landing
                   window.location.href = "/";
                 });
               }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition border border-red-600/30"
+              className="flex items-center gap-2 px-4 py-2 rounded-none bg-transparent hover:bg-[#d63a2f] border border-[#d63a2f] text-[#d63a2f] hover:text-white transition uppercase text-[10px] font-bold tracking-[0.2em]"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
-              <span className="text-sm font-medium hidden sm:inline">
-                Logout
+              <span className="hidden sm:inline">
+                LOGOUT
               </span>
             </motion.button>
 
@@ -306,7 +326,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-slate-700 py-4 space-y-2"
+              className="md:hidden border-t border-[#222] bg-[#0a0a0a] py-4 px-4 space-y-2"
             >
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -320,14 +340,14 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                       setIsMenuOpen(false);
                     }}
                     title={item.tooltip}
-                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition ${
+                    className={`w-full flex items-center gap-3 px-5 py-4 border transition-all rounded-none uppercase text-[11px] font-bold tracking-widest ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-                        : "text-slate-300 hover:text-white hover:bg-slate-700"
+                        ? "bg-[#111111] text-white border-[#333]"
+                        : "bg-transparent border-transparent text-[#6b6b6b] hover:text-white hover:bg-[#111] hover:border-[#333]"
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">
+                    <Icon className={`w-4 h-4 ${isActive ? "text-[#d63a2f]" : ""}`} />
+                    <span>
                       {getMenuItemLabel(item)}
                     </span>
                   </motion.button>

@@ -9,7 +9,7 @@ import {
   isPageAllowedForRole,
 } from "./utils/roleAccess";
 import SystemNavbar from "./components/SystemNavbar";
-import EnhancedChatbotWidget from "./components/EnhancedChatbotWidget";
+import AIChatModal from "./components/AIChatModal";
 import DatabaseStatus from "./components/DatabaseStatus";
 import AccessDenied from "./components/AccessDenied";
 import Dashboard from "./pages/Dashboard";
@@ -28,11 +28,12 @@ import MechanicLoginPage from "./pages/MechanicLoginPage";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
 import LoginChoicePage from "./pages/LoginChoicePage";
 import AdminProductsPage from "./pages/AdminProductsPage";
+import AIInquiriesPage from "./pages/AIInquiriesPage";
 
 // Landing page imports (original)
 import Navbar from "./components/Navbar";
 import HeroSlideshow from "./components/HeroSlideshow";
-import ChatAssistantWidget from "./components/ChatAssistantWidget";
+import ServicesGrid from "./components/ServicesGrid";
 import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
@@ -41,10 +42,11 @@ import BrowsePartsModal from "./components/BrowsePartsModal";
 import CustomerPortalModal from "./components/CustomerPortalModal";
 import CustomerSettingsModal from "./components/CustomerSettingsModal";
 import ServiceHistoryModal from "./components/ServiceHistoryModal";
+import MechanicsModal from "./components/MechanicsModal";
 
 type PageType = AppPage;
 
-type LoginType = "landing" | "choice" | "customer" | "mechanic" | "owner";
+type LoginType = "landing" | "choice" | "customer" | "customer-signup" | "mechanic" | "owner";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -62,6 +64,8 @@ const AppContent: React.FC = () => {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showMechanicsModal, setShowMechanicsModal] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   /**
    * Wrapper around setCurrentPage that persists to localStorage
@@ -188,6 +192,10 @@ const AppContent: React.FC = () => {
       navigateTo("landing");
     };
 
+    const handleOpenSignup = () => {
+      setCurrentLoginType("customer-signup");
+    };
+
     const handleOpenLogin = () => {
       setCurrentLoginType("choice");
     };
@@ -201,18 +209,30 @@ const AppContent: React.FC = () => {
               onBookAppointment={handleOpenLogin}
               onBrowseParts={() => setShowPartsModal(true)}
               onJoinSignIn={handleOpenLogin}
+              onSignUp={handleOpenSignup}
+              onMechanics={() => setShowMechanicsModal(true)}
               onViewAccount={handleOpenLogin}
+              onAIChat={() => setShowAIChat(true)}
             />
             <HeroSlideshow
               onBookNow={handleOpenLogin}
               onShopNow={() => setShowPartsModal(true)}
             />
-            <ChatAssistantWidget />
+            <ServicesGrid />
             <TrustSection />
             <Footer />
             <BrowsePartsModal
               isOpen={showPartsModal}
               onClose={() => setShowPartsModal(false)}
+            />
+            <MechanicsModal
+              isOpen={showMechanicsModal}
+              onClose={() => setShowMechanicsModal(false)}
+            />
+            <AIChatModal
+              isOpen={showAIChat}
+              onClose={() => setShowAIChat(false)}
+              userRole={user?.role}
             />
           </>
         ) : currentLoginType === "choice" ? (
@@ -221,6 +241,13 @@ const AppContent: React.FC = () => {
             onChooseMechanic={() => setCurrentLoginType("mechanic")}
             onChooseOwner={() => setCurrentLoginType("owner")}
             onBack={() => setCurrentLoginType("landing")}
+          />
+        ) : currentLoginType === "customer-signup" ? (
+          <LoginPage
+            onLoginSuccess={handleLoginSuccess}
+            onBack={() => setCurrentLoginType("landing")}
+            onHome={() => setCurrentLoginType("landing")}
+            initialIsSignup={true}
           />
         ) : currentLoginType === "customer" ? (
           <LoginPage
@@ -269,15 +296,18 @@ const AppContent: React.FC = () => {
           onShowAppointments={() => setShowAppointmentsModal(true)}
           onBrowseParts={() => setShowPartsModal(true)}
           onJoinSignIn={() => handleBackToLanding()}
+          onSignUp={() => handleBackToLanding()}
+          onMechanics={() => setShowMechanicsModal(true)}
           onViewAccount={() => setShowAccountModal(true)}
           onSettings={() => setShowSettingsModal(true)}
           onServiceHistory={() => setShowHistoryModal(true)}
+          onAIChat={() => setShowAIChat(true)}
         />
         <HeroSlideshow
           onBookNow={() => setShowBookingModal(true)}
           onShopNow={() => setShowPartsModal(true)}
         />
-        <ChatAssistantWidget />
+        <ServicesGrid />
         <TrustSection />
         <Footer />
         <BookAppointmentModal
@@ -304,6 +334,15 @@ const AppContent: React.FC = () => {
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
         />
+        <MechanicsModal
+          isOpen={showMechanicsModal}
+          onClose={() => setShowMechanicsModal(false)}
+        />
+        <AIChatModal
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+          userRole={user?.role}
+        />
       </div>
     );
   }
@@ -318,6 +357,7 @@ const AppContent: React.FC = () => {
         <SystemNavbar
           currentPage={defaultPage}
           onNavigate={(page: string) => handlePageChange(page as AppPage)}
+          onAIChat={() => setShowAIChat(true)}
         />
         <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-12">
           <AccessDenied
@@ -325,6 +365,11 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as AppPage)}
           />
         </main>
+        <AIChatModal
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+          userRole={user?.role}
+        />
       </div>
     );
   }
@@ -337,6 +382,7 @@ const AppContent: React.FC = () => {
         <SystemNavbar
           currentPage={currentPage}
           onNavigate={(page: string) => handlePageChange(page as PageType)}
+          onAIChat={() => setShowAIChat(true)}
         />
       )}
 
@@ -399,11 +445,18 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
+        {currentPage === "ai-inquiries" && (
+          <AIInquiriesPage
+            onNavigate={(page: string) => handlePageChange(page as PageType)}
+          />
+        )}
       </main>
 
       {/* Contextual AI Support */}
-      <EnhancedChatbotWidget
-        userRole={user?.role === "mechanic" ? "mechanic" : "customer"}
+      <AIChatModal
+        isOpen={showAIChat}
+        onClose={() => setShowAIChat(false)}
+        userRole={user?.role}
       />
     </div>
   );

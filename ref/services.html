@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Services</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: rgba(255, 255, 255, 0.07);
+      --red: #d63a2f;
+      --red-dim: rgba(214, 58, 47, 0.12);
+      --white: #f0ede8;
+      --muted: #6b6b6b;
+      --card-hover: #161616;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ─── SECTION ─── */
+    .services-section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 100px 40px;
+    }
+
+    /* ─── HEADER ─── */
+    .section-header {
+      margin-bottom: 72px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 20px;
+    }
+
+    .eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(64px, 9vw, 120px);
+      line-height: 0.92;
+      letter-spacing: 0.01em;
+      color: var(--white);
+      margin-bottom: 24px;
+    }
+
+    h1 span {
+      color: var(--red);
+    }
+
+    .subtitle {
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--muted);
+      max-width: 420px;
+      line-height: 1.7;
+    }
+
+    /* ─── GRID ─── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--surface);
+      padding: 44px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--red-dim);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      background: var(--card-hover);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 40px;
+      transition: color 0.3s;
+    }
+
+    .card:hover .card-number {
+      color: var(--red);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 28px;
+      display: block;
+      color: var(--muted);
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .card:hover .card-icon {
+      color: var(--red);
+      transform: translateY(-3px);
+    }
+
+    .card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      margin-bottom: 14px;
+      line-height: 1;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.65;
+      flex: 1;
+      margin-bottom: 32px;
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.3s, gap 0.3s;
+    }
+
+    .card:hover .card-link {
+      color: var(--red);
+      gap: 14px;
+    }
+
+    .card-link svg {
+      transition: transform 0.3s;
+    }
+
+    .card:hover .card-link svg {
+      transform: translateX(3px);
+    }
+
+    /* ─── BOTTOM BAR ─── */
+    .bottom-bar {
+      margin-top: 60px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .bottom-bar p {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--red);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 14px 28px;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .cta-btn:hover {
+      background: #c0322a;
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 580px) {
+      .services-section {
+        padding: 60px 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-bar {
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <section class="services-section">
+    <header class="section-header">
+      <div class="eyebrow">What we offer</div>
+      <h1>Our<br><span>Services</span></h1>
+      <p class="subtitle">Everything you need to keep your motorcycle running at peak performance  handled by people
+        who ride.</p>
+    </header>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="card-number">01</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <!-- Wrench body -->
+          <path
+            d="M35.5 4C30.25 4 26 8.25 26 13.5c0 1.1.18 2.16.5 3.15L6.8 36.35A3.75 3.75 0 0 0 12.15 41.7l19.7-19.7c.99.32 2.05.5 3.15.5C40.25 22.5 44.5 18.25 44.5 13c0-1.38-.3-2.7-.83-3.88l-5.5 5.5-3.79-.79-.79-3.79 5.5-5.5A9.36 9.36 0 0 0 35.5 4z" />
+          <circle cx="10.5" cy="38.5" r="2" />
+        </svg>
+        <div class="card-title">General Repair</div>
+        <p class="card-desc">Comprehensive maintenance and repair services for all motorcycle types  from oil changes
+          to full engine rebuilds.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-number">02</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M19.5 4l-1.5 5.1a15.1 15.1 0 0 0-4.1 2.4L8.7 9.6 4 17.4l4.2 3.3a15.3 15.3 0 0 0 0 6.6L4 30.6 8.7 38.4l5.2-1.9c1.2.9 2.6 1.7 4.1 2.4L19.5 44h9l1.5-5.1a15.1 15.1 0 0 0 4.1-2.4l5.2 1.9 4.7-7.8-4.2-3.3a15.3 15.3 0 0 0 0-6.6l4.2-3.3-4.7-7.8-5.2 1.9a15.1 15.1 0 0 0-4.1-2.4L28.5 4h-9zM24 16a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm0 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" />
+        </svg>
+        <div class="card-title">Parts & Accessories</div>
+        <p class="card-desc">Wide selection of genuine and premium motorcycle components, sourced from trusted
+          manufacturers worldwide.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-number">03</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M34 6h-2V4h-4v2H20V4h-4v2h-2a4 4 0 0 0-4 4v28a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V10a4 4 0 0 0-4-4zm0 32H14V18h20v20zm0-24H14v-4h20v4zM18 22h-4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4zm-12 6h-4v4h4v-4zm6 0h-4v4h4v-4z" />
+        </svg>
+        <div class="card-title">Online Booking</div>
+        <p class="card-desc">Easy appointment scheduling with real-time availability. Book your slot in under a minute,
+          reschedule anytime.</p>
+        <a href="#" class="card-link">
+          Learn more
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 1L13 5M13 5L8.5 9M13 5H1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-number">04</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M30 4h-4v4h-4V4h-4v4h-2a4 4 0 0 0-4 4v2H8v4h4v4H8v4h4v2a4 4 0 0 0 4 4h2v4h4v-4h4v4h4v-4h2a4 4 0 0 0 4-4v-2h4v-4h-4v-4h4v-4h-4v-2a4 4 0 0 0-4-4h-2V4zM16 14h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2V16a2 2 0 0 1 2-2zm2 4v10h12V18H18zm2 2h8v6h-8v-6z" />
+        </svg>
+        <div class="card-title">AI Diagnostics</div>
+        <p class="card-desc">Advanced diagnostics to identify issues quickly and accurately  reducing guesswork and
+          turnaround time.</p>
+        <a href="#" class="card-link">
+          Learn more
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 1L13 5M13 5L8.5 9M13 5H1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-number">05</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm0 4c2.04 0 4 .36 5.82 1.02L24 14.34l-5.82-5.32A15.93 15.93 0 0 1 24 8zM14.7 10.9l5.54 5.06-2.38 7.34-6.96 2.26A16.05 16.05 0 0 1 14.7 10.9zm18.6 0a16.05 16.05 0 0 1 3.8 14.66l-6.96-2.26-2.38-7.34 5.54-5.06zM24 18.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11zm-9.56 8.16l6.62 2.15 2.04 6.28A16.1 16.1 0 0 1 9.04 26.8l5.4-.14zm19.12 0 5.4.14a16.1 16.1 0 0 1-14.06 8.09l2.04-6.28 6.62-2.15z" />
+        </svg>
+        <div class="card-title">Tire & Wheel</div>
+        <p class="card-desc">Professional tire fitting, balancing, and wheel maintenance. We carry all major brands in
+          stock.</p>
+        <a href="#" class="card-link">
+          Learn more
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 1L13 5M13 5L8.5 9M13 5H1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-number">06</div>
+        <svg class="card-icon" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M30 4h-3.17A4 4 0 0 0 23 2h-2a4 4 0 0 0-3.83 2H14a4 4 0 0 0-4 4v32a4 4 0 0 0 4 4h20a4 4 0 0 0 4-4V8a4 4 0 0 0-4-4zm-8 2h2a2 2 0 0 1 0 4h-2a2 2 0 0 1 0-4zm8 34H14V8h4v2h8V8h4v32zM16 20h16v-3H16v3zm0 6h16v-3H16v3zm0 6h10v-3H16v3z" />
+        </svg>
+        <div class="card-title">Service History</div>
+        <p class="card-desc">Complete tracking of all your vehicle maintenance records  accessible anytime, shareable
+          with buyers.</p>
+        <a href="#" class="card-link">
+          Learn more
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 1L13 5M13 5L8.5 9M13 5H1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+
+    </div>
+
+    <div class="bottom-bar">
+      <p>Not sure what your bike needs? Talk to one of our technicians.</p>
+      <a href="#" class="cta-btn">
+        Book a service
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8.5 1L13 5M13 5L8.5 9M13 5H1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </a>
+    </div>
+  </section>
+
+</body>
+
+</html>

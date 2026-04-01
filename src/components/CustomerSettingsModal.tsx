@@ -16,6 +16,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
@@ -224,39 +225,46 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[700px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[700px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
         >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg">
-                <Settings size={20} className="text-white" />
+          <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
+                <Settings size={28} className="text-white" strokeWidth={1.5} />
               </div>
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">Settings</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">Manage your profile, vehicles & security</p>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> ACCOUNT
+                </div>
+                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
+                  SETTINGS
+                </h2>
+                <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
+                  Manage your profile, vehicles & security
+                </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-              <X size={20} />
+            <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+              <X size={20} strokeWidth={1} />
             </button>
           </div>
 
           {/* ── Tabs ── */}
-          <div className="flex items-center gap-1 px-4 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 flex-shrink-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 px-6 sm:px-10 py-4 border-b border-[#222] overflow-x-auto flex-shrink-0 bg-[#0a0a0a]">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.key}
                   onClick={() => { setActiveTab(tab.key); setError(""); setSuccess(""); }}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex items-center gap-2 px-5 py-3 text-[10px] font-bold tracking-widest uppercase transition-all border ${
                     activeTab === tab.key
-                      ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                      : "text-slate-500 hover:text-slate-300 border border-transparent hover:bg-slate-800/40"
+                      ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
+                      : "text-[#6b6b6b] border-[#222] hover:bg-[#111] hover:text-[#888] hover:border-[#333]"
                   }`}
                 >
-                  <Icon size={13} />
+                  <Icon size={14} />
                   {tab.label}
                 </button>
               );
@@ -268,102 +276,104 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
             {success && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="mx-4 sm:mx-8 mt-3 sm:mt-4 px-3 sm:px-4 py-2.5 sm:py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold"
+                className="mx-6 sm:mx-10 mt-6 px-4 py-3 bg-[#221515] border border-[#d63a2f] flex items-center gap-3 text-[#d63a2f] text-[10px] tracking-widest uppercase font-bold"
               >
-                <CheckCircle size={16} /> {success}
+                <CheckCircle size={14} /> {success}
               </motion.div>
             )}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="mx-4 sm:mx-8 mt-3 sm:mt-4 px-3 sm:px-4 py-2.5 sm:py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs sm:text-sm font-semibold"
+                className="mx-6 sm:mx-10 mt-6 px-4 py-3 bg-red-900/20 border border-red-500 flex items-center gap-3 text-red-500 text-[10px] tracking-widest uppercase font-bold"
               >
-                {error}
+                <AlertCircle size={14} className="text-red-500" /> {error}
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* ── Content ── */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 bg-[#0a0a0a]">
             <AnimatePresence mode="wait">
               {/* ── Profile Tab ── */}
               {activeTab === "profile" && (
                 <motion.div key="profile" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                  <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/20">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                      <User size={16} className="text-blue-400" /> Profile Information
+                  <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
+                    <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <User size={14} className="text-[#d63a2f]" /> PROFILE INFORMATION
                     </h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {/* Name */}
                       <div>
-                        <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                          <User size={12} /> Full Name *
+                        <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                          <User size={12} /> FULL NAME *
                         </label>
                         <input
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
-                          placeholder="Your full name"
+                          className="w-full bg-[#0a0a0a] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase placeholder-[#444]"
+                          placeholder="YOUR FULL NAME"
                         />
                       </div>
 
                       {/* Email (read-only) */}
                       <div>
-                        <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                          <Mail size={12} /> Email
+                        <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                          <Mail size={12} /> EMAIL
                         </label>
                         <input
                           type="email"
                           value={user?.email || ""}
                           disabled
-                          className="w-full bg-slate-800/20 text-slate-500 px-4 py-3 rounded-xl border border-slate-700/20 text-sm cursor-not-allowed"
+                          className="w-full bg-[#050505] text-[#555] px-4 py-3 border border-[#222] transition text-xs font-bold tracking-widest uppercase cursor-not-allowed"
                         />
-                        <p className="text-[10px] text-slate-600 mt-1">Email cannot be changed</p>
+                        <p className="text-[9px] text-[#444] tracking-widest uppercase font-bold mt-2">EMAIL CANNOT BE CHANGED</p>
                       </div>
 
                       {/* Phone */}
                       <div>
-                        <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                          <Phone size={12} /> Phone Number
+                        <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                          <Phone size={12} /> PHONE NUMBER
                         </label>
                         <input
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
+                          className="w-full bg-[#0a0a0a] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase placeholder-[#444]"
                           placeholder="09XX XXX XXXX"
                         />
                       </div>
 
                       {/* Address */}
                       <div>
-                        <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                          <MapPin size={12} /> Address
+                        <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                          <MapPin size={12} /> ADDRESS
                         </label>
                         <textarea
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
                           rows={2}
-                          className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm resize-none placeholder-slate-600"
-                          placeholder="Your home or office address"
+                          className="w-full bg-[#0a0a0a] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase resize-none placeholder-[#444]"
+                          placeholder="YOUR HOME OR OFFICE ADDRESS"
                         />
                       </div>
 
                       {/* Save Button */}
-                      <button
-                        onClick={handleSaveProfile}
-                        disabled={saving}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                          saving
-                            ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25"
-                        }`}
-                      >
-                        {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
-                        {saving ? "Saving..." : "Save Changes"}
-                      </button>
+                      <div className="pt-4 border-t border-[#222]">
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={saving}
+                          className={`flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 text-[10px] font-bold tracking-widest uppercase transition border ${
+                            saving
+                              ? "bg-[#111] text-[#555] border-[#222] cursor-not-allowed"
+                              : "bg-[#d63a2f] hover:bg-[#c0322a] text-white border-[#d63a2f]"
+                          }`}
+                        >
+                          {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                          {saving ? "SAVING..." : "SAVE CHANGES"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -372,16 +382,16 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
               {/* ── Vehicles Tab ── */}
               {activeTab === "vehicles" && (
                 <motion.div key="vehicles" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                  <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/20">
-                    <div className="flex items-center justify-between mb-5">
-                      <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <Car size={16} className="text-blue-400" /> My Vehicles
+                  <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                      <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Car size={14} className="text-[#d63a2f]" /> MY VEHICLES
                       </h3>
                       <button
                         onClick={() => setShowAddVehicle(!showAddVehicle)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition border border-blue-500/20"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-[#221515] hover:bg-[#d63a2f] text-[#d63a2f] hover:text-white border border-[#d63a2f] text-[10px] font-bold tracking-widest uppercase transition"
                       >
-                        <Plus size={14} /> Add Vehicle
+                        <Plus size={12} /> ADD VEHICLE
                       </button>
                     </div>
 
@@ -390,44 +400,44 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                       {showAddVehicle && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                          className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/20 mb-4 space-y-3 overflow-hidden"
+                          className="bg-[#0a0a0a] p-5 border border-[#333] mb-6 space-y-4 overflow-hidden"
                         >
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <input
-                              type="text" placeholder="Make (e.g. Honda)" value={newVehicle.make} onChange={(e) => setNewVehicle({ ...newVehicle, make: e.target.value })}
-                              className="bg-slate-800/60 text-white px-3 py-2.5 rounded-lg border border-slate-700/30 focus:border-blue-500/50 focus:outline-none text-sm placeholder-slate-600"
+                              type="text" placeholder="MAKE (E.G. HONDA)" value={newVehicle.make} onChange={(e) => setNewVehicle({ ...newVehicle, make: e.target.value })}
+                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                             />
                             <input
-                              type="text" placeholder="Model (e.g. Click 150i)" value={newVehicle.model} onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
-                              className="bg-slate-800/60 text-white px-3 py-2.5 rounded-lg border border-slate-700/30 focus:border-blue-500/50 focus:outline-none text-sm placeholder-slate-600"
+                              type="text" placeholder="MODEL (E.G. CLICK 150I)" value={newVehicle.model} onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
+                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                             />
                             <input
-                              type="number" placeholder="Year" value={newVehicle.year} onChange={(e) => setNewVehicle({ ...newVehicle, year: e.target.value })}
-                              className="bg-slate-800/60 text-white px-3 py-2.5 rounded-lg border border-slate-700/30 focus:border-blue-500/50 focus:outline-none text-sm placeholder-slate-600"
+                              type="number" placeholder="YEAR" value={newVehicle.year} onChange={(e) => setNewVehicle({ ...newVehicle, year: e.target.value })}
+                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                             />
                             <input
-                              type="text" placeholder="Plate Number" value={newVehicle.plate_number} onChange={(e) => setNewVehicle({ ...newVehicle, plate_number: e.target.value })}
-                              className="bg-slate-800/60 text-white px-3 py-2.5 rounded-lg border border-slate-700/30 focus:border-blue-500/50 focus:outline-none text-sm placeholder-slate-600 uppercase"
+                              type="text" placeholder="PLATE NUMBER" value={newVehicle.plate_number} onChange={(e) => setNewVehicle({ ...newVehicle, plate_number: e.target.value })}
+                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                             />
                           </div>
                           <input
-                            type="text" placeholder="Engine Number (optional)" value={newVehicle.engine_number} onChange={(e) => setNewVehicle({ ...newVehicle, engine_number: e.target.value })}
-                            className="w-full bg-slate-800/60 text-white px-3 py-2.5 rounded-lg border border-slate-700/30 focus:border-blue-500/50 focus:outline-none text-sm placeholder-slate-600"
+                            type="text" placeholder="ENGINE NUMBER (OPTIONAL)" value={newVehicle.engine_number} onChange={(e) => setNewVehicle({ ...newVehicle, engine_number: e.target.value })}
+                            className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex gap-3 pt-2">
                             <button
                               onClick={handleAddVehicle}
                               disabled={savingVehicle}
-                              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition"
+                              className="flex items-center gap-2 px-5 py-2.5 bg-[#d63a2f] hover:bg-[#c0322a] text-white border border-[#d63a2f] text-[10px] font-bold tracking-widest uppercase transition"
                             >
-                              {savingVehicle ? <Loader size={13} className="animate-spin" /> : <Plus size={13} />}
-                              {savingVehicle ? "Adding..." : "Add Vehicle"}
+                              {savingVehicle ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
+                              {savingVehicle ? "ADDING..." : "ADD VEHICLE"}
                             </button>
                             <button
                               onClick={() => { setShowAddVehicle(false); setNewVehicle({ make: "", model: "", year: "", plate_number: "", engine_number: "" }); }}
-                              className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-400 rounded-lg text-xs font-bold transition"
+                              className="px-5 py-2.5 bg-[#111] hover:bg-[#222] text-[#888] hover:text-white border border-[#333] text-[10px] font-bold tracking-widest uppercase transition"
                             >
-                              Cancel
+                              CANCEL
                             </button>
                           </div>
                         </motion.div>
@@ -436,39 +446,42 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
 
                     {/* Vehicle List */}
                     {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="flex items-center justify-center py-12">
+                        <div className="w-8 h-8 border-3 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : vehicles.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Car className="w-10 h-10 text-slate-700 mx-auto mb-2" />
-                        <p className="text-slate-500 text-sm">No vehicles registered yet</p>
+                      <div className="text-center py-12 border border-[#222] bg-[#0a0a0a]">
+                        <Car className="w-12 h-12 text-[#333] mx-auto mb-4" />
+                        <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">NO VEHICLES REGISTERED YET</p>
                       </div>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-4">
                         {vehicles.map((vehicle) => (
                           <div
                             key={vehicle.id}
-                            className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/20 flex items-center justify-between group"
+                            className="bg-[#0a0a0a] p-5 border border-[#222] hover:border-[#333] flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-colors"
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-lg bg-slate-800/60 border border-slate-700/30 flex items-center justify-center">
-                                <Car size={14} className="text-slate-400" />
+                            <div className="flex items-start sm:items-center gap-4">
+                              <div className="w-12 h-12 bg-[#111] border border-[#333] flex items-center justify-center shrink-0">
+                                <Car size={16} className="text-[#6b6b6b]" />
                               </div>
                               <div>
-                                <p className="text-white font-bold text-sm">{vehicle.make} {vehicle.model}</p>
-                                <p className="text-slate-500 text-xs">
-                                  {vehicle.year}{vehicle.engine_number && ` • ${vehicle.engine_number}`}
+                                <p className="font-display text-xl text-white uppercase tracking-wide leading-none mb-2 group-hover:text-[#d63a2f] transition-colors">
+                                  {vehicle.make} {vehicle.model}
+                                </p>
+                                <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">
+                                  {vehicle.year}{vehicle.engine_number && ` • ENGINE: ${vehicle.engine_number}`}
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-slate-800/60 text-slate-400 px-2.5 py-1 rounded-lg border border-slate-700/30 font-mono font-bold">
+                            <div className="flex items-center gap-4 self-end sm:self-auto">
+                              <span className="text-[10px] tracking-widest bg-[#111] text-[#d63a2f] px-3 py-1.5 border border-[#333] font-bold uppercase">
                                 {vehicle.plate_number}
                               </span>
                               <button
                                 onClick={() => handleDeleteVehicle(vehicle.id)}
-                                className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition opacity-0 group-hover:opacity-100"
+                                className="w-8 h-8 flex items-center justify-center text-[#555] hover:text-white hover:bg-red-600 border border-transparent hover:border-red-600 transition-all opacity-100 sm:opacity-0 group-hover:opacity-100"
+                                title="Remove Vehicle"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -484,71 +497,71 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
               {/* ── Security Tab ── */}
               {activeTab === "security" && (
                 <motion.div key="security" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                  <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/20">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                      <Lock size={16} className="text-blue-400" /> Password & Security
+                  <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
+                    <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <Lock size={14} className="text-[#d63a2f]" /> PASSWORD & SECURITY
                     </h3>
 
                     {!showPasswordChange ? (
                       <button
                         onClick={() => setShowPasswordChange(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 rounded-xl transition text-sm font-semibold border border-slate-700/30"
+                        className="flex items-center justify-center sm:justify-start gap-2 px-6 py-3 bg-[#0a0a0a] hover:bg-[#221515] text-white hover:text-[#d63a2f] border border-[#333] hover:border-[#d63a2f] text-[10px] font-bold tracking-widest uppercase transition w-full sm:w-auto"
                       >
-                        <Lock size={14} /> Change Password
+                        <Lock size={12} /> CHANGE PASSWORD
                       </button>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <div>
-                          <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                            <Lock size={12} /> New Password *
+                          <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                            <Lock size={12} /> NEW PASSWORD *
                           </label>
                           <div className="relative">
                             <input
                               type={showPassword ? "text" : "password"}
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
-                              className="w-full bg-slate-800/40 text-white px-4 py-3 pr-12 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
-                              placeholder="At least 6 characters"
+                              className="w-full bg-[#0a0a0a] text-white px-4 py-3 pr-12 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase placeholder-[#444]"
+                              placeholder="AT LEAST 6 CHARACTERS"
                             />
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#d63a2f] transition"
                             >
-                              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                              {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 mb-1.5">
-                            <Lock size={12} /> Confirm Password *
+                          <label className="text-[10px] text-[#555] font-bold tracking-widest uppercase flex items-center gap-2 mb-2">
+                            <Lock size={12} /> CONFIRM PASSWORD *
                           </label>
                           <input
                             type={showPassword ? "text" : "password"}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
-                            placeholder="Re-enter new password"
+                            className="w-full bg-[#0a0a0a] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase placeholder-[#444]"
+                            placeholder="RE-ENTER NEW PASSWORD"
                           />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#222]">
                           <button
                             onClick={handleChangePassword}
                             disabled={changingPassword}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            className={`flex items-center justify-center gap-2 px-6 py-3 text-[10px] font-bold tracking-widest uppercase transition border ${
                               changingPassword
-                                ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25"
+                                ? "bg-[#111] text-[#555] border-[#222] cursor-not-allowed"
+                                : "bg-[#d63a2f] hover:bg-[#c0322a] text-white border-[#d63a2f]"
                             }`}
                           >
-                            {changingPassword ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-                            {changingPassword ? "Changing..." : "Update Password"}
+                            {changingPassword ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+                            {changingPassword ? "CHANGING..." : "UPDATE PASSWORD"}
                           </button>
                           <button
                             onClick={() => { setShowPasswordChange(false); setNewPassword(""); setConfirmPassword(""); }}
-                            className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-400 rounded-xl text-sm font-bold transition"
+                            className="px-6 py-3 bg-[#111] hover:bg-[#222] text-[#888] hover:text-white border border-[#333] text-[10px] font-bold tracking-widest uppercase transition flex items-center justify-center"
                           >
-                            Cancel
+                            CANCEL
                           </button>
                         </div>
                       </div>

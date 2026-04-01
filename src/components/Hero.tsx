@@ -39,17 +39,6 @@ const Hero: React.FC = () => {
           </h1>
         </motion.div>
 
-        {/* Subtitle */}
-        <motion.p
-          className="text-base sm:text-lg md:text-xl text-gray-100 mb-8 max-w-2xl mx-auto font-medium tracking-wide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-        >
-          Premium motorcycles, protective gear, and accessories for riders who
-          demand the best. Fast shipping. Real quality. Pure adrenaline.
-        </motion.p>
-
         {/* CTA Buttons */}
         <motion.div
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"

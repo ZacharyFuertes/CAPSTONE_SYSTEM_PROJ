@@ -9,15 +9,17 @@ interface CustomerLoginPageProps {
   onLoginSuccess: () => void;
   onBack: () => void;
   onHome?: () => void;
+  initialIsSignup?: boolean;
 }
 
 const LoginPage: React.FC<CustomerLoginPageProps> = ({
   onLoginSuccess,
   onBack,
   onHome,
+  initialIsSignup = false,
 }) => {
   const { login, signup, user, isLoading } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
+  const [isSignup, setIsSignup] = useState(initialIsSignup);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loginAttempted, setLoginAttempted] = useState(false);

@@ -33,34 +33,34 @@ interface ViewAppointmentsModalProps {
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode; label: string }> = {
   pending: {
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/10 border-yellow-500/20",
-    icon: <Clock size={13} />,
-    label: "Pending",
+    color: "text-yellow-500",
+    bg: "bg-[#221515] border-yellow-500/50",
+    icon: <Clock size={12} strokeWidth={2} />,
+    label: "PENDING",
   },
   confirmed: {
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
-    icon: <CheckCircle size={13} />,
-    label: "Confirmed",
+    color: "text-white",
+    bg: "bg-[#d63a2f] border-[#d63a2f]",
+    icon: <CheckCircle size={12} strokeWidth={2} />,
+    label: "CONFIRMED",
   },
   in_progress: {
-    color: "text-purple-400",
-    bg: "bg-purple-500/10 border-purple-500/20",
-    icon: <Wrench size={13} />,
-    label: "In Progress",
+    color: "text-[#d63a2f]",
+    bg: "bg-[#221515] border-[#d63a2f]",
+    icon: <Wrench size={12} strokeWidth={2} />,
+    label: "IN PROGRESS",
   },
   completed: {
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10 border-emerald-500/20",
-    icon: <CheckCircle size={13} />,
-    label: "Completed",
+    color: "text-green-500",
+    bg: "bg-green-900/20 border-green-500/50",
+    icon: <CheckCircle size={12} strokeWidth={2} />,
+    label: "COMPLETED",
   },
   cancelled: {
-    color: "text-red-400",
-    bg: "bg-red-500/10 border-red-500/20",
-    icon: <XCircle size={13} />,
-    label: "Cancelled",
+    color: "text-red-500",
+    bg: "bg-red-900/20 border-red-500/50",
+    icon: <XCircle size={12} strokeWidth={2} />,
+    label: "CANCELLED",
   },
 };
 
@@ -191,69 +191,76 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
         >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <CalendarDays size={20} className="text-white" />
+          <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
+                <CalendarDays size={28} className="text-white" strokeWidth={1.5} />
               </div>
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">My Appointments</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">View and manage your service appointments</p>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> MY SCHEDULE
+                </div>
+                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
+                  APPOINTMENTS
+                </h2>
+                <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
+                  View and manage your service appointments
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white"
+                className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0"
                 title="Refresh"
               >
-                <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCw size={20} strokeWidth={1} className={refreshing ? "animate-spin" : ""} />
               </button>
-              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-                <X size={20} />
+              <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+                <X size={20} strokeWidth={1} />
               </button>
             </div>
           </div>
 
           {/* ── Filter Tabs ── */}
-          <div className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 flex-shrink-0">
+          <div className="flex items-center gap-2 px-6 sm:px-10 py-4 border-b border-[#222] flex-shrink-0 bg-[#0a0a0a]">
             {FILTER_TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setFilter(tab.key)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-5 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
                   filter === tab.key
-                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                    : "text-slate-500 hover:text-slate-300 border border-transparent hover:bg-slate-800/40"
+                    ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
+                    : "text-[#6b6b6b] border-[#222] hover:text-[#888] hover:bg-[#111] hover:border-[#333]"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
-            <div className="ml-auto text-xs text-slate-600">
-              {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? "s" : ""}
+            <div className="ml-auto text-[10px] font-bold tracking-widest uppercase text-[#555]">
+              {filteredAppointments.length} APPOINTMENT{filteredAppointments.length !== 1 ? "S" : ""}
             </div>
           </div>
 
           {/* ── Appointments List ── */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6">
+          <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-3 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredAppointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <AlertCircle className="w-14 h-14 text-slate-700 mb-4" />
-                <p className="text-slate-500 text-sm">
-                  {filter === "upcoming" ? "No upcoming appointments" : filter === "past" ? "No past appointments" : "No appointments found"}
+              <div className="flex flex-col items-center justify-center py-20 border border-[#222] bg-[#111]">
+                <AlertCircle className="w-14 h-14 text-[#333] mb-4" strokeWidth={1} />
+                <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">
+                  {filter === "upcoming" ? "NO UPCOMING APPOINTMENTS" : filter === "past" ? "NO PAST APPOINTMENTS" : "NO APPOINTMENTS FOUND"}
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredAppointments.map((apt, index) => {
                   const status = STATUS_CONFIG[apt.status] || STATUS_CONFIG.pending;
                   const showCancel = canCancel(apt);
@@ -266,63 +273,62 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.04 }}
-                      className="bg-slate-800/30 rounded-2xl p-3 sm:p-5 border border-slate-700/20 hover:border-slate-600/40 transition-all group"
+                      className="bg-[#111111] rounded-none p-6 border border-[#222] hover:border-[#333] transition flex flex-col items-stretch group"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="flex items-start justify-between flex-1">
+                        <div className="flex items-start gap-4 flex-1 min-w-0">
                           {/* Date Badge */}
-                          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-800/60 border border-slate-700/30 flex flex-col items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] text-slate-500 font-semibold leading-none">
+                          <div className="w-16 h-16 bg-[#0a0a0a] border border-[#333] flex flex-col items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] text-[#555] font-bold tracking-widest uppercase mb-1">
                               {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
                             </span>
-                            <span className="text-base sm:text-lg font-black text-white leading-tight">
+                            <span className="font-display text-2xl text-white leading-none">
                               {new Date(apt.scheduled_date + "T00:00:00").getDate()}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-white font-bold text-sm mb-1">{apt.service_type}</h4>
-                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                              <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                <Calendar size={11} />
+                            <h4 className="font-display text-xl text-white uppercase leading-none mb-3 group-hover:text-[#d63a2f] transition-colors">{apt.service_type}</h4>
+                            <div className="flex flex-col gap-2">
+                              <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
+                                <Calendar size={12} className="text-[#555]" />
                                 {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                               </span>
-                              <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                <Clock size={11} />
+                              <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
+                                <Clock size={12} className="text-[#555]" />
                                 {formatTime(apt.scheduled_time)}
                               </span>
                               {apt.mechanic_name && (
-                                <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                                  <Wrench size={11} />
+                                <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
+                                  <Wrench size={12} className="text-[#d63a2f]" />
                                   {apt.mechanic_name}
                                 </span>
                               )}
                             </div>
                             {apt.description && (
-                              <p className="text-slate-600 text-xs mt-2">{apt.description}</p>
+                              <p className="text-[#555] text-xs mt-4 font-light italic border-l block border-[#d63a2f] pl-2">{apt.description}</p>
                             )}
                           </div>
                         </div>
+                      </div>
+                      
+                      {/* Action Row */}
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#222]">
+                        {/* Status Badge */}
+                        <span className={`flex items-center gap-1.5 text-[9px] px-3 py-1.5 border font-bold tracking-widest ${status.bg} ${status.color}`}>
+                          {status.icon}
+                          {status.label}
+                        </span>
 
-                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                          {/* Status Badge */}
-                          <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border font-bold ${status.bg} ${status.color}`}>
-                            {status.icon}
-                            {status.label}
-                          </span>
-
-                          {/* Cancel Button */}
-                          {showCancel && !isConfirmingCancel && (
-                            <motion.button
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              onClick={() => setConfirmCancelId(apt.id)}
-                              className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-red-400 transition px-2 py-1 rounded-lg hover:bg-red-500/10"
-                            >
-                              <Ban size={11} /> Cancel
-                            </motion.button>
-                          )}
-                        </div>
+                        {/* Cancel Button */}
+                        {showCancel && !isConfirmingCancel && (
+                          <button
+                            onClick={() => setConfirmCancelId(apt.id)}
+                            className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase text-[#555] hover:text-white transition px-3 py-1.5 bg-[#161616] hover:bg-[#d63a2f] border border-[#333] hover:border-[#d63a2f]"
+                          >
+                            <Ban size={10} /> CANCEL
+                          </button>
+                        )}
                       </div>
 
                       {/* Cancel Confirmation */}
@@ -334,26 +340,26 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                             exit={{ opacity: 0, height: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="mt-3 pt-3 border-t border-slate-700/20 flex items-center justify-between">
-                              <p className="text-xs text-red-400 font-semibold">Are you sure you want to cancel this appointment?</p>
-                              <div className="flex items-center gap-2">
+                            <div className="mt-4 pt-4 border-t border-[#333] border-dashed flex flex-col justify-between gap-4">
+                              <p className="text-[10px] text-red-500 tracking-widest font-bold uppercase">ARE YOU SURE YOU WANT TO CANCEL THIS APPOINTMENT?</p>
+                              <div className="flex items-center gap-3 w-full">
                                 <button
                                   onClick={() => setConfirmCancelId(null)}
-                                  className="px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/60 rounded-lg transition border border-slate-700/30"
+                                  className="flex-1 px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-[#888] hover:text-white bg-[#161616] hover:bg-[#222] transition border border-[#333]"
                                 >
-                                  No, Keep
+                                  KEEP
                                 </button>
                                 <button
                                   onClick={() => handleCancelAppointment(apt.id)}
                                   disabled={isCancelling}
-                                  className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition shadow-lg shadow-red-600/25 flex items-center gap-1"
+                                  className="flex-1 px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-white bg-[#d63a2f] hover:bg-[#c0322a] transition flex items-center justify-center gap-2 border border-[#d63a2f]"
                                 >
                                   {isCancelling ? (
                                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                   ) : (
                                     <XCircle size={12} />
                                   )}
-                                  {isCancelling ? "Cancelling..." : "Yes, Cancel"}
+                                  {isCancelling ? "CANCELLING..." : "YES, CANCEL"}
                                 </button>
                               </div>
                             </div>
@@ -366,6 +372,7 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
               </div>
             )}
           </div>
+
         </motion.div>
       </motion.div>
     </AnimatePresence>

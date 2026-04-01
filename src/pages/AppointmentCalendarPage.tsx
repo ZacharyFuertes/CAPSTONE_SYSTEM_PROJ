@@ -547,6 +547,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
                   <option>Tire Replacement</option>
                   <option>Engine Diagnostic</option>
                   <option>General Maintenance</option>
+                  <option>Custom Work</option>
                 </select>
 
                 {/* Mechanic Selection */}

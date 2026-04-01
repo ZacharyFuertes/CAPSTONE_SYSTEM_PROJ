@@ -1,0 +1,8 @@
+﻿
+> motoshop-landing@1.0.0 build
+> tsc && vite build
+
+src/components/AIChatModal.tsx(46,3): error TS6133: 'userRole' is declared but its value is never read.
+src/components/ServicesGrid.tsx(10,3): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/components/TrustSection.tsx(3,48): error TS6133: 'Send' is declared but its value is never read.
+src/components/TrustSection.tsx(27,9): error TS6133: 'handleSubscribe' is declared but its value is never read.

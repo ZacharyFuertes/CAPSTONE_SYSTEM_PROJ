@@ -17,9 +17,12 @@ interface NavbarProps {
   onBookAppointment?: () => void;
   onBrowseParts?: () => void;
   onJoinSignIn?: () => void;
+  onSignUp?: () => void;
+  onMechanics?: () => void;
   onViewAccount?: () => void;
   onSettings?: () => void;
   onServiceHistory?: () => void;
+  onAIChat?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -27,9 +30,12 @@ const Navbar: React.FC<NavbarProps> = ({
   onBookAppointment,
   onBrowseParts,
   onJoinSignIn,
+  onSignUp,
+  onMechanics,
   onViewAccount,
   onSettings,
   onServiceHistory,
+  onAIChat,
 }) => {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -58,58 +64,68 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const scrollToSection = (id: string) => {
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        // Get the header height (approx 80px) to offset the scroll
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }, 100); // 100ms delay helps prevent mobile layout shifting issues
+  };
+
   const navItems = [
-    { label: "Browse Parts", onClick: onBrowseParts },
-    { label: "Book Appointment", onClick: onBookAppointment },
+    { label: "AI CHAT", onClick: onAIChat },
+    { label: "BROWSE PARTS", onClick: onBrowseParts },
+    { label: "BOOK APPOINTMENT", onClick: onBookAppointment },
+    { label: "SERVICES", onClick: () => scrollToSection("services") },
+    { label: "ABOUT US", onClick: () => scrollToSection("about") },
+    { label: "MECHANICS", onClick: onMechanics },
     ...(user
-      ? [{ label: "My Appointments", onClick: onShowAppointments }]
+      ? [{ label: "MY APPOINTMENTS", onClick: onShowAppointments }]
       : []),
   ];
 
   return (
     <motion.nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 will-change-transform ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-[#222] ${
         scrolled
-          ? "bg-[#0f172a] sm:bg-[#0f172a]/98 backdrop-blur-none sm:backdrop-blur-xl shadow-xl sm:shadow-2xl shadow-black/30"
-          : "bg-[#0f172a]/95 sm:bg-[#0f172a]/80 backdrop-blur-none sm:backdrop-blur-md"
+          ? "bg-[#0a0a0a] shadow-2xl"
+          : "bg-[#0a0a0a]"
       }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* Animated gradient border at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
-        <motion.div
-          className="h-full w-[200%]"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent 0%, #f97316 15%, #f59e0b 30%, #22c55e 50%, #f59e0b 70%, #f97316 85%, transparent 100%)",
-          }}
-          animate={{ x: ["-50%", "0%"] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        />
-      </div>
+      {/* Red accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#d63a2f]" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="flex items-center justify-between h-[72px] lg:h-[100px]">
-          {/* ── Logo ── */}
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-8">
+        <div className="flex items-center justify-between h-[72px] lg:h-[100px] gap-2 lg:gap-6">
           <motion.div
-            className="flex items-center gap-3 cursor-pointer select-none"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+            className="flex items-center gap-2 lg:gap-3 cursor-pointer select-none shrink-0"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <img
               src="/logo.png"
               alt="JSBM MotoShop Logo"
-              className="w-10 h-10 lg:w-14 lg:h-14 object-contain rounded-full"
+              className="w-10 h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 object-contain rounded-full bg-white border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.15)]"
             />
-            <span className="text-xl lg:text-2xl font-black tracking-tight text-white">
-              JSBM MOTOSHOP
+            <span className="text-lg lg:text-xl xl:text-2xl font-display font-black tracking-wide text-white leading-none uppercase">
+              JSBM<br className="hidden sm:block lg:hidden" /> MOTOSHOP
             </span>
           </motion.div>
 
           {/* ── Center Nav Items (Desktop) ── */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex flex-1 justify-center items-center gap-1 xl:gap-2 overflow-hidden">
             {navItems.map((item, idx) => (
               <motion.button
                 key={idx}
@@ -117,54 +133,42 @@ const Navbar: React.FC<NavbarProps> = ({
                   item.onClick?.();
                   setMobileOpen(false);
                 }}
-                className="relative px-5 lg:px-7 py-2.5 lg:py-3 text-sm lg:text-base font-semibold text-slate-400 hover:text-white transition-all duration-300 rounded-xl hover:bg-white/[0.06] group"
+                className="relative px-2 xl:px-3 py-2 text-[10px] xl:text-xs font-bold tracking-widest uppercase text-white hover:text-white transition-all duration-300 border border-transparent hover:border-[#333] hover:bg-[#111] group whitespace-nowrap shrink-0"
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.97 }}
               >
-                {/* Hover underline glow */}
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 group-hover:w-6 h-[2px] bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-300" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#d63a2f] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
                 {item.label}
               </motion.button>
             ))}
           </div>
 
           {/* ── Right Side ── */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             {user ? (
               <div ref={profileRef} className="relative">
                 {/* Profile Trigger */}
                 <motion.button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-3 pl-2 pr-4 py-2 rounded-xl hover:bg-white/[0.06] transition-all group border border-transparent hover:border-slate-700/50"
+                  className="flex items-center gap-3 pl-2 pr-4 py-2 hover:bg-[#111111] border border-transparent hover:border-[#333] transition-all group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="relative">
-                    {/* Hardware accelerated glowing ring */}
-                    <motion.div
-                      className="absolute inset-0 rounded-full bg-blue-500/30 blur-md pointer-events-none hidden sm:block"
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.5, 0.8, 0.5],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    <div
-                      className="relative z-10 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black shadow-lg shadow-blue-500/20"
-                    >
+                  <div className="relative w-10 h-10 bg-[#111111] border border-[#333] flex items-center justify-center">
+                    <span className="text-white text-lg font-display font-black leading-none group-hover:text-[#d63a2f] transition-colors">
                       {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-300 group-hover:text-white truncate max-w-[120px] transition-colors">
-                    {user.name}
-                  </span>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-widest group-hover:text-white truncate max-w-[120px] transition-colors leading-none">
+                      {user.name}
+                    </span>
+                    <span className="text-[8px] font-bold text-[#d63a2f] uppercase tracking-widest leading-none">ONLINE</span>
+                  </div>
                   <ChevronDown
-                    size={15}
-                    className={`text-slate-500 transition-transform duration-300 ${profileOpen ? "rotate-180" : ""}`}
+                    size={14}
+                    className={`text-[#6b6b6b] transition-transform duration-300 ml-2 ${profileOpen ? "rotate-180" : ""}`}
+                    strokeWidth={2}
                   />
                 </motion.button>
 
@@ -176,28 +180,27 @@ const Navbar: React.FC<NavbarProps> = ({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute right-0 top-full mt-3 w-56 bg-[#1e293b]/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden py-1.5"
+                      className="absolute right-0 top-full mt-3 w-64 bg-[#0a0a0a] border border-[#222] shadow-2xl py-2"
                     >
                       {/* User info */}
-                      <div className="px-4 py-3.5 border-b border-slate-700/30">
-                        <p className="text-white font-bold text-sm truncate">
+                      <div className="px-5 py-4 border-b border-[#222]">
+                        <p className="text-white font-display text-lg tracking-wide uppercase truncate leading-none mb-1">
                           {user.name}
                         </p>
-                        <p className="text-slate-500 text-xs truncate mt-0.5">
+                        <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase truncate">
                           {user.email}
                         </p>
                       </div>
 
-                      <div className="py-1.5">
+                      <div className="py-2">
                         <button
                           onClick={() => {
                             setProfileOpen(false);
                             onViewAccount?.();
                           }}
-                          className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <User size={16} className="text-slate-500" /> View
-                          Account
+                          <User size={14} className="text-[#d63a2f]" /> VIEW ACCOUNT
                         </button>
                         {user && (
                           <button
@@ -205,13 +208,9 @@ const Navbar: React.FC<NavbarProps> = ({
                               setProfileOpen(false);
                               onShowAppointments?.();
                             }}
-                            className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
+                            className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                           >
-                            <CalendarDays
-                              size={16}
-                              className="text-slate-500"
-                            />{" "}
-                            My Appointments
+                            <CalendarDays size={14} className="text-[#d63a2f]" /> MY APPOINTMENTS
                           </button>
                         )}
                         <button
@@ -219,32 +218,30 @@ const Navbar: React.FC<NavbarProps> = ({
                             setProfileOpen(false);
                             onSettings?.();
                           }}
-                          className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <Settings size={16} className="text-slate-500" />{" "}
-                          Settings
+                          <Settings size={14} className="text-[#d63a2f]" /> SETTINGS
                         </button>
                         <button
                           onClick={() => {
                             setProfileOpen(false);
                             onServiceHistory?.();
                           }}
-                          className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center gap-3"
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <History size={16} className="text-slate-500" />{" "}
-                          Service History
+                          <History size={14} className="text-[#d63a2f]" /> SERVICE HISTORY
                         </button>
                       </div>
 
-                      <div className="border-t border-slate-700/30 py-1.5">
+                      <div className="border-t border-[#222] py-2">
                         <button
                           onClick={() => {
                             setProfileOpen(false);
                             logout().catch(() => window.location.reload());
                           }}
-                          className="w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition flex items-center gap-3"
+                          className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#d63a2f] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <LogOut size={16} /> Logout
+                          <LogOut size={14} /> LOGOUT
                         </button>
                       </div>
                     </motion.div>
@@ -252,35 +249,34 @@ const Navbar: React.FC<NavbarProps> = ({
                 </AnimatePresence>
               </div>
             ) : (
-              <motion.button
-                onClick={onJoinSignIn}
-                className="relative px-6 lg:px-8 py-2.5 lg:py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl font-bold text-white text-sm lg:text-base overflow-hidden group"
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-              >
-                {/* Animated shine effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-                  animate={{ x: ["-200%", "200%"] }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatDelay: 2,
-                    ease: "easeInOut",
-                  }}
-                />
-                <span className="relative z-10">Sign In</span>
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <motion.button
+                  onClick={onSignUp || onJoinSignIn}
+                  className="relative px-6 py-3 bg-transparent text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b6b6b] border border-[#333] hover:border-[#666] hover:text-white transition-all whitespace-nowrap"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  SIGN UP
+                </motion.button>
+                <motion.button
+                  onClick={onJoinSignIn}
+                  className="relative px-8 py-3 bg-[#d63a2f] hover:bg-[#c0322a] font-bold tracking-[0.2em] uppercase text-white text-[10px] group transition-all whitespace-nowrap"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="relative z-10 block">SIGN IN</span>
+                </motion.button>
+              </div>
             )}
           </div>
 
           {/* ── Mobile Menu Button ── */}
           <motion.button
-            className="md:hidden p-2.5 text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
+            className="md:hidden p-3 text-[#6b6b6b] hover:text-white border border-[#333] hover:bg-[#111111] transition"
             onClick={() => setMobileOpen(!mobileOpen)}
             whileTap={{ scale: 0.9 }}
           >
-            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
           </motion.button>
         </div>
 
@@ -292,9 +288,9 @@ const Navbar: React.FC<NavbarProps> = ({
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="md:hidden overflow-hidden border-t border-slate-700/30"
+              className="md:hidden overflow-hidden border-t border-[#222] bg-[#0a0a0a]"
             >
-              <div className="py-3 space-y-1">
+              <div className="py-4 px-4 space-y-2">
                 {navItems.map((item, idx) => (
                   <button
                     key={idx}
@@ -302,12 +298,12 @@ const Navbar: React.FC<NavbarProps> = ({
                       item.onClick?.();
                       setMobileOpen(false);
                     }}
-                    className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
+                    className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#6b6b6b] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase"
                   >
                     {item.label}
                   </button>
                 ))}
-                <div className="pt-2 border-t border-slate-700/30 mt-2">
+                <div className="pt-4 pb-2 border-t border-[#222] mt-4 space-y-2">
                   {user ? (
                     <>
                       <button
@@ -315,48 +311,59 @@ const Navbar: React.FC<NavbarProps> = ({
                           setMobileOpen(false);
                           onViewAccount?.();
                         }}
-                        className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
+                        className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        View Account
+                        <User size={14} className="text-[#d63a2f]" /> VIEW ACCOUNT
                       </button>
                       <button
                         onClick={() => {
                           setMobileOpen(false);
                           onSettings?.();
                         }}
-                        className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
+                        className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        Settings
+                        <Settings size={14} className="text-[#d63a2f]" /> SETTINGS
                       </button>
                       <button
                         onClick={() => {
                           setMobileOpen(false);
                           onServiceHistory?.();
                         }}
-                        className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-xl transition"
+                        className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        Service History
+                        <History size={14} className="text-[#d63a2f]" /> SERVICE HISTORY
                       </button>
                       <button
                         onClick={() => {
                           setMobileOpen(false);
                           logout().catch(() => window.location.reload());
                         }}
-                        className="w-full text-left px-4 py-3 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition"
+                        className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#d63a2f] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3 mt-4"
                       >
-                        Logout
+                        <LogOut size={14} /> LOGOUT
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => {
-                        onJoinSignIn?.();
-                        setMobileOpen(false);
-                      }}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl font-bold text-white text-sm"
-                    >
-                      Sign In
-                    </button>
+                    <div className="flex flex-col gap-3 pt-2">
+                      <button
+                        onClick={() => {
+                          (onSignUp || onJoinSignIn)?.();
+                          setMobileOpen(false);
+                        }}
+                        className="w-full px-5 py-4 border border-[#333] hover:border-[#666] text-[#6b6b6b] hover:text-white font-bold tracking-[0.2em] text-[11px] transition-all uppercase"
+                      >
+                        SIGN UP
+                      </button>
+                      <button
+                        onClick={() => {
+                          onJoinSignIn?.();
+                          setMobileOpen(false);
+                        }}
+                        className="w-full px-5 py-4 bg-[#d63a2f] hover:bg-[#c0322a] text-white font-bold tracking-[0.2em] text-[11px] transition-all uppercase"
+                      >
+                        SIGN IN
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

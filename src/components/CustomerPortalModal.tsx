@@ -103,10 +103,10 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
   if (!isOpen) return null;
 
   const STATS = [
-    { icon: Calendar, label: "Total Appointments", value: totalAppointments.toString(), color: "from-blue-500 to-indigo-600" },
-    { icon: Clock, label: "Pending", value: pendingAppointments.toString(), color: "from-yellow-500 to-amber-600" },
-    { icon: Wallet, label: "Total Spent", value: `₱${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`, color: "from-emerald-500 to-emerald-600" },
-    { icon: Car, label: "Vehicles", value: vehicles.length.toString(), color: "from-purple-500 to-purple-600" },
+    { icon: Calendar, label: "TOTAL APPOINTMENTS", value: totalAppointments.toString() },
+    { icon: Clock, label: "PENDING", value: pendingAppointments.toString() },
+    { icon: Wallet, label: "TOTAL SPENT", value: `₱${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+    { icon: Car, label: "VEHICLES", value: vehicles.length.toString() },
   ];
 
   const ACCOUNT_FIELDS = [
@@ -132,44 +132,51 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
         >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <UserCircle size={20} className="text-white" />
+          <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
+                <UserCircle size={28} className="text-white" strokeWidth={1.5} />
               </div>
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">My Account</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">Welcome, {user?.name || "Customer"}</p>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> DASHBOARD
+                </div>
+                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
+                  MY ACCOUNT
+                </h2>
+                <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
+                  Welcome, {user?.name || "Customer"}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white"
+                className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0"
                 title="Refresh"
               >
-                <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCw size={20} className={refreshing ? "animate-spin" : ""} strokeWidth={1} />
               </button>
-              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-                <X size={20} />
+              <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+                <X size={20} strokeWidth={1} />
               </button>
             </div>
           </div>
 
           {/* ── Content ── */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
+          <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-3 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="space-y-6">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[#222]">
                   {STATS.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
@@ -178,15 +185,13 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="bg-slate-800/30 rounded-2xl p-4 sm:p-5 border border-slate-700/20"
+                        className="bg-[#111111] p-5 sm:p-6 border-b sm:border-b-0 sm:border-r border-[#222] last:border-b-0 sm:last:border-r-0"
                       >
-                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
-                            <Icon size={13} className="text-white" />
-                          </div>
-                          <span className="text-slate-500 text-[10px] sm:text-xs font-semibold">{stat.label}</span>
+                        <div className="flex items-center gap-3 mb-4">
+                          <Icon size={14} className="text-[#d63a2f]" />
+                          <span className="text-[#555] text-[10px] font-bold tracking-widest uppercase">{stat.label}</span>
                         </div>
-                        <p className="text-xl sm:text-2xl font-black text-white">{stat.value}</p>
+                        <p className="font-display text-3xl sm:text-4xl text-white leading-none">{stat.value}</p>
                       </motion.div>
                     );
                   })}
@@ -197,25 +202,22 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
-                  className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/20"
+                  className="bg-[#111111] border border-[#222] p-6 sm:p-10 rounded-none"
                 >
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                    <UserCircle size={16} className="text-blue-400" /> Account Information
+                  <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                    <UserCircle size={14} className="text-[#d63a2f]" /> ACCOUNT INFORMATION
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                     {ACCOUNT_FIELDS.map((field) => {
                       const Icon = field.icon;
                       return (
-                        <div key={field.label} className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-800/60 border border-slate-700/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Icon size={14} className="text-slate-500" />
+                        <div key={field.label} className="flex flex-col gap-2 border-l border-[#222] pl-4">
+                          <div className="flex items-center gap-2 text-[#555] text-[10px] font-bold tracking-widest uppercase mb-1">
+                            <Icon size={12} /> {field.label}
                           </div>
-                          <div>
-                            <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wide">{field.label}</p>
-                            <p className={`text-white font-semibold text-sm ${field.capitalize ? "capitalize" : ""}`}>
-                              {field.value}
-                            </p>
-                          </div>
+                          <p className={`font-display text-lg sm:text-xl text-white leading-tight uppercase ${field.capitalize ? "capitalize" : ""}`}>
+                            {field.value}
+                          </p>
                         </div>
                       );
                     })}
@@ -227,43 +229,43 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 }}
-                  className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/20"
+                  className="bg-[#111111] border border-[#222] p-6 sm:p-10 rounded-none"
                 >
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5 flex items-center gap-2">
-                    <Car size={16} className="text-blue-400" /> Your Vehicles
+                  <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                    <Car size={14} className="text-[#d63a2f]" /> YOUR VEHICLES
                   </h3>
 
                   {vehicles.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Car className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                      <p className="text-slate-500 text-sm">No vehicles registered yet.</p>
-                      <p className="text-slate-600 text-xs mt-1">Add vehicles in Settings</p>
+                    <div className="text-center py-12 border border-[#222] bg-[#0a0a0a]">
+                      <Car className="w-12 h-12 text-[#333] mx-auto mb-4" strokeWidth={1} />
+                      <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase mb-2">NO VEHICLES REGISTERED YET.</p>
+                      <p className="text-[#444] text-[10px] font-bold tracking-widest uppercase">ADD VEHICLES IN SETTINGS</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {vehicles.map((vehicle, i) => (
                         <motion.div
                           key={vehicle.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.3 + i * 0.05 }}
-                          className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/20 flex items-center justify-between"
+                          className="bg-[#0a0a0a] border border-[#222] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700/80 to-slate-800/80 border border-slate-600/30 flex items-center justify-center">
-                              <Car size={16} className="text-slate-400" />
+                          <div className="flex items-start sm:items-center gap-4">
+                            <div className="w-14 h-14 bg-[#111] border border-[#333] flex items-center justify-center shrink-0">
+                              <Car size={20} className="text-[#6b6b6b]" strokeWidth={1} />
                             </div>
                             <div>
-                              <p className="text-white font-bold text-sm">
+                              <p className="font-display text-xl text-white uppercase tracking-wide leading-none mb-2">
                                 {vehicle.make} {vehicle.model}
                               </p>
-                              <p className="text-slate-500 text-xs">
+                              <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">
                                 {vehicle.year || "N/A"}
-                                {vehicle.engine_number && ` • Engine: ${vehicle.engine_number}`}
+                                {vehicle.engine_number && ` • ENGINE: ${vehicle.engine_number}`}
                               </p>
                             </div>
                           </div>
-                          <span className="text-xs bg-slate-800/60 text-slate-400 px-3 py-1.5 rounded-lg border border-slate-700/30 font-mono font-bold">
+                          <span className="text-[10px] tracking-widest bg-[#111] text-[#d63a2f] px-3 py-1.5 border border-[#333] font-bold uppercase self-end sm:self-auto">
                             {vehicle.plate_number}
                           </span>
                         </motion.div>

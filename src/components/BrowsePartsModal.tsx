@@ -15,7 +15,6 @@ import {
   SlidersHorizontal,
   Info,
   ArrowLeft,
-  Tag,
   Box,
   CheckCircle,
 } from "lucide-react";
@@ -140,27 +139,37 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 30 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[700px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+            className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[800px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-              <button
-                onClick={() => setSelectedPart(null)}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-semibold"
-              >
-                <ArrowLeft size={18} /> Back to Parts
-              </button>
-              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-                <X size={20} />
+            <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => setSelectedPart(null)}
+                  className="w-14 h-14 bg-[#161616] hover:bg-[#221515] border border-[#333] hover:border-[#d63a2f] flex items-center justify-center shrink-0 transition text-[#6b6b6b] hover:text-[#d63a2f]"
+                >
+                  <ArrowLeft size={24} strokeWidth={1.5} />
+                </button>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                    <div className="w-6 h-[1px] bg-[#d63a2f]" /> PART DETAILS
+                  </div>
+                  <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide truncate max-w-[300px] sm:max-w-[450px]">
+                    {selectedPart.name}
+                  </h2>
+                </div>
+              </div>
+              <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+                <X size={20} strokeWidth={1} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
-              <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
+              <div className="flex flex-col sm:flex-row gap-8">
                 {/* Image */}
-                <div className="w-full sm:w-64 flex-shrink-0">
-                  <div className="aspect-square bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden border border-slate-700/30">
+                <div className="w-full sm:w-[320px] flex-shrink-0">
+                  <div className="aspect-square bg-[#111] border border-[#222] overflow-hidden">
                     {selectedPart.image || selectedPart.image_url ? (
                       <img
                         src={selectedPart.image || selectedPart.image_url}
@@ -169,90 +178,87 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Zap className="w-16 h-16 text-slate-700" />
+                        <Zap className="w-16 h-16 text-[#333]" />
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs bg-slate-800/60 text-slate-400 px-2.5 py-1 rounded-lg border border-slate-700/30 font-semibold">
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-[10px] font-bold tracking-[0.2em] bg-[#111] text-[#6b6b6b] px-3 py-1.5 border border-[#222] uppercase">
                       {selectedPart.category}
                     </span>
                     {isInStock ? (
-                      <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold flex items-center gap-1">
-                        <CheckCircle size={10} /> In Stock ({stockQty})
+                      <span className="text-[10px] font-bold tracking-[0.2em] bg-[#221515] text-[#d63a2f] px-3 py-1.5 border border-[#d63a2f] uppercase flex items-center gap-1">
+                        <CheckCircle size={10} /> IN STOCK ({stockQty})
                       </span>
                     ) : (
-                      <span className="text-xs bg-red-500/10 text-red-400 px-2.5 py-1 rounded-lg border border-red-500/20 font-semibold">
-                        Out of Stock
+                      <span className="text-[10px] font-bold tracking-[0.2em] bg-[#111] text-[#6b6b6b] px-3 py-1.5 border border-[#333] uppercase">
+                        OUT OF STOCK
                       </span>
                     )}
                   </div>
 
-                  <h2 className="text-2xl font-black text-white mb-1">{selectedPart.name}</h2>
+                  <h2 className="font-display text-3xl text-white uppercase leading-tight mb-2 tracking-wide">{selectedPart.name}</h2>
 
                   {/* Rating */}
                   {selectedPart.rating && (
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex gap-0.5">
+                    <div className="flex items-center gap-2 mb-6 border-b border-[#222] pb-6">
+                      <div className="flex gap-1">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
                             size={14}
-                            className={i < Math.round(selectedPart.rating!) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}
+                            className={i < Math.round(selectedPart.rating!) ? "fill-[#d63a2f] text-[#d63a2f]" : "text-[#333]"}
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-slate-500">{selectedPart.rating} ({selectedPart.reviews} reviews)</span>
+                      <span className="text-[10px] font-bold tracking-widest uppercase text-[#555] ml-2">({selectedPart.reviews} REVIEWS)</span>
                     </div>
                   )}
 
                   {/* Price */}
-                  <div className="flex items-center gap-3 mb-5">
-                    <Tag size={18} className="text-orange-400" />
-                    <span className="text-3xl font-black text-orange-400">₱{selectedPart.price.toLocaleString()}</span>
+                  <div className="flex items-end gap-3 mb-8">
+                    <span className="font-display text-5xl font-black text-[#d63a2f] leading-none tracking-tight">₱{selectedPart.price.toLocaleString()}</span>
                   </div>
 
                   {/* Description */}
                   {selectedPart.description && (
-                    <div className="mb-6">
-                      <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Description</h4>
-                      <p className="text-slate-400 text-sm leading-relaxed">{selectedPart.description}</p>
+                    <div className="mb-8 flex-1">
+                      <h4 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-3">DESCRIPTION</h4>
+                      <p className="text-[#888] text-xs font-light leading-relaxed">{selectedPart.description}</p>
                     </div>
                   )}
 
                   {/* SKU */}
                   {selectedPart.sku && (
-                    <div className="flex items-center gap-2 mb-6">
-                      <Box size={13} className="text-slate-500" />
-                      <span className="text-xs text-slate-500">SKU: {selectedPart.sku}</span>
+                    <div className="flex items-center gap-2 mb-8">
+                      <Box size={14} className="text-[#555]" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#555]">SKU: {selectedPart.sku}</span>
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                  <div className="mt-auto">
+                    <button
                       onClick={() => handleInquiry(selectedPart.id)}
                       disabled={!isInStock || inquirySent === selectedPart.id}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                      className={`w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border ${
                         inquirySent === selectedPart.id
-                          ? "bg-emerald-600 text-white"
+                          ? "bg-[#d63a2f] border-[#d63a2f] text-white"
                           : isInStock
-                            ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25"
-                            : "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/30"
+                            ? "bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
+                            : "bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
                       }`}
                     >
                       {inquirySent === selectedPart.id ? (
-                        <><CheckCircle size={16} /> Inquiry Sent!</>
+                        <><CheckCircle size={16} /> INQUIRY SENT</>
                       ) : (
-                        <><ShoppingCart size={16} /> Inquire Now</>
+                        <><ShoppingCart size={16} /> INQUIRE NOW</>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -277,39 +283,46 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[95vw] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[1200px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
         >
           {/* ── Top Bar ── */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <Package size={20} className="text-white" />
+          <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
+                <Package size={28} className="text-white" strokeWidth={1.5} />
               </div>
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">Browse Parts</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">Genuine motorcycle parts & accessories</p>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> INVENTORY
+                </div>
+                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
+                  BROWSE PARTS
+                </h2>
+                <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
+                  Genuine motorcycle parts and accessories
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {/* Search */}
               <div className="relative hidden sm:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search parts..."
+                  placeholder="SEARCH PARTS..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 bg-slate-800/60 text-white pl-10 pr-4 py-2.5 rounded-xl border border-slate-700/50 focus:border-orange-500/50 focus:outline-none focus:ring-1 focus:ring-orange-500/20 transition text-sm placeholder-slate-500"
+                  className="w-72 bg-[#0a0a0a] text-white pl-12 pr-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase rounded-none"
                 />
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-                <X size={20} />
+              <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0 mt-1 sm:mt-0">
+                <X size={20} strokeWidth={1} />
               </button>
             </div>
           </div>
 
           {/* ── Category Icons Row ── */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 px-3 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 overflow-x-auto flex-shrink-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 px-6 sm:px-10 py-4 border-b border-[#222] overflow-x-auto flex-shrink-0 bg-[#0a0a0a]">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = selectedCategory === cat.id;
@@ -317,155 +330,152 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({ isOpen, onClose }) 
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex flex-col items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl min-w-[56px] sm:min-w-[72px] transition-all ${
+                  className={`flex flex-col items-center gap-2 px-4 py-3 min-w-[72px] transition-all border ${
                     isActive
-                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
-                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border border-transparent"
+                      ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
+                      : "text-[#6b6b6b] bg-transparent border-[#222] hover:bg-[#111111] hover:border-[#333]"
                   }`}
                 >
-                  <Icon size={16} className="sm:w-5 sm:h-5" strokeWidth={isActive ? 2.5 : 1.5} />
-                  <span className="text-[10px] font-semibold whitespace-nowrap">{cat.label}</span>
+                  <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                  <span className="text-[9px] font-bold tracking-widest uppercase whitespace-nowrap">{cat.label}</span>
                 </button>
               );
             })}
 
             {/* Availability filters */}
-            <div className="hidden sm:flex ml-auto items-center gap-2 pl-4 border-l border-slate-700/30">
+            <div className="hidden sm:flex ml-auto items-center gap-3 pl-6 border-l border-[#222]">
               {(["all", "instock", "outofstock"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setStockFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
+                  className={`px-4 py-3 text-[9px] font-bold uppercase tracking-widest transition-all border ${
                     stockFilter === f
-                      ? f === "instock" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                        : f === "outofstock" ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                        : "bg-slate-700/60 text-white border border-slate-600/50"
-                      : "text-slate-500 hover:text-slate-300 border border-transparent"
+                      ? f === "instock" ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
+                        : f === "outofstock" ? "bg-[#221n1] text-[#d63a2f] border-[#d63a2f]"
+                        : "bg-[#111] text-white border-[#333]"
+                      : "text-[#6b6b6b] border-[#222] hover:bg-[#111] hover:text-[#888]"
                   }`}
                 >
-                  {f === "all" ? "All" : f === "instock" ? "In-Stock" : "Out-of-Stock"}
+                  {f === "all" ? "ALL" : f === "instock" ? "IN-STOCK" : "OUT-OF-STOCK"}
                 </button>
               ))}
             </div>
           </div>
 
           {/* ── Mobile Search ── */}
-          <div className="sm:hidden px-4 py-2.5 border-b border-slate-700/30 flex-shrink-0">
+          <div className="sm:hidden px-6 py-4 border-b border-[#222] flex-shrink-0 bg-[#0a0a0a]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search parts..."
+                placeholder="SEARCH PARTS..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-800/60 text-white pl-10 pr-4 py-2.5 rounded-xl border border-slate-700/50 focus:border-orange-500/50 focus:outline-none transition text-sm placeholder-slate-500"
+                className="w-full bg-[#111111] text-white pl-12 pr-4 py-4 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold"
               />
             </div>
           </div>
 
           {/* ── Product Grid ── */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6">
+          <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-10 h-10 border-3 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredParts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <Package className="w-16 h-16 text-slate-700 mb-4" />
-                <p className="text-slate-500 text-sm">No parts found</p>
+              <div className="flex flex-col items-center justify-center py-20 border border-[#222] bg-[#111]">
+                <Package className="w-16 h-16 text-[#333] mb-4" strokeWidth={1} />
+                <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">NO PARTS FOUND</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-5">
-                {filteredParts.map((part, index) => {
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 w-full">
+                {filteredParts.map((part) => {
                   const isInStock = part.inStock ?? (part.quantity ?? part.quantity_in_stock ?? 0) > 0;
                   return (
-                    <motion.div
+                    <div
                       key={part.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      className="group bg-slate-800/40 rounded-2xl border border-slate-700/30 hover:border-orange-500/30 transition-all duration-300 overflow-hidden hover:shadow-lg hover:shadow-orange-500/5"
+                      className="group bg-[#111111] border border-[#222] hover:border-[#333] transition flex flex-col items-stretch max-w-full"
                     >
                       {/* Product Image */}
-                      <div className="relative aspect-square bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden cursor-pointer" onClick={() => setSelectedPart(part)}>
+                      <div className="relative aspect-square bg-[#0a0a0a] border-b border-[#222] overflow-hidden cursor-pointer w-full" onClick={() => setSelectedPart(part)}>
                         {part.image || part.image_url ? (
                           <img
                             src={part.image || part.image_url}
                             alt={part.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Zap className="w-12 h-12 text-slate-700" />
+                            <Zap className="w-12 h-12 text-[#333]" />
                           </div>
                         )}
                         {/* Stock Badge */}
-                        <div className="absolute top-2.5 right-2.5">
+                        <div className="absolute top-3 right-3">
                           {isInStock ? (
-                            <span className="bg-emerald-500/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                              In Stock
+                            <span className="bg-[#221515] border border-[#d63a2f] text-[#d63a2f] text-[8px] font-bold px-2 py-1 tracking-widest uppercase">
+                              IN STOCK
                             </span>
                           ) : (
-                            <span className="bg-red-500/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                              Sold Out
+                            <span className="bg-[#111] border border-[#333] text-[#6b6b6b] text-[8px] font-bold px-2 py-1 tracking-widest uppercase">
+                              SOLD OUT
                             </span>
                           )}
                         </div>
                       </div>
 
                       {/* Product Info */}
-                      <div className="p-2.5 sm:p-4">
-                        <p className="text-sm sm:text-lg font-black text-orange-400 mb-0.5 sm:mb-1">
-                          ₱{part.price.toLocaleString()}
-                        </p>
-                        <h3 className="text-sm font-semibold text-white mb-1 leading-tight line-clamp-2 group-hover:text-orange-300 transition-colors">
-                          {part.name}
-                        </h3>
+                      <div className="p-4 sm:p-5 flex flex-col flex-1 w-full justify-between items-stretch">
+                        <div className="w-full">
+                          <p className="font-display text-2xl font-black text-[#d63a2f] mb-2 leading-none">
+                            ₱{part.price.toLocaleString()}
+                          </p>
+                          <h3 className="font-display text-lg text-white mb-3 leading-tight uppercase group-hover:text-[#d63a2f] transition-colors break-words">
+                            {part.name}
+                          </h3>
 
-                        {/* Rating Row */}
-                        <div className="flex items-center gap-1 mb-3">
-                          {part.rating && (
-                            <>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    size={10}
-                                    className={i < Math.round(part.rating!) ? "fill-yellow-400 text-yellow-400" : "text-slate-600"}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-[10px] text-slate-500 ml-1">{part.reviews}</span>
-                            </>
-                          )}
+                          {/* Rating Row */}
+                          <div className="flex items-center gap-1 mb-5">
+                            {part.rating && (
+                              <>
+                                <div className="flex gap-0.5">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      size={10}
+                                      className={i < Math.round(part.rating!) ? "fill-[#d63a2f] text-[#d63a2f]" : "text-[#333]"}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-[9px] font-bold tracking-widest text-[#555] ml-1">({part.reviews})</span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         {/* Action Row */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-auto">
                           <button
                             onClick={() => setSelectedPart(part)}
-                            className="text-[11px] text-slate-400 hover:text-orange-400 transition flex items-center gap-1 font-medium"
+                            className="text-[9px] text-[#6b6b6b] hover:text-[#d63a2f] transition flex items-center gap-1 font-bold tracking-widest uppercase"
                           >
-                            <Info size={12} /> More Info
+                            <Info size={12} /> DETAILS
                           </button>
-                          <motion.button
-                            whileHover={{ scale: 1.15 }}
-                            whileTap={{ scale: 0.9 }}
+                          <button
                             disabled={!isInStock}
                             onClick={() => handleInquiry(part.id)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            className={`w-10 h-10 flex items-center justify-center transition border shrink-0 ${
                               inquirySent === part.id
-                                ? "bg-emerald-500 text-white"
+                                ? "bg-[#d63a2f] border-[#d63a2f] text-white"
                                 : isInStock
-                                  ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/30"
-                                  : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                                  ? "bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
+                                  : "bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
                             }`}
                           >
-                            {inquirySent === part.id ? <CheckCircle size={14} /> : <ShoppingCart size={14} />}
-                          </motion.button>
+                            {inquirySent === part.id ? <CheckCircle size={16} /> : <ShoppingCart size={16} />}
+                          </button>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>

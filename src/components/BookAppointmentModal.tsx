@@ -2,21 +2,18 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  Wrench,
-  Calendar,
-  Clock,
   CheckCircle,
   ChevronRight,
   ChevronLeft,
-  User,
-  Droplet,
-  Settings,
-  CircleDashed,
-  Sparkles,
-  Hammer,
   Car,
-  FileText,
   AlertTriangle,
+  ClipboardList,
+  Droplet,
+  Wrench,
+  CircleDashed,
+  Settings,
+  Hammer,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
@@ -42,12 +39,12 @@ interface BookAppointmentModalProps {
 }
 
 const SERVICE_TYPES = [
-  { id: "oil_change", label: "Oil Change", icon: Droplet, desc: "Full synthetic or conventional oil change", color: "from-orange-500 to-amber-600" },
-  { id: "brake_service", label: "Brake Service", icon: Wrench, desc: "Brake pad replacement and inspection", color: "from-slate-400 to-slate-500" },
-  { id: "tire_replacement", label: "Tire Replacement", icon: CircleDashed, desc: "Tire mounting, balancing, and alignment", color: "from-blue-500 to-blue-600" },
-  { id: "engine_diagnostic", label: "Engine Diagnostic", icon: Settings, desc: "Full engine scan and diagnosis", color: "from-purple-500 to-purple-600" },
-  { id: "general_maintenance", label: "General Maintenance", icon: Hammer, desc: "Routine checkup and maintenance", color: "from-emerald-500 to-emerald-600" },
-  { id: "custom_work", label: "Custom Work", icon: Sparkles, desc: "Custom modifications and upgrades", color: "from-pink-500 to-rose-600" },
+  { id: "oil_change", label: "Oil Change", icon: Droplet, desc: "Full synthetic or conventional oil change" },
+  { id: "brake_service", label: "Brake Service", icon: Wrench, desc: "Brake pad replacement and inspection" },
+  { id: "tire_replacement", label: "Tire Replacement", icon: CircleDashed, desc: "Tire mounting, balancing, and alignment" },
+  { id: "engine_diagnostic", label: "Engine Diagnostic", icon: Settings, desc: "Full engine scan and diagnosis" },
+  { id: "general_maintenance", label: "General Maintenance", icon: Hammer, desc: "Routine checkup and maintenance" },
+  { id: "custom_work", label: "Custom Work", icon: Sparkles, desc: "Custom modifications and upgrades" },
 ];
 
 const TIME_SLOTS = [
@@ -258,51 +255,48 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0f172a] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-slate-700/40 shadow-2xl shadow-black/50 flex flex-col"
+          className="bg-[#0a0a0a] rounded-none w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden border border-[#222] border-t-2 border-t-[#d63a2f] shadow-2xl flex flex-col"
         >
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-slate-700/40 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Calendar size={20} className="text-white" />
+          <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
+                <ClipboardList size={28} className="text-white" strokeWidth={1.5} />
               </div>
-              <div>
-                <h2 className="text-base sm:text-xl font-black text-white tracking-wide">
-                  {success ? "Appointment Booked!" : "Book Appointment"}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> APPOINTMENT
+                </div>
+                <h2 className="font-display text-4xl sm:text-5xl text-white uppercase leading-none tracking-wide">
+                  {success ? "APPOINTMENT BOOKED" : "BOOK A SERVICE"}
                 </h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs hidden sm:block">Schedule your service appointment</p>
+                <p className="text-[#6b6b6b] text-xs font-light tracking-wide">
+                  Schedule your visit takes less than 2 minutes
+                </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white">
-              <X size={20} />
+            <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+              <X size={20} strokeWidth={1} />
             </button>
           </div>
 
           {!success ? (
             <>
               {/* ── Step Indicator ── */}
-              <div className="flex items-center justify-start sm:justify-center gap-1 sm:gap-2 px-4 sm:px-8 py-2 sm:py-3 border-b border-slate-700/30 flex-shrink-0 overflow-x-auto">
+              <div className="flex items-center px-6 sm:px-10 py-5 border-b border-[#222] bg-[#111111] overflow-x-auto gap-8 sm:gap-12 flex-shrink-0 scrollbar-hide">
                 {STEPS.map((step, i) => (
-                  <React.Fragment key={step}>
-                    <button
-                      onClick={() => { if (i < currentStep) setCurrentStep(i); }}
-                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
-                        i === currentStep
-                          ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                          : i < currentStep
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 cursor-pointer"
-                            : "text-slate-600 border border-transparent"
-                      }`}
-                    >
-                      <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-black ${
-                        i < currentStep ? "bg-emerald-500 text-white" : i === currentStep ? "bg-blue-500 text-white" : "bg-slate-800 text-slate-600"
-                      }`}>
-                        {i < currentStep ? "✓" : i + 1}
-                      </span>
-                      <span className="hidden sm:inline">{step}</span>
-                    </button>
-                    {i < STEPS.length - 1 && <ChevronRight size={12} className="text-slate-700" />}
-                  </React.Fragment>
+                  <div key={step} className="flex items-center gap-4 shrink-0">
+                    <div className={`w-8 h-8 flex items-center justify-center text-xs font-bold ${
+                      i === currentStep ? "bg-[#d63a2f] text-white" : "border border-[#333] text-[#6b6b6b]"
+                    }`}>
+                      {i + 1}
+                    </div>
+                    <span className={`text-xs tracking-widest uppercase font-medium ${
+                      i === currentStep ? "text-white" : "text-[#6b6b6b]"
+                    }`}>
+                      {step}
+                    </span>
+                  </div>
                 ))}
               </div>
 
@@ -319,39 +313,32 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
               </AnimatePresence>
 
               {/* ── Step Content (scrollable) ── */}
-              <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
+              <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
                 <AnimatePresence mode="wait">
                   {/* Step 1: Select Service */}
                   {currentStep === 0 && (
                     <motion.div key="service" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                      <p className="text-slate-400 text-sm mb-5">What service do you need?</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                      <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-8">What service do you need?</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
                         {SERVICE_TYPES.map((svc) => {
                           const Icon = svc.icon;
                           const isActive = selectedService === svc.id;
                           return (
-                            <motion.button
+                            <button
                               key={svc.id}
-                              whileHover={{ y: -3 }}
-                              whileTap={{ scale: 0.97 }}
                               onClick={() => setSelectedService(svc.id)}
-                              className={`relative p-3 sm:p-5 rounded-2xl border text-left transition-all overflow-hidden ${
+                              className={`relative p-6 text-left transition-all group ${
                                 isActive
-                                  ? "border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10"
-                                  : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50"
+                                  ? "bg-[#221515] border-t-2 border-t-[#d63a2f]"
+                                  : "bg-transparent border-t-2 border-t-transparent hover:bg-[#111111]"
                               }`}
                             >
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${svc.color} flex items-center justify-center mb-2 sm:mb-3 shadow-lg`}>
-                                <Icon size={18} className="text-white" />
+                              <div className={`mb-5 transition-colors duration-300 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b] group-hover:text-[#888]"}`}>
+                                <Icon size={32} strokeWidth={1.2} />
                               </div>
-                              <p className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">{svc.label}</p>
-                              <p className="text-slate-500 text-[10px] sm:text-xs leading-relaxed hidden sm:block">{svc.desc}</p>
-                              {isActive && (
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3">
-                                  <CheckCircle size={18} className="text-blue-400" />
-                                </motion.div>
-                              )}
-                            </motion.button>
+                              <p className={`font-display text-xl tracking-wide uppercase mb-2 leading-tight transition-colors ${isActive ? "text-[#f0ede8]" : "text-white"}`}>{svc.label}</p>
+                              <p className="text-[#6b6b6b] text-xs leading-relaxed font-light">{svc.desc}</p>
+                            </button>
                           );
                         })}
                       </div>
@@ -361,38 +348,38 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                   {/* Step 2: Select Mechanic */}
                   {currentStep === 1 && (
                     <motion.div key="mechanic" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                      <p className="text-slate-400 text-sm mb-5">Choose your preferred mechanic</p>
+                      <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-8">Choose your preferred mechanic</p>
                       {loadingMechanics ? (
                         <div className="flex items-center justify-center py-12">
-                          <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-8 h-8 border-3 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : mechanics.length === 0 ? (
-                        <p className="text-slate-500 text-center py-12 text-sm">No mechanics available.</p>
+                        <p className="text-[#555555] text-center py-12 text-sm italic">No mechanics available.</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {mechanics.map((mech) => {
                             const isActive = selectedMechanic === mech.id;
                             return (
-                              <motion.button
+                              <button
                                 key={mech.id}
-                                whileHover={{ y: -2 }}
-                                whileTap={{ scale: 0.97 }}
                                 onClick={() => setSelectedMechanic(mech.id)}
-                                className={`p-5 rounded-2xl border text-left transition-all flex items-center gap-4 ${
+                                className={`p-5 border text-left transition-all flex items-center gap-4 ${
                                   isActive
-                                    ? "border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10"
-                                    : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50"
+                                    ? "bg-[#221515] border-[#d63a2f]"
+                                    : "border-[#333] hover:border-[#555] bg-transparent"
                                 }`}
                               >
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                  <span className="text-white font-black text-lg">{mech.name.charAt(0).toUpperCase()}</span>
+                                <div className={`w-12 h-12 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                  isActive ? "bg-[#d63a2f]" : "bg-[#111111] border border-[#333]"
+                                }`}>
+                                  <span className={`font-display text-2xl leading-none ${isActive ? "text-white" : "text-[#6b6b6b]"}`}>{mech.name.charAt(0).toUpperCase()}</span>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-white font-bold text-sm truncate">{mech.name}</p>
-                                  <p className="text-slate-500 text-xs truncate">{mech.email}</p>
+                                  <p className="font-display text-xl text-white tracking-wide uppercase truncate leading-none mb-1">{mech.name}</p>
+                                  <p className="text-[#6b6b6b] text-xs font-light truncate">{mech.email}</p>
                                 </div>
-                                {isActive && <CheckCircle size={18} className="text-blue-400 flex-shrink-0" />}
-                              </motion.button>
+                                {isActive && <div className="w-2 h-2 rounded-full bg-[#d63a2f] shrink-0" />}
+                              </button>
                             );
                           })}
                         </div>
@@ -403,64 +390,60 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                   {/* Step 3: Date & Time */}
                   {currentStep === 2 && (
                     <motion.div key="datetime" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                      <p className="text-slate-400 text-sm mb-4">Pick a date</p>
-                      <div className="flex gap-2.5 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+                      <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-6">Pick a date</p>
+                      <div className="flex gap-4 overflow-x-auto pb-4 mb-8 scrollbar-hide">
                         {getAvailableDates().map((date) => {
                           const f = formatDate(date);
                           const isActive = selectedDate === date;
                           return (
-                            <motion.button
+                            <button
                               key={date}
-                              whileHover={{ y: -2 }}
-                              whileTap={{ scale: 0.95 }}
                               onClick={() => { setSelectedDate(date); setSelectedTime(""); }}
-                              className={`flex-shrink-0 w-[68px] py-3 rounded-2xl border text-center transition-all ${
+                              className={`flex-shrink-0 w-24 py-5 border text-center transition-all ${
                                 isActive
-                                  ? "border-blue-500/50 bg-blue-500/15 shadow-lg shadow-blue-500/10"
-                                  : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50"
+                                  ? "bg-[#221515] border-[#d63a2f]"
+                                  : "border-[#333] hover:border-[#555] bg-transparent"
                               }`}
                             >
-                              <p className={`text-[10px] font-semibold ${isActive ? "text-blue-400" : "text-slate-500"}`}>{f.day}</p>
-                              <p className={`text-xl font-black ${isActive ? "text-white" : "text-slate-300"}`}>{f.date}</p>
-                              <p className={`text-[10px] ${isActive ? "text-blue-400" : "text-slate-500"}`}>{f.month}</p>
-                            </motion.button>
+                              <p className={`text-[10px] uppercase font-bold tracking-widest mb-1 ${isActive ? "text-[#d63a2f]" : "text-[#555555]"}`}>{f.day}</p>
+                              <p className={`font-display text-4xl leading-none mb-1 ${isActive ? "text-white" : "text-[#e2e8f0]"}`}>{f.date}</p>
+                              <p className={`text-[10px] uppercase font-bold tracking-widest ${isActive ? "text-[#d63a2f]" : "text-[#555555]"}`}>{f.month}</p>
+                            </button>
                           );
                         })}
                       </div>
 
-                      <p className="text-slate-400 text-sm mb-3">Pick a time</p>
-                      <div className="grid grid-cols-5 sm:grid-cols-5 gap-2 sm:gap-2.5">
+                      <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-6">Pick a time</p>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                         {TIME_SLOTS.map((time) => {
                           const isActive = selectedTime === time;
                           const isBooked = bookedSlots.includes(time);
                           return (
-                            <motion.button
+                            <button
                               key={time}
-                              whileHover={!isBooked ? { y: -1 } : undefined}
-                              whileTap={!isBooked ? { scale: 0.95 } : undefined}
                               onClick={() => { if (!isBooked) setSelectedTime(time); }}
                               disabled={isBooked}
-                              className={`py-3 rounded-xl border text-sm font-bold transition-all relative ${
+                              className={`py-4 border text-xs font-bold tracking-widest transition-all relative ${
                                 isBooked
-                                  ? "border-red-500/20 bg-red-500/5 text-red-400/50 cursor-not-allowed line-through"
+                                  ? "border-[#222] bg-[#111111] text-[#333] cursor-not-allowed"
                                   : isActive
-                                    ? "border-blue-500/50 bg-blue-500/15 text-blue-400 shadow-lg shadow-blue-500/10"
-                                    : "border-slate-700/30 bg-slate-800/30 text-slate-400 hover:border-slate-600/50"
+                                    ? "bg-[#221515] border-[#d63a2f] text-[#d63a2f]"
+                                    : "border-[#333] text-[#6b6b6b] hover:border-[#555] hover:text-white bg-transparent"
                               }`}
                             >
                               {formatTime(time)}
                               {isBooked && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500/80 rounded-full flex items-center justify-center">
-                                  <X size={8} className="text-white" />
-                                </span>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-10 h-[1px] bg-[#333] rotate-45" />
+                                </div>
                               )}
-                            </motion.button>
+                            </button>
                           );
                         })}
                       </div>
                       {bookedSlots.length > 0 && (
-                        <p className="text-xs text-slate-600 mt-3 flex items-center gap-1.5">
-                          <AlertTriangle size={11} /> Crossed-out slots are already booked
+                        <p className="text-[10px] tracking-[0.1em] text-[#444444] mt-4 flex items-center gap-2 uppercase">
+                          <AlertTriangle size={12} /> Times with strikethrough are unavailable
                         </p>
                       )}
                     </motion.div>
@@ -469,43 +452,39 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                   {/* Step 4: Confirm */}
                   {currentStep === 3 && (
                     <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                      <p className="text-slate-400 text-sm mb-5">Review and confirm your booking</p>
+                      <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-6">Review your booking</p>
 
-                      <div className="bg-slate-800/40 rounded-2xl p-5 border border-slate-700/30 mb-5 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Wrench size={15} className="text-blue-400" />
-                          <span className="text-slate-500 text-sm w-20">Service</span>
-                          <span className="text-white font-semibold text-sm">{SERVICE_TYPES.find((s) => s.id === selectedService)?.label}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <User size={15} className="text-blue-400" />
-                          <span className="text-slate-500 text-sm w-20">Mechanic</span>
-                          <span className="text-white font-semibold text-sm">{mechanics.find((m) => m.id === selectedMechanic)?.name || "Any"}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Calendar size={15} className="text-blue-400" />
-                          <span className="text-slate-500 text-sm w-20">Date</span>
-                          <span className="text-white font-semibold text-sm">{selectedDate}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Clock size={15} className="text-blue-400" />
-                          <span className="text-slate-500 text-sm w-20">Time</span>
-                          <span className="text-white font-semibold text-sm">{formatTime(selectedTime)}</span>
+                      <div className="bg-[#111111] p-6 border border-[#222] mb-8">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Service</span>
+                            <span className="text-white font-medium text-sm">{SERVICE_TYPES.find((s) => s.id === selectedService)?.label}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Mechanic</span>
+                            <span className="text-white font-medium text-sm">{mechanics.find((m) => m.id === selectedMechanic)?.name || "Any Available"}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Date</span>
+                            <span className="text-white font-medium text-sm">{selectedDate}</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Time</span>
+                            <span className="text-white font-medium text-sm">{formatTime(selectedTime)}</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {/* Vehicle Selection */}
-                        <div>
-                          <label className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5 font-semibold">
-                            <Car size={12} /> Select Vehicle *
-                          </label>
+                        <div className="space-y-4">
+                          <label className="text-[10px] tracking-[0.2em] font-medium uppercase text-[#6b6b6b]">Vehicle Information *</label>
                           {loadingVehicles ? (
                             <div className="flex items-center justify-center py-4">
-                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <div className="w-5 h-5 border-2 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
                             </div>
                           ) : vehicles.length > 0 ? (
-                            <div className="space-y-2 mb-3">
+                            <div className="space-y-3">
                               {vehicles.map((v) => {
                                 const isActive = selectedVehicleId === v.id;
                                 return (
@@ -515,59 +494,59 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                                       setSelectedVehicleId(v.id);
                                       setVehicleInfo(`${v.make} ${v.model} (${v.year})`);
                                     }}
-                                    className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all ${
+                                    className={`w-full text-left p-4 border flex items-center justify-between transition-all ${
                                       isActive
-                                        ? "border-blue-500/50 bg-blue-500/10"
-                                        : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50"
+                                        ? "bg-[#221515] border-[#d63a2f]"
+                                        : "border-[#333] bg-transparent hover:border-[#555]"
                                     }`}
                                   >
-                                    <div className="flex items-center gap-3">
-                                      <Car size={16} className={isActive ? "text-blue-400" : "text-slate-500"} />
+                                    <div className="flex items-center gap-4">
+                                      <div className={`w-10 h-10 border flex items-center justify-center ${isActive ? "border-[#d63a2f] text-[#d63a2f]" : "border-[#333] text-[#6b6b6b]"}`}>
+                                        <Car size={18} strokeWidth={1} />
+                                      </div>
                                       <div>
-                                        <p className="text-white font-semibold text-sm">{v.make} {v.model}</p>
-                                        <p className="text-slate-500 text-xs">{v.year} • {v.plate_number}</p>
+                                        <p className="text-white font-display text-xl uppercase tracking-wide leading-none mb-1">{v.make} {v.model}</p>
+                                        <p className="text-[#6b6b6b] text-xs font-light">{v.year} • {v.plate_number}</p>
                                       </div>
                                     </div>
-                                    {isActive && <CheckCircle size={16} className="text-blue-400" />}
+                                    {isActive && <div className="w-2 h-2 rounded-full bg-[#d63a2f]" />}
                                   </button>
                                 );
                               })}
                               <button
                                 onClick={() => { setSelectedVehicleId("manual"); setVehicleInfo(""); }}
-                                className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 transition-all text-sm ${
+                                className={`w-full text-left p-4 border flex items-center justify-center transition-all text-xs tracking-widest uppercase font-bold ${
                                   selectedVehicleId === "manual"
-                                    ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
-                                    : "border-slate-700/30 bg-slate-800/30 hover:border-slate-600/50 text-slate-400"
+                                    ? "bg-[#221515] border-[#d63a2f] text-[#d63a2f]"
+                                    : "border-[#333] bg-transparent hover:border-[#555] text-[#6b6b6b]"
                                 }`}
                               >
-                                <FileText size={14} /> Enter vehicle info manually
+                                ENTER MANUALLY
                               </button>
                             </div>
                           ) : (
-                            <p className="text-xs text-slate-600 mb-2">No saved vehicles. Enter your vehicle details below.</p>
+                            <p className="text-xs text-[#555555] italic">No saved vehicles. Enter manually below.</p>
                           )}
 
-                          {/* Manual input - show if no saved vehicles or manual mode selected */}
+                          {/* Manual input */}
                           {(vehicles.length === 0 || selectedVehicleId === "manual") && (
                             <input
                               type="text"
                               value={vehicleInfo}
                               onChange={(e) => setVehicleInfo(e.target.value)}
-                              placeholder="e.g. Honda Click 150i"
-                              className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm placeholder-slate-600"
+                              placeholder="E.G. HONDA CLICK 150I"
+                              className="w-full bg-[#111111] text-white px-4 py-4 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs"
                             />
                           )}
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5 font-semibold">
-                            <FileText size={12} /> Notes (optional)
-                          </label>
+                        <div className="space-y-4">
+                          <label className="text-[10px] tracking-[0.2em] font-medium uppercase text-[#6b6b6b]">Additional Notes</label>
                           <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Any additional details..."
-                            rows={2}
-                            className="w-full bg-slate-800/40 text-white px-4 py-3 rounded-xl border border-slate-700/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition text-sm resize-none placeholder-slate-600"
+                            placeholder="ANY SPECIFIC ISSUES OR REQUESTS?"
+                            rows={3}
+                            className="w-full bg-[#111111] text-white px-4 py-4 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs resize-none"
                           />
                         </div>
                       </div>
@@ -577,51 +556,49 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
               </div>
 
               {/* ── Footer ── */}
-              <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-t border-slate-700/30 flex-shrink-0">
+              <div className="flex items-center justify-between px-6 sm:px-10 py-6 border-t border-[#222] flex-shrink-0 bg-[#0a0a0a]">
                 <button
                   onClick={() => currentStep > 0 ? setCurrentStep(currentStep - 1) : onClose()}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 rounded-xl transition text-sm font-semibold border border-slate-700/30"
+                  className="flex items-center gap-3 px-8 py-3.5 border border-[#333] text-[#6b6b6b] hover:text-white transition uppercase text-[11px] tracking-[0.15em] font-bold"
                 >
-                  <ChevronLeft size={16} />
-                  {currentStep > 0 ? "Back" : "Cancel"}
+                  <ChevronLeft size={14} /> {currentStep > 0 ? "BACK" : "CANCEL"}
                 </button>
                 {currentStep < STEPS.length - 1 ? (
                   <button
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={!canGoNext()}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition text-sm font-bold ${
+                    className={`flex items-center gap-3 px-8 py-3.5 transition uppercase text-[11px] tracking-[0.15em] font-bold ${
                       canGoNext()
-                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25"
-                        : "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/30"
+                        ? "bg-[#d63a2f] text-white hover:bg-[#c0322a]"
+                        : "bg-[#111] border border-[#222] text-[#555] cursor-not-allowed"
                     }`}
                   >
-                    Next <ChevronRight size={16} />
+                    NEXT <ChevronRight size={14} />
                   </button>
                 ) : (
                   <button
                     onClick={handleSubmit}
                     disabled={!canGoNext() || submitting}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition text-sm font-bold ${
+                    className={`flex items-center gap-3 px-8 py-3.5 transition uppercase text-[11px] tracking-[0.15em] font-bold ${
                       canGoNext() && !submitting
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25"
-                        : "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/30"
+                        ? "bg-[#d63a2f] hover:bg-[#c0322a] text-white"
+                        : "bg-[#111] border border-[#222] text-[#555] cursor-not-allowed"
                     }`}
                   >
-                    {submitting ? "Booking..." : "Confirm Booking"} <CheckCircle size={16} />
+                    {submitting ? "PROCESSING..." : "CONFIRM"} {!submitting && <ChevronRight size={14} />}
                   </button>
                 )}
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center py-16 px-8">
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5 }}
-                className="w-20 h-20 bg-emerald-500/15 rounded-full flex items-center justify-center mb-6 border border-emerald-500/30">
-                <CheckCircle size={36} className="text-emerald-400" />
-              </motion.div>
-              <h3 className="text-2xl font-black text-white mb-2">Appointment Booked!</h3>
-              <p className="text-slate-500 mb-8 text-sm text-center max-w-sm">Your appointment has been scheduled. You'll receive a confirmation soon.</p>
-              <button onClick={onClose} className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition text-sm shadow-lg shadow-blue-600/25">
-                Done
+            <div className="flex-1 flex flex-col items-center justify-center py-16 px-8 bg-[#0a0a0a]">
+              <div className="w-20 h-20 bg-[#d63a2f] flex items-center justify-center mb-8 rounded-none">
+                <CheckCircle size={36} className="text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-display text-4xl sm:text-5xl text-white uppercase tracking-wide mb-4">APPOINTMENT BOOKED</h3>
+              <p className="text-[#6b6b6b] mb-10 text-sm text-center max-w-md font-light">Your appointment has been successfully scheduled. You'll receive a confirmation soon.</p>
+              <button onClick={onClose} className="px-10 py-4 bg-[#d63a2f] text-white uppercase font-bold tracking-[0.15em] text-xs transition hover:bg-[#c0322a]">
+                DONE
               </button>
             </div>
           )}
