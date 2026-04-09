@@ -27,7 +27,7 @@ const GenericNavbar: React.FC<GenericNavbarProps> = ({
   menuItems,
   onNavigate,
   onLogo,
-  logoLabel = "JSBM MotoShop",
+  logoLabel = "JBMS MotoShop",
   userRole = "customer",
 }) => {
   const { user, logout } = useAuth();
@@ -58,11 +58,13 @@ const GenericNavbar: React.FC<GenericNavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
             onClick={handleLogoClick}
           >
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="w-10 h-10 object-contain rounded-full"
-            />
+            <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-slate-200 via-white to-slate-300 shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_-2px_-2px_8px_rgba(0,0,0,0.1),inset_2px_2px_8px_rgba(255,255,255,0.8)] border border-white/30">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="w-10 h-10 object-contain"
+              />
+            </div>
             <div>
               <h1 className="text-xl font-bold text-white">{logoLabel}</h1>
               <p className="text-xs text-slate-400">{subtitle}</p>

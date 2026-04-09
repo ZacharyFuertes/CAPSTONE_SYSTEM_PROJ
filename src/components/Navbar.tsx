@@ -71,11 +71,12 @@ const Navbar: React.FC<NavbarProps> = ({
         // Get the header height (approx 80px) to offset the scroll
         const headerOffset = 80;
         const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
+
         window.scrollTo({
           top: offsetPosition,
-          behavior: "smooth"
+          behavior: "smooth",
         });
       }
     }, 100); // 100ms delay helps prevent mobile layout shifting issues
@@ -96,9 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <motion.nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-[#222] ${
-        scrolled
-          ? "bg-[#0a0a0a] shadow-2xl"
-          : "bg-[#0a0a0a]"
+        scrolled ? "bg-[#0a0a0a] shadow-2xl" : "bg-[#0a0a0a]"
       }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -110,18 +109,34 @@ const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-[1440px] mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-[72px] lg:h-[100px] gap-2 lg:gap-6">
           <motion.div
-            className="flex items-center gap-2 lg:gap-3 cursor-pointer select-none shrink-0"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-3 lg:gap-4 cursor-pointer select-none shrink-0 group"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
           >
-            <img
-              src="/logo.png"
-              alt="JSBM MotoShop Logo"
-              className="w-10 h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 object-contain rounded-full bg-white border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.15)]"
-            />
-            <span className="text-lg lg:text-xl xl:text-2xl font-display font-black tracking-wide text-white leading-none uppercase">
-              JSBM<br className="hidden sm:block lg:hidden" /> MOTOSHOP
-            </span>
+            {/* Logo Image */}
+            <div className="relative w-14 h-14 lg:w-[68px] lg:h-[68px] xl:w-[78px] xl:h-[78px] rounded-full bg-white flex items-center justify-center border-2 border-[#333] group-hover:border-[#d63a2f] shadow-[0_0_20px_rgba(0,0,0,0.8)] overflow-hidden shrink-0 transition-all duration-300">
+              <div className="absolute inset-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] rounded-full pointer-events-none" z-10 />
+              <img
+                src="/logo.png"
+                alt="JBMS MotoShop Logo"
+                className="w-[90%] h-[90%] object-contain scale-110 relative z-0"
+              />
+            </div>
+            {/* Brand Text */}
+            <div className="flex flex-col leading-none">
+              <span
+                className="text-lg lg:text-xl xl:text-2xl font-display font-black tracking-wider uppercase"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #888888 70%, #666666 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: 'none',
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+                }}
+              >
+                JBMS MOTOSHOP
+              </span>
+            </div>
           </motion.div>
 
           {/* ── Center Nav Items (Desktop) ── */}
@@ -163,7 +178,9 @@ const Navbar: React.FC<NavbarProps> = ({
                     <span className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-widest group-hover:text-white truncate max-w-[120px] transition-colors leading-none">
                       {user.name}
                     </span>
-                    <span className="text-[8px] font-bold text-[#d63a2f] uppercase tracking-widest leading-none">ONLINE</span>
+                    <span className="text-[8px] font-bold text-[#d63a2f] uppercase tracking-widest leading-none">
+                      ONLINE
+                    </span>
                   </div>
                   <ChevronDown
                     size={14}
@@ -200,7 +217,8 @@ const Navbar: React.FC<NavbarProps> = ({
                           }}
                           className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <User size={14} className="text-[#d63a2f]" /> VIEW ACCOUNT
+                          <User size={14} className="text-[#d63a2f]" /> VIEW
+                          ACCOUNT
                         </button>
                         {user && (
                           <button
@@ -210,7 +228,11 @@ const Navbar: React.FC<NavbarProps> = ({
                             }}
                             className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                           >
-                            <CalendarDays size={14} className="text-[#d63a2f]" /> MY APPOINTMENTS
+                            <CalendarDays
+                              size={14}
+                              className="text-[#d63a2f]"
+                            />{" "}
+                            MY APPOINTMENTS
                           </button>
                         )}
                         <button
@@ -220,7 +242,8 @@ const Navbar: React.FC<NavbarProps> = ({
                           }}
                           className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <Settings size={14} className="text-[#d63a2f]" /> SETTINGS
+                          <Settings size={14} className="text-[#d63a2f]" />{" "}
+                          SETTINGS
                         </button>
                         <button
                           onClick={() => {
@@ -229,7 +252,8 @@ const Navbar: React.FC<NavbarProps> = ({
                           }}
                           className="w-full text-left px-5 py-3 text-[10px] font-bold tracking-widest uppercase text-[#555] hover:text-white hover:bg-[#111111] transition flex items-center gap-3"
                         >
-                          <History size={14} className="text-[#d63a2f]" /> SERVICE HISTORY
+                          <History size={14} className="text-[#d63a2f]" />{" "}
+                          SERVICE HISTORY
                         </button>
                       </div>
 
@@ -276,7 +300,11 @@ const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setMobileOpen(!mobileOpen)}
             whileTap={{ scale: 0.9 }}
           >
-            {mobileOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
+            {mobileOpen ? (
+              <X size={20} strokeWidth={2} />
+            ) : (
+              <Menu size={20} strokeWidth={2} />
+            )}
           </motion.button>
         </div>
 
@@ -313,7 +341,8 @@ const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        <User size={14} className="text-[#d63a2f]" /> VIEW ACCOUNT
+                        <User size={14} className="text-[#d63a2f]" /> VIEW
+                        ACCOUNT
                       </button>
                       <button
                         onClick={() => {
@@ -322,7 +351,8 @@ const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        <Settings size={14} className="text-[#d63a2f]" /> SETTINGS
+                        <Settings size={14} className="text-[#d63a2f]" />{" "}
+                        SETTINGS
                       </button>
                       <button
                         onClick={() => {
@@ -331,7 +361,8 @@ const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className="w-full text-left px-5 py-4 text-[11px] font-bold tracking-[0.2em] text-[#555] hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all uppercase flex items-center gap-3"
                       >
-                        <History size={14} className="text-[#d63a2f]" /> SERVICE HISTORY
+                        <History size={14} className="text-[#d63a2f]" /> SERVICE
+                        HISTORY
                       </button>
                       <button
                         onClick={() => {

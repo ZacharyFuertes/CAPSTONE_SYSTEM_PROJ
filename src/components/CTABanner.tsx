@@ -12,7 +12,7 @@ const CTABanner: React.FC<CTABannerProps> = ({ onBookAppointment }) => {
       {/* Decorative ghost text background */}
       <div className="absolute inset-0 flex items-center justify-center opacity-5">
         <span className="font-display text-9xl md:text-[20rem] font-black leading-none tracking-widest">
-          JSBM
+          JBMS
         </span>
       </div>
 

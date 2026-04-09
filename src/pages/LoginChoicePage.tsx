@@ -38,13 +38,13 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
         <div className="text-center mb-12">
           <motion.img
             src="/logo.png"
-            alt="JSBM Autoshop Logo"
+            alt="JBMS Autoshop Logo"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
             className="w-16 h-16 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-4xl font-bold text-white mb-2">JSBM AUTOSHOP</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">JBMS AUTOSHOP</h1>
           <p className="text-slate-400">Select your login type</p>
         </div>
 

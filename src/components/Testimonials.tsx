@@ -99,7 +99,7 @@ const Testimonials: React.FC = () => {
             Trusted by Riders
           </h2>
           <p className="text-cream/60 text-lg max-w-2xl mx-auto">
-            See what our customers have to say about their experience with JSBM
+            See what our customers have to say about their experience with JBMS
             MotoShop
           </p>
         </motion.div>

@@ -32,7 +32,11 @@ interface MenuItem {
   tooltip?: string;
 }
 
-const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat }) => {
+const SystemNavbar: React.FC<NavbarProps> = ({
+  currentPage,
+  onNavigate,
+  onAIChat,
+}) => {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -179,14 +183,17 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
               )
             }
           >
-            <img
-              src="/logo.png"
-              alt="MotoShop Logo"
-              className="w-10 h-10 lg:w-12 lg:h-12 object-contain rounded-full bg-white border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.15)]"
-            />
+            <div className="relative w-14 h-14 lg:w-16 lg:h-16 flex items-center justify-center rounded-full bg-white shadow-[0_0_20px_rgba(0,0,0,0.8)] border-2 border-[#333] group-hover:border-[#d63a2f] overflow-hidden shrink-0 transition-all duration-300">
+              <div className="absolute inset-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] rounded-full pointer-events-none z-10" />
+              <img
+                src="/logo.png"
+                alt="MotoShop Logo"
+                className="w-[90%] h-[90%] object-contain scale-110 relative z-0"
+              />
+            </div>
             <div className="flex flex-col">
               <h1 className="text-lg lg:text-xl font-display font-black text-white uppercase tracking-wide leading-none mb-1">
-                JSBM MOTOSHOP
+                JBMS MOTOSHOP
               </h1>
               <p className="text-[9px] text-[#d63a2f] font-bold tracking-[0.2em] uppercase leading-none">
                 {user?.role === "customer"
@@ -216,10 +223,10 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
                       : "text-white border-transparent hover:text-white hover:bg-[#111111] hover:border-[#333]"
                   }`}
                 >
-                  <Icon className={`w-3 h-3 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b]"}`} />
-                  <span>
-                    {getMenuItemLabel(item)}
-                  </span>
+                  <Icon
+                    className={`w-3 h-3 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b]"}`}
+                  />
+                  <span>{getMenuItemLabel(item)}</span>
                 </motion.button>
               );
             })}
@@ -265,9 +272,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
               }
             >
               <Globe className="w-3 h-3" />
-              <span>
-                {language === "en" ? "EN" : "TL"}
-              </span>
+              <span>{language === "en" ? "EN" : "TL"}</span>
             </motion.button>
 
             {/* User Info */}
@@ -277,7 +282,9 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-white text-[10px] uppercase font-bold tracking-widest leading-none mb-1">{user.name}</p>
+                  <p className="text-white text-[10px] uppercase font-bold tracking-widest leading-none mb-1">
+                    {user.name}
+                  </p>
                   <p className="text-[#6b6b6b] text-[8px] uppercase font-bold tracking-widest leading-none">
                     {user.role}
                   </p>
@@ -300,9 +307,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                LOGOUT
-              </span>
+              <span className="hidden sm:inline">LOGOUT</span>
             </motion.button>
 
             {/* Mobile Menu Toggle */}
@@ -346,10 +351,10 @@ const SystemNavbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onAIChat
                         : "bg-transparent border-transparent text-[#6b6b6b] hover:text-white hover:bg-[#111] hover:border-[#333]"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? "text-[#d63a2f]" : ""}`} />
-                    <span>
-                      {getMenuItemLabel(item)}
-                    </span>
+                    <Icon
+                      className={`w-4 h-4 ${isActive ? "text-[#d63a2f]" : ""}`}
+                    />
+                    <span>{getMenuItemLabel(item)}</span>
                   </motion.button>
                 );
               })}

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, BookOpen } from "lucide-react";
+import slide1 from "../hero-slide-images/hero-slide-image-1.png";
+import slide2 from "../hero-slide-images/hero-slide-image-2.png";
+import slide3 from "../hero-slide-images/hero-slide-image-3.png";
+import slide4 from "../hero-slide-images/hero-slide-image-4.png";
 
 interface Slide {
   id: number;
@@ -24,29 +28,26 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
   const slides: Slide[] = [
     {
       id: 1,
-      image:
-        "https://scontent.fmnl9-4.fna.fbcdn.net/v/t1.15752-9/643787299_1281727390507393_2125770188258383661_n.png?_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEso-l7zXL9bfqANziQXJiUlZNTfdhhWr6Vk1N92GFavnZZmi7l_W7r_p84WV15YajYpa6QWxo_1d-KNj7MwInr&_nc_ohc=tqpcOkULju4Q7kNvwEqc3b7&_nc_oc=AdnzehCSyeYSbtuZefz8KGGvQR4L3l9eA3yt2I0_ZTyVzS2cp9_q8Sq0SwjHyaBzmac&_nc_zt=23&_nc_ht=scontent.fmnl9-4.fna&_nc_ss=8&oh=03_Q7cD4wFgmvFMZWK82ffeiiT-oLp_Gy7C-OVbx82g3coqje5Dsw&oe=69CE5ECD",
+      image: slide1,
       title: "Gear Up. Ride Hard.",
       subtitle:
         "Premium Parts • Expert Service • Para sa Mga Rider ng Pilipinas",
     },
     {
       id: 2,
-      image: "https://images.pexels.com/photos/235226/pexels-photo-235226.jpeg",
+      image: slide2,
       title: "Service Fast.",
       subtitle: "Premium Motorcycle Parts & Expert Maintenance sa PH",
     },
     {
       id: 3,
-      image:
-        "https://images.pexels.com/photos/1409999/pexels-photo-1409999.jpeg",
+      image: slide3,
       title: "Powered By Performance",
       subtitle: "Top-Tier Components Para sa Yamaha, Honda, Suzuki",
     },
     {
       id: 4,
-      image:
-        "https://images.pexels.com/photos/10182878/pexels-photo-10182878.jpeg",
+      image: slide4,
       title: "Built To Last",
       subtitle: "Quality Parts From Local & International Brands",
     },
@@ -182,7 +183,6 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
         <div
           className={`w-2 h-2 rounded-full ${isAutoPlay ? "bg-moto-accent-neon animate-pulse" : "bg-gray-600"}`}
         />
-        {isAutoPlay ? "Auto-play" : "Manual"}
       </div>
     </div>
   );

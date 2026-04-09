@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Wrench, Star, Award, ChevronDown, MessageSquare } from "lucide-react";
+import {
+  X,
+  Wrench,
+  Star,
+  Award,
+  ChevronDown,
+  MessageSquare,
+} from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 
 interface MechanicsModalProps {
@@ -38,7 +45,6 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
-
   const generateMockReviews = (name: string): Review[] => {
     return [
       {
@@ -67,11 +73,11 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
         .eq("role", "mechanic");
 
       if (error) throw error;
-      
+
       const mechanicsWithReviews = (data || []).map((m: any) => ({
         ...m,
         reviews: generateMockReviews(m.name),
-        rating: 4.8 + Math.random() * 0.2 // Fake rating between 4.8 and 5.0
+        rating: 4.8 + Math.random() * 0.2, // Fake rating between 4.8 and 5.0
       }));
       setMechanics(mechanicsWithReviews);
     } catch (error) {
@@ -81,7 +87,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
         {
           id: "1",
           name: "John Doeson",
-          email: "john@jsbmmoto.com",
+          email: "john@JBMSmoto.com",
           experience: "10+ Years",
           specialties: ["Engine Performance", "Suspension"],
           rating: 4.9,
@@ -90,7 +96,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
         {
           id: "2",
           name: "Mike O. Wrench",
-          email: "mike@jsbmmoto.com",
+          email: "mike@JBMSmoto.com",
           experience: "8 Years",
           specialties: ["Electrical Diagnostics", "Custom Builds"],
           rating: 4.8,
@@ -99,7 +105,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
         {
           id: "3",
           name: "Sarah Bolt",
-          email: "sarah@jsbmmoto.com",
+          email: "sarah@JBMSmoto.com",
           experience: "5 Years",
           specialties: ["Tire & Wheel", "Routine Maintenance"],
           rating: 4.7,
@@ -112,7 +118,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
   };
 
   const toggleExpand = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -139,7 +145,11 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
               <div className="flex-none p-6 md:px-10 md:py-8 flex items-start justify-between border-b border-[#222] bg-[#111111]">
                 <div className="flex items-center gap-6">
                   <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
-                    <Wrench size={28} className="text-white" strokeWidth={1.5} />
+                    <Wrench
+                      size={28}
+                      className="text-white"
+                      strokeWidth={1.5}
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
@@ -181,7 +191,9 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
                         className="bg-[#111111] border border-[#222] rounded-none p-6 hover:border-[#333] hover:bg-[#161616] transition-all group"
                       >
                         <div className="w-16 h-16 bg-[#0a0a0a] border border-[#333] mb-6 flex items-center justify-center">
-                          <span className="font-display text-2xl text-white">{mechanic.name.charAt(0).toUpperCase()}</span>
+                          <span className="font-display text-2xl text-white">
+                            {mechanic.name.charAt(0).toUpperCase()}
+                          </span>
                         </div>
                         <h3 className="font-display text-2xl leading-none text-white tracking-wide uppercase mb-2 group-hover:text-[#d63a2f] transition-colors">
                           {mechanic.name}
@@ -194,7 +206,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
                         ) : (
                           <div className="flex items-center gap-2 mt-1 text-xs text-[#6b6b6b] font-light">
                             <Award size={14} className="text-[#d63a2f]" />
-                            <span>CERTIFIED JSBM EXPERT</span>
+                            <span>CERTIFIED JBMS EXPERT</span>
                           </div>
                         )}
 
@@ -223,23 +235,32 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
                           <div className="flex items-center gap-1.5 text-[#d63a2f]">
                             <Star size={14} className="fill-current" />
                             <span className="font-bold text-sm text-white">
-                              {mechanic.rating ? mechanic.rating.toFixed(1) : 4.8}
+                              {mechanic.rating
+                                ? mechanic.rating.toFixed(1)
+                                : 4.8}
                             </span>
                             <span className="text-xs text-[#6b6b6b] ml-1 tracking-widest font-light">
                               ({mechanic.reviews?.length || 2})
                             </span>
                           </div>
-                          
+
                           <button
-                            onClick={() => toggleExpand(mechanic.id || String(idx))}
+                            onClick={() =>
+                              toggleExpand(mechanic.id || String(idx))
+                            }
                             className="text-[10px] font-bold tracking-[0.15em] text-[#d63a2f] hover:text-white uppercase flex items-center gap-2 transition-colors px-4 py-2 bg-[#221515] border border-[#d63a2f]"
                           >
                             <MessageSquare size={12} />
-                            {expandedId === (mechanic.id || String(idx)) ? "HIDE" : "REVIEWS"}
-                            <ChevronDown size={14} className={`transition-transform duration-300 ${expandedId === (mechanic.id || String(idx)) ? "rotate-180" : ""}`} />
+                            {expandedId === (mechanic.id || String(idx))
+                              ? "HIDE"
+                              : "REVIEWS"}
+                            <ChevronDown
+                              size={14}
+                              className={`transition-transform duration-300 ${expandedId === (mechanic.id || String(idx)) ? "rotate-180" : ""}`}
+                            />
                           </button>
                         </div>
-                        
+
                         <AnimatePresence>
                           {expandedId === (mechanic.id || String(idx)) && (
                             <motion.div
@@ -251,14 +272,29 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
                             >
                               <div className="mt-6 pt-6 border-t border-[#222] space-y-4">
                                 {(mechanic.reviews || []).map((review) => (
-                                  <div key={review.id} className="bg-[#0a0a0a] p-4 text-left border border-[#222]">
+                                  <div
+                                    key={review.id}
+                                    className="bg-[#0a0a0a] p-4 text-left border border-[#222]"
+                                  >
                                     <div className="flex items-center justify-between mb-3">
-                                      <span className="text-[10px] font-bold tracking-widest uppercase text-white">{review.author}</span>
-                                      <span className="text-[10px] font-light text-[#6b6b6b]">{review.date}</span>
+                                      <span className="text-[10px] font-bold tracking-widest uppercase text-white">
+                                        {review.author}
+                                      </span>
+                                      <span className="text-[10px] font-light text-[#6b6b6b]">
+                                        {review.date}
+                                      </span>
                                     </div>
                                     <div className="flex items-center gap-1 mb-3">
                                       {[...Array(5)].map((_, i) => (
-                                        <Star key={i} size={10} className={i < review.rating ? "text-[#d63a2f] fill-current" : "text-[#333]"} />
+                                        <Star
+                                          key={i}
+                                          size={10}
+                                          className={
+                                            i < review.rating
+                                              ? "text-[#d63a2f] fill-current"
+                                              : "text-[#333]"
+                                          }
+                                        />
                                       ))}
                                     </div>
                                     <p className="text-xs text-[#888] font-light leading-relaxed italic border-l block border-[#d63a2f] pl-3 py-1">
