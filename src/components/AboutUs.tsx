@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Wrench,
@@ -13,62 +13,44 @@ import {
   ChevronRight,
   Quote,
 } from "lucide-react";
+import { getMechanics } from "../services/staffService";
 
 /* ------------------------------------------------------------------ */
-/*  DATA                                                               */
+/*  TYPES                                                              */
 /* ------------------------------------------------------------------ */
+
+interface DBMechanic {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone?: string;
+  address?: string;
+  specialties?: string;
+  bio?: string;
+  years_of_experience?: number;
+  created_at: string;
+}
 
 interface Mechanic {
+  id: string;
   name: string;
   role: string;
   years: number;
   specialties: string[];
   bio: string;
   avatar: string;
+  email?: string;
 }
 
-const mechanics: Mechanic[] = [
-  {
-    name: "Marco \"Kuya Marc\" Reyes",
-    role: "Lead Mechanic & Shop Foreman",
-    years: 14,
-    specialties: ["Engine Overhaul", "Fuel Injection Systems", "Transmission"],
-    bio: "Si Kuya Marc ang backbone ng MotoShop. With 14 years of hands-on experience across Honda, Yamaha, and Suzuki platforms, he can diagnose an engine issue just by listening. He leads the team with patience and precision — every bike that leaves his bay runs like new.",
-    avatar: "MR",
-  },
-  {
-    name: "Jessa Mae Villanueva",
-    role: "Diagnostic Specialist",
-    years: 8,
-    specialties: ["AI-Assisted Diagnostics", "Electrical Systems", "ECU Tuning"],
-    bio: "Jessa is our tech-forward specialist who bridges traditional know-how with modern diagnostic tools. She's the go-to for complex electrical gremlins and ECU calibration. Clients love her clear, jargon-free explanations — she makes sure you understand every repair.",
-    avatar: "JV",
-  },
-  {
-    name: "Rodel \"Odie\" Santos",
-    role: "Senior Technician – Suspension & Chassis",
-    years: 11,
-    specialties: ["Suspension Tuning", "Frame Alignment", "Brake Systems"],
-    bio: "Odie lives and breathes chassis work. From fork rebuilds to full brake overhauls, he treats every motorcycle like his own. Riders across Quezon City specifically request him for track-day setups and long-haul comfort tuning.",
-    avatar: "RS",
-  },
-  {
-    name: "Angelica \"Gel\" Delos Reyes",
-    role: "Parts Specialist & Inventory Manager",
-    years: 6,
-    specialties: ["OEM Parts Sourcing", "Aftermarket Accessories", "Inventory Systems"],
-    bio: "Gel keeps our shelves stocked and our system organized. She personally vets every supplier to ensure only quality parts make it to our inventory. Need a rare OEM gasket or a specific aftermarket exhaust? Gel will find it — fast.",
-    avatar: "AD",
-  },
-  {
-    name: "Bryan \"BJ\" Joaquin",
-    role: "Junior Technician & Customer Liaison",
-    years: 3,
-    specialties: ["Preventive Maintenance", "Oil & Filter Service", "Tire Fitting"],
-    bio: "BJ is the newest member of the MotoShop family, but his energy and dedication are unmatched. He handles routine maintenance with speed and care, and his friendly attitude makes every customer feel at home the moment they walk in.",
-    avatar: "BJ",
-  },
-];
+// Mapping for different mechanic roles to more descriptive titles
+const roleMapping: { [key: string]: string } = {
+  mechanic: "Technician",
+  lead_mechanic: "Lead Mechanic",
+  senior_mechanic: "Senior Technician",
+  diagnostic_specialist: "Diagnostic Specialist",
+  parts_specialist: "Parts Specialist",
+};
 
 interface Feature {
   icon: React.ElementType;
@@ -132,6 +114,65 @@ const features: Feature[] = [
 /* ------------------------------------------------------------------ */
 
 const AboutUs: React.FC = () => {
+  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const dbMechanics = (await getMechanics()) as DBMechanic[];
+
+        // Transform database mechanics into Mechanic interface format
+        const transformedMechanics: Mechanic[] = dbMechanics.map(
+          (mech, idx) => {
+            // Generate initials for avatar
+            const initials = mech.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()
+              .slice(0, 2);
+
+            // Parse specialties from string or provide default
+            const specialties = mech.specialties
+              ? mech.specialties.split(",").map((s) => s.trim())
+              : ["Motorcycle Repair", "Maintenance"];
+
+            // Get descriptive role title or use from database
+            const roleTitle =
+              roleMapping[mech.role] || mech.role || "Technician";
+
+            return {
+              id: mech.id,
+              name: mech.name,
+              role: roleTitle,
+              years: mech.years_of_experience || (idx + 1) * 3, // Default years if not provided
+              specialties,
+              bio:
+                mech.bio ||
+                `Dedicated technician bringing years of expertise to MotoShop. With a passion for motorcycles and commitment to quality repairs, ${mech.name} ensures every bike leaves our shop running smoothly.`,
+              avatar: initials,
+              email: mech.email,
+            };
+          },
+        );
+
+        setMechanics(transformedMechanics);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching mechanics:", err);
+        setError("Unable to load mechanics data");
+        setMechanics([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <section id="about-us" className="w-full bg-[#0a0a0a] overflow-hidden">
       {/* ============================================================ */}
@@ -235,8 +276,8 @@ const AboutUs: React.FC = () => {
               MotoShop was born out of frustration — and a love for riding. Our
               founder, a lifelong motorcycle enthusiast from Quezon City, grew
               tired of repair shops that over-charged, under-delivered, and left
-              riders guessing about what was actually done to their bikes.
-              In 2019, he opened a small garage with one mission:{" "}
+              riders guessing about what was actually done to their bikes. In
+              2019, he opened a small garage with one mission:{" "}
               <span className="text-[#f0ede8] font-medium">
                 provide honest, high-quality motorcycle service that every
                 Filipino rider deserves.
@@ -296,83 +337,99 @@ const AboutUs: React.FC = () => {
 
           {/* Mechanic cards — brutalist grid */}
           <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.07)] p-[1px]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px]">
-              {mechanics.map((mech, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: idx * 0.08 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  className="relative flex flex-col p-8 lg:p-10 bg-[#111111] overflow-hidden group hover:bg-[#161616] transition-colors duration-300"
-                >
-                  {/* Hover glow */}
-                  <div className="absolute inset-0 bg-[#d63a2f]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            {loading ? (
+              <div className="flex items-center justify-center py-20 px-6">
+                <p className="text-[#888]">Loading mechanics...</p>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-20 px-6">
+                <p className="text-[#d63a2f]">{error}</p>
+              </div>
+            ) : mechanics.length === 0 ? (
+              <div className="flex items-center justify-center py-20 px-6">
+                <p className="text-[#888]">No mechanics found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px]">
+                {mechanics.map((mech, idx) => (
+                  <motion.div
+                    key={mech.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: idx * 0.08 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    className="relative flex flex-col p-8 lg:p-10 bg-[#111111] overflow-hidden group hover:bg-[#161616] transition-colors duration-300"
+                  >
+                    {/* Hover glow */}
+                    <div className="absolute inset-0 bg-[#d63a2f]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                  {/* Index */}
-                  <div className="font-display text-[11px] tracking-[0.15em] text-[#6b6b6b] mb-6 group-hover:text-[#d63a2f] transition-colors duration-300 relative z-10">
-                    0{idx + 1}
-                  </div>
+                    {/* Index */}
+                    <div className="font-display text-[11px] tracking-[0.15em] text-[#6b6b6b] mb-6 group-hover:text-[#d63a2f] transition-colors duration-300 relative z-10">
+                      0{idx + 1}
+                    </div>
 
-                  {/* Avatar */}
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#d63a2f] to-[#f97316] flex items-center justify-center text-white font-display text-xl font-bold mb-6 group-hover:scale-105 transition-transform duration-300 relative z-10">
-                    {mech.avatar}
-                  </div>
+                    {/* Avatar */}
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#d63a2f] to-[#f97316] flex items-center justify-center text-white font-display text-xl font-bold mb-6 group-hover:scale-105 transition-transform duration-300 relative z-10">
+                      {mech.avatar}
+                    </div>
 
-                  {/* Name & Role */}
-                  <h4 className="font-display text-[22px] tracking-wide text-[#f0ede8] leading-tight uppercase mb-1 relative z-10">
-                    {mech.name}
-                  </h4>
-                  <p className="text-[#d63a2f] text-[13px] font-medium tracking-wide mb-1 relative z-10">
-                    {mech.role}
-                  </p>
-                  <p className="text-[#6b6b6b] text-[12px] mb-5 relative z-10">
-                    {mech.years} years of experience
-                  </p>
+                    {/* Name & Role */}
+                    <h4 className="font-display text-[22px] tracking-wide text-[#f0ede8] leading-tight uppercase mb-1 relative z-10">
+                      {mech.name}
+                    </h4>
+                    <p className="text-[#d63a2f] text-[13px] font-medium tracking-wide mb-1 relative z-10">
+                      {mech.role}
+                    </p>
+                    <p className="text-[#6b6b6b] text-[12px] mb-5 relative z-10">
+                      {mech.years} years of experience
+                    </p>
 
-                  {/* Specialties */}
-                  <div className="flex flex-wrap gap-2 mb-5 relative z-10">
-                    {mech.specialties.map((spec, sIdx) => (
-                      <span
-                        key={sIdx}
-                        className="px-3 py-1 text-[11px] tracking-wider uppercase bg-[#1a1a1a] border border-[rgba(255,255,255,0.07)] text-[#888] rounded-sm group-hover:border-[#d63a2f]/30 group-hover:text-[#bbb] transition-all duration-300"
-                      >
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
+                    {/* Specialties */}
+                    <div className="flex flex-wrap gap-2 mb-5 relative z-10">
+                      {mech.specialties.map((spec, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className="px-3 py-1 text-[11px] tracking-wider uppercase bg-[#1a1a1a] border border-[rgba(255,255,255,0.07)] text-[#888] rounded-sm group-hover:border-[#d63a2f]/30 group-hover:text-[#bbb] transition-all duration-300"
+                        >
+                          {spec}
+                        </span>
+                      ))}
+                    </div>
 
-                  {/* Bio */}
-                  <p className="text-[13px] font-light text-[#6b6b6b] leading-[1.7] flex-1 relative z-10">
-                    {mech.bio}
-                  </p>
-                </motion.div>
-              ))}
+                    {/* Bio */}
+                    <p className="text-[13px] font-light text-[#6b6b6b] leading-[1.7] flex-1 relative z-10">
+                      {mech.bio}
+                    </p>
+                  </motion.div>
+                ))}
 
-              {/* Empty cell to complete the 3-col grid (5 mechanics + 1 filler) */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                viewport={{ once: true }}
-                className="relative flex flex-col items-center justify-center p-8 lg:p-10 bg-[#111111] overflow-hidden group hover:bg-[#161616] transition-colors duration-300 min-h-[300px]"
-              >
-                <div className="absolute inset-0 bg-[#d63a2f]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                <div className="text-center relative z-10">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#333] flex items-center justify-center mx-auto mb-5 group-hover:border-[#d63a2f]/50 transition-colors duration-300">
-                    <span className="text-[#444] text-2xl group-hover:text-[#d63a2f] transition-colors duration-300">
-                      +
-                    </span>
-                  </div>
-                  <p className="font-display text-[18px] text-[#444] uppercase tracking-wide mb-2 group-hover:text-[#666] transition-colors duration-300">
-                    Join the Team
-                  </p>
-                  <p className="text-[13px] text-[#444] leading-[1.6]">
-                    We're always looking for passionate mechanics.
-                  </p>
-                </div>
-              </motion.div>
-            </div>
+                {/* Empty cell to complete the 3-col grid (if mechanics count is not divisible by 3) */}
+                {mechanics.length % 3 !== 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    viewport={{ once: true }}
+                    className="relative flex flex-col items-center justify-center p-8 lg:p-10 bg-[#111111] overflow-hidden group hover:bg-[#161616] transition-colors duration-300 min-h-[300px]"
+                  >
+                    <div className="absolute inset-0 bg-[#d63a2f]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <div className="text-center relative z-10">
+                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#333] flex items-center justify-center mx-auto mb-5 group-hover:border-[#d63a2f]/50 transition-colors duration-300">
+                        <span className="text-[#444] text-2xl group-hover:text-[#d63a2f] transition-colors duration-300">
+                          +
+                        </span>
+                      </div>
+                      <p className="font-display text-[18px] text-[#444] uppercase tracking-wide mb-2 group-hover:text-[#666] transition-colors duration-300">
+                        Join the Team
+                      </p>
+                      <p className="text-[13px] text-[#444] leading-[1.6]">
+                        We're always looking for passionate mechanics.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
