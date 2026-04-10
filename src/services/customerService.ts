@@ -88,17 +88,36 @@ export const customerService = {
   },
 
   /**
-   * Delete a customer
+   * Delete a customer and all related records
+   * Deletes appointments and vehicles first to handle foreign key constraints
    */
   async deleteCustomer(customerId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
+      // First, delete all appointments for this customer
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('customer_id', customerId)
+
+      if (appointmentError) throw appointmentError
+
+      // Then, delete all vehicles for this customer
+      const { error: vehicleError } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('customer_id', customerId)
+
+      if (vehicleError) throw vehicleError
+
+      // Finally, delete the customer user record
+      const { error: userError } = await supabase
         .from('users')
         .delete()
         .eq('id', customerId)
 
-      if (error) throw error
-      console.log('✅ Customer deleted')
+      if (userError) throw userError
+
+      console.log('✅ Customer and all related records deleted')
       return true
     } catch (err) {
       console.error('Error deleting customer:', err)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Mail,
@@ -8,8 +8,11 @@ import {
   TrendingUp,
   Calendar,
   AlertCircle,
+  Trash2,
+  X,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
+import { customerService } from "../services/customerService";
 
 interface Customer {
   id: string;
@@ -32,6 +35,9 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmationInput, setConfirmationInput] = useState("");
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -83,6 +89,29 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
     );
     setFilteredCustomers(filtered);
   }, [searchTerm, customers]);
+
+  // Handle customer deletion
+  const handleDeleteCustomer = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setDeleting(true);
+      const success = await customerService.deleteCustomer(deleteConfirm.id);
+      if (success) {
+        setCustomers(customers.filter((c) => c.id !== deleteConfirm.id));
+        setDeleteConfirm(null);
+        setConfirmationInput("");
+        alert("Customer deleted successfully!");
+      } else {
+        alert("Failed to delete customer");
+      }
+    } catch (err) {
+      console.error("Error deleting customer:", err);
+      alert("Error deleting customer");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const totalSpent = customers.reduce(
     (sum, c) => sum + (c.total_spent || 0),
@@ -243,6 +272,9 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
                     Joined
                   </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-moto-gray-light/20">
@@ -300,6 +332,15 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
                         ? new Date(customer.created_at).toLocaleDateString()
                         : "N/A"}
                     </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => setDeleteConfirm(customer)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition-colors"
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -326,6 +367,97 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
       >
         Showing {filteredCustomers.length} of {totalCustomers} customers
       </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 rounded-lg border border-slate-700 max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Delete Customer</h3>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="text-slate-400 hover:text-white transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-300 mb-2">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-white">
+                    {deleteConfirm.name}
+                  </span>
+                  ?
+                </p>
+                <p className="text-sm text-gray-400 mb-4">
+                  This action cannot be undone. All customer data and associated
+                  records will be permanently removed.
+                </p>
+
+                <p className="text-sm text-gray-400 mb-2">
+                  To confirm, type{" "}
+                  <span className="font-mono font-semibold text-gray-300">
+                    CONFIRM
+                  </span>
+                </p>
+                <input
+                  type="text"
+                  placeholder="Type CONFIRM to delete"
+                  value={confirmationInput}
+                  onChange={(e) => setConfirmationInput(e.target.value)}
+                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-red-500 focus:outline-none mb-4"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteConfirm(null);
+                    setConfirmationInput("");
+                  }}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteCustomer}
+                  disabled={
+                    deleting || confirmationInput !== "CONFIRM"
+                  }
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
