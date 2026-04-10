@@ -2,11 +2,11 @@
 
 A professional, capstone-grade web application for managing Philippine auto repair shops. Built with React, TypeScript, Tailwind CSS, and Supabase for modern, scalable management of appointments, inventory, customers, and AI-powered diagnostics.
 
-## 🎯 Features
+## Features
 
 ### Core Modules
 
-#### 1. **Dashboard with Analytics** 📊
+#### 1. **Dashboard with Analytics** 
 - Real-time revenue tracking and trends
 - Job status distribution (pie charts)
 - Daily metrics and KPIs
@@ -15,7 +15,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 - Customizable time period filters (week/month/year)
 - Professional dark-mode UI with Recharts visualization
 
-#### 2. **Inventory Management** 📦
+#### 2. **Inventory Management** 
 - **Full CRUD** for parts and components
 - Real-time stock tracking with low-stock alerts
 - Category filtering (brakes, tires, oils, electrical, suspension, exhaust, filters)
@@ -25,7 +25,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 - Part details: SKU, unit price, supplier tracking
 - Reorder level configuration
 
-#### 3. **Appointment Calendar** 📅
+#### 3. **Appointment Calendar** 
 - Visual calendar interface for scheduling
 - Time-slot availability system
 - Appointment status tracking (Pending/Confirmed/In-Progress/Completed/Cancelled)
@@ -35,7 +35,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 - Note-taking for service details
 - Bulk status updates
 
-#### 4. **Customer Portal** 👥
+#### 4. **Customer Portal** 
 - Service history with complete records
 - Vehicle registration and management
 - Total spending analytics
@@ -44,7 +44,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 - Invoice download (PDF export)
 - Upcoming appointment visibility
 
-#### 5. **AI-Powered Chatbot** 🤖
+#### 5. **AI-Powered Chatbot** 
 - **Context-aware assistance** based on user role
 - **For Mechanics**: Diagnostic tool, part suggestions based on symptoms
 - **For Customers**: Service info, FAQ, appointment booking helper
@@ -53,7 +53,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 - Groq API integration (free, unlimited)
 - Bilingual support (English/Tagalog)
 
-#### 6. **Bilingual Interface** 🌐
+#### 6. **Bilingual Interface** 
 - English ↔ Tagalog toggle
 - Full translation coverage for all UI elements
 - Language preference persistence (localStorage)
@@ -81,7 +81,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technologies |
 |-------|--------------|
@@ -99,7 +99,7 @@ A professional, capstone-grade web application for managing Philippine auto repa
 
 ---
 
-## 📋 Project Structure
+## Project Structure
 
 ```
 src/
@@ -138,7 +138,7 @@ Other:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 16+ and npm
@@ -284,7 +284,7 @@ CREATE TABLE invoices (
 
 ---
 
-## 🔐 Environment Setup
+## Environment Setup
 
 ### Supabase Configuration
 
@@ -446,7 +446,7 @@ git push origin main
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Issue: Groq API rate limited
 **Solution**: Wait 60 seconds, or use different model in `EnhancedChatbotWidget.tsx`
@@ -462,7 +462,7 @@ git push origin main
 
 ---
 
-## 📝 Future Enhancements
+## Future Enhancements
 
 - [ ] Real Supabase integration (replace mock data)
 - [ ] SMS via Twilio/Semaphore API
@@ -477,7 +477,7 @@ git push origin main
 
 ---
 
-## 📞 Support & Contact
+## Support & Contact
 
 For capstone defense questions or issues:
 - Email: support@motoshop-system.com
@@ -486,7 +486,7 @@ For capstone defense questions or issues:
 
 ---
 
-## 📄 License
+## License
 
 This project is built for educational purposes (Capstone Project). All code is open-source and ready for deployment to production Philippine auto repair shops.
 
@@ -494,7 +494,7 @@ This project is built for educational purposes (Capstone Project). All code is o
 
 ---
 
-## 🏆 Capstone Highlights
+## Capstone Highlights
 
 ✨ **What Makes This Capstone Impressive:**
 

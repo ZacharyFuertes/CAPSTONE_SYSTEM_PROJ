@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import slide1 from "../hero-slide-images/hero-slide-image-1.png";
 import slide2 from "../hero-slide-images/hero-slide-image-2.png";
 import slide3 from "../hero-slide-images/hero-slide-image-3.png";
@@ -111,32 +111,7 @@ const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
                 {slides[current].subtitle}
               </p>
 
-              {/* CTA Buttons */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-              >
-                <motion.button
-                  onClick={onShopNow}
-                  className="px-8 py-3 bg-gradient-accent rounded-lg font-bold text-white uppercase tracking-wide flex items-center gap-2 hover:shadow-2xl hover:shadow-moto-accent/50"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Play size={20} fill="currentColor" />
-                  Shop Now
-                </motion.button>
-                <motion.button
-                  onClick={onBookNow}
-                  className="px-8 py-3 border-2 border-moto-accent-neon rounded-lg font-bold text-moto-accent-neon uppercase tracking-wide flex items-center gap-2 hover:bg-moto-accent-neon/10 backdrop-blur-none sm:backdrop-blur-sm bg-moto-darker/60 sm:bg-transparent"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <BookOpen size={20} />
-                  Book Service
-                </motion.button>
-              </motion.div>
+
             </motion.div>
           </div>
         </motion.div>

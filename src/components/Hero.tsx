@@ -46,13 +46,7 @@ const Hero: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
         >
-          <button
-            onClick={scrollToProducts}
-            className="px-8 py-3 bg-moto-accent hover:bg-moto-accent-dark text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            aria-label="Shop products - scroll to featured items"
-          >
-            Shop Now
-          </button>
+  
           <button
             className="px-8 py-3 border-2 border-white hover:bg-white hover:text-moto-dark text-white font-semibold rounded-lg transition-colors"
             aria-label="Learn more about MotoShop"
