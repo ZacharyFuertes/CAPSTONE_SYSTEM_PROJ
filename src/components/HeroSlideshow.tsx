@@ -19,8 +19,6 @@ interface HeroSlideshowProps {
 }
 
 const HeroSlideshow: React.FC<HeroSlideshowProps> = ({
-  onBookNow,
-  onShopNow,
 }) => {
   const [current, setCurrent] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);

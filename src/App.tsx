@@ -34,6 +34,7 @@ import AIInquiriesPage from "./pages/AIInquiriesPage";
 import Navbar from "./components/Navbar";
 import HeroSlideshow from "./components/HeroSlideshow";
 import ServicesGrid from "./components/ServicesGrid";
+import AboutUs from "./components/AboutUs";
 import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
@@ -219,6 +220,7 @@ const AppContent: React.FC = () => {
               onShopNow={() => setShowPartsModal(true)}
             />
             <ServicesGrid />
+            <AboutUs />
             <TrustSection />
             <Footer />
             <BrowsePartsModal
@@ -308,6 +310,7 @@ const AppContent: React.FC = () => {
           onShopNow={() => setShowPartsModal(true)}
         />
         <ServicesGrid />
+        <AboutUs />
         <TrustSection />
         <Footer />
         <BookAppointmentModal
