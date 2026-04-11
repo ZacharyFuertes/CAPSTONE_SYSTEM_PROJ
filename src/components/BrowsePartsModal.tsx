@@ -17,7 +17,7 @@ import {
   Box,
   CheckCircle,
 } from "lucide-react";
-import { inventoryService } from "../services/inventoryService";
+import { supabase } from "../services/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { Part } from "../types";
 
@@ -55,7 +55,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   const [inquirySent, setInquirySent] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && shopId) {
+    if (isOpen) {
       fetchParts();
     }
   }, [isOpen, shopId]);
@@ -63,8 +63,14 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   const fetchParts = async () => {
     try {
       setLoading(true);
-      const dbParts = await inventoryService.getParts(shopId);
-      setParts(dbParts);
+      // If shopId is available, filter by shop; otherwise fetch ALL parts for public view
+      let query = supabase.from("parts").select("*").order("name", { ascending: true });
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      setParts((data as Part[]) || []);
     } catch (err) {
       console.error("Error fetching parts:", err);
       setParts([]);

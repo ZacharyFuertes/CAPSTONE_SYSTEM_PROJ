@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Search, ShoppingCart, Zap, Package } from "lucide-react";
+import { Search, ShoppingCart, Zap, Package } from "lucide-react";
 
 import { supabase } from "../services/supabaseClient";
 
@@ -8,7 +8,8 @@ interface Part {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price?: number;
+  unit_price?: number;
   image?: string;
   image_url?: string;
   rating?: number;
@@ -42,159 +43,30 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
     { id: "oils", label: "Oils" },
     { id: "electrical", label: "Electrical" },
     { id: "suspension", label: "Suspension" },
+    { id: "exhaust", label: "Exhaust" },
+    { id: "other", label: "Other" },
   ];
 
-  // Demo parts data as fallback
-  const demoParts: Part[] = [
-    {
-      id: "1",
-      name: "Oil Filter",
-      category: "Filters",
-      price: 450,
-      image:
-        "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcSaLUpmocducA385wmGWxMjj3NPopkQ6ohCtaadIqbJhyWyWrUDlcSud2WkG-tsCPmVggaeav2-Osl6wYxlVyrnOj-OrUCoOejrYKpIaeFb_3R3n0tJhqgxqA",
-      rating: 4.8,
-      reviews: 234,
-      inStock: true,
-      quantity: 45,
-    },
-    {
-      id: "2",
-      name: "Air Filter",
-      category: "Filters",
-      price: 650,
-      image: "https://m.media-amazon.com/images/I/81EQio4lHlL.jpg",
-      rating: 4.9,
-      reviews: 189,
-      inStock: true,
-      quantity: 32,
-    },
-    {
-      id: "3",
-      name: "Brake Pads Set",
-      category: "Brakes",
-      price: 1200,
-      image:
-        "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQOWVt03NPiiV-eZ4ryoT4G4hNrQRVqxxU-SBYZH3bWbpGLHw3YoUY0Byi-w5ILYVRoXUfmJdQ_uzLgMOr68YonTVqiRUUM9GP20rKb2oNL6NiGxy4G7qqhItw",
-      rating: 4.7,
-      reviews: 156,
-      inStock: true,
-      quantity: 28,
-    },
-    {
-      id: "4",
-      name: "Spark Plugs (Set of 4)",
-      category: "Electrical",
-      price: 800,
-      image:
-        "https://www.partspro.ph/cdn/shop/files/IridiumIX-B_700x.jpg?v=1742352489",
-      rating: 4.6,
-      reviews: 142,
-      inStock: true,
-      quantity: 55,
-    },
-    {
-      id: "5",
-      name: "Wiper Blade Set",
-      category: "Accessories",
-      price: 550,
-      image:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbj-BCKrR5JBP-OQHvaGHqHQj3coychNZaEg&s",
-      rating: 4.5,
-      reviews: 98,
-      inStock: true,
-      quantity: 40,
-    },
-    {
-      id: "6",
-      name: "Car Battery 40Ah",
-      category: "Electrical",
-      price: 2800,
-      image:
-        "https://img.lazcdn.com/g/p/11b752fe5ed0a26a8cbe7421207456b0.jpg_960x960q80.jpg_.webp",
-      rating: 4.8,
-      reviews: 267,
-      inStock: true,
-      quantity: 12,
-    },
-    {
-      id: "7",
-      name: "Engine Oil 5L (Synthetic)",
-      category: "Fluids",
-      price: 1800,
-      image:
-        "https://m.media-amazon.com/images/I/61ep7z3yB3L._AC_UF1000,1000_QL80_.jpg",
-      rating: 4.7,
-      reviews: 201,
-      inStock: true,
-      quantity: 38,
-    },
-    {
-      id: "8",
-      name: "Coolant Antifreeze 1L",
-      category: "Fluids",
-      price: 320,
-      image:
-        "https://down-ph.img.susercontent.com/file/ph-11134207-7ra0n-mb3ucjswkpyp17",
-      rating: 4.6,
-      reviews: 124,
-      inStock: true,
-      quantity: 50,
-    },
-    {
-      id: "9",
-      name: "Transmission Fluid 1L",
-      category: "Fluids",
-      price: 480,
-      image:
-        "https://www.partspro.ph/cdn/shop/files/MultiATFN.jpg?v=1691041651",
-      rating: 4.5,
-      reviews: 89,
-      inStock: true,
-      quantity: 25,
-    },
-    {
-      id: "10",
-      name: "Brake Fluid DOT 4",
-      category: "Fluids",
-      price: 380,
-      image:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRE-UzVnvRXIJTichfwrz26Z2QxCtCO7qiSQ&s",
-      rating: 4.7,
-      reviews: 156,
-      inStock: true,
-      quantity: 42,
-    },
-    {
-      id: "11",
-      name: "Serpentine Belt",
-      category: "Belts",
-      price: 650,
-      image:
-        "https://img.lazcdn.com/g/p/c28725e1bcf0458b7a6ba7e4fe0ba0b5.jpg_720x720q80.jpg",
-      rating: 4.4,
-      reviews: 76,
-      inStock: true,
-      quantity: 18,
-    },
-    {
-      id: "12",
-      name: "Radiator Hose Kit",
-      category: "Cooling",
-      price: 1100,
-      image:
-        "https://img.lazcdn.com/g/ff/kf/S1d3152de25664de9a5288107f3506f55d.jpg_720x720q80.jpg",
-      rating: 4.6,
-      reviews: 112,
-      inStock: true,
-      quantity: 22,
-    },
-  ];
+  // Helper to get the display price from either field
+  const getPrice = (part: Part): number => {
+    return part.price ?? part.unit_price ?? 0;
+  };
 
-  // Fetch parts from database
+  // Helper to get the stock quantity
+  const getStock = (part: Part): number => {
+    return part.quantity ?? part.quantity_in_stock ?? 0;
+  };
+
+  // Helper to check if in stock
+  const isInStock = (part: Part): boolean => {
+    if (part.inStock !== undefined) return part.inStock;
+    return getStock(part) > 0;
+  };
+
+  // Fetch parts from database (all parts, no shop_id filter for public store)
   useEffect(() => {
     const fetchParts = async () => {
-      // Skip if we've already fetched or are fetching
+      // Skip if we've already fetched
       if (fetchedRef.current) {
         return;
       }
@@ -221,19 +93,15 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
         // Mark that we've fetched
         fetchedRef.current = true;
 
-        // Use demo parts if database is empty
-        const partsToUse =
-          (data as Part[])?.length > 0 ? (data as Part[]) : demoParts;
-        setParts(partsToUse);
+        setParts((data as Part[]) || []);
       } catch (err) {
         // Ignore abort errors
         if (err instanceof Error && err.name === "AbortError") {
           return;
         }
         console.error("Error fetching parts:", err);
-        // Fallback to demo parts on error
         if (!fetchAbortRef.current?.signal.aborted) {
-          setParts(demoParts);
+          setParts([]);
         }
       } finally {
         if (!fetchAbortRef.current?.signal.aborted) {
@@ -429,8 +297,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
                         </p>
                       </div>
                       <div className="ml-3">
-                        {(part.inStock ??
-                        (part.quantity ?? part.quantity_in_stock ?? 0) > 0) ? (
+                        {isInStock(part) ? (
                           <span className="inline-flex items-center gap-1 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-semibold">
                             In Stock
                           </span>
@@ -442,50 +309,24 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
                       </div>
                     </div>
 
-                    {/* Rating */}
-                    {part.rating && (
-                      <div className="mb-4">
-                        <div className="flex items-center gap-1 mb-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={14}
-                              className={
-                                i < Math.round(part.rating!)
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-slate-600"
-                              }
-                            />
-                          ))}
-                          <span className="text-xs text-slate-400 ml-2">
-                            {part.rating}
-                          </span>
-                        </div>
-                        {part.reviews && (
-                          <p className="text-xs text-slate-500">
-                            ({part.reviews} reviews)
-                          </p>
-                        )}
-                      </div>
+                    {/* Description */}
+                    {part.description && (
+                      <p className="text-sm text-slate-400 mb-4 line-clamp-2">
+                        {part.description}
+                      </p>
                     )}
 
                     {/* Price and Action */}
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold text-moto-accent">
-                        ₱{part.price.toLocaleString()}
+                        ₱{getPrice(part).toLocaleString()}
                       </div>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        disabled={
-                          !(
-                            part.inStock ??
-                            (part.quantity ?? part.quantity_in_stock ?? 0) > 0
-                          )
-                        }
+                        disabled={!isInStock(part)}
                         className={`p-2.5 rounded-lg transition-all ${
-                          (part.inStock ??
-                          (part.quantity ?? part.quantity_in_stock ?? 0) > 0)
+                          isInStock(part)
                             ? "bg-moto-accent hover:bg-moto-accent-dark text-white"
                             : "bg-slate-600 text-slate-400 cursor-not-allowed"
                         }`}
@@ -496,7 +337,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
 
                     {/* Stock Count */}
                     <p className="text-xs text-slate-500 mt-3">
-                      {part.quantity ?? part.quantity_in_stock ?? 0} units
+                      {getStock(part)} units
                       available
                     </p>
                   </div>
