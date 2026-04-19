@@ -29,8 +29,9 @@ import LoginPage from "./pages/LoginPage";
 import MechanicLoginPage from "./pages/MechanicLoginPage";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
 import LoginChoicePage from "./pages/LoginChoicePage";
-import AdminProductsPage from "./pages/AdminProductsPage";
 import AIInquiriesPage from "./pages/AIInquiriesPage";
+import UpdatePartsPage from "./pages/UpdatePartsPage";
+
 
 // Landing page imports (original)
 import Navbar from "./components/Navbar";
@@ -175,7 +176,7 @@ const AppContent: React.FC = () => {
   // If auth loading, show a spinner placeholder
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] text-white">
         <div className="text-center">
           <p className="text-xl font-semibold mb-2">
             Checking authentication and role permissions...
@@ -278,7 +279,7 @@ const AppContent: React.FC = () => {
   // While user object is authenticated but role is not yet resolved, show loader
   if (isAuthenticated && !user?.role) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] text-white">
         <div className="text-center">
           <p className="text-xl font-semibold mb-2">
             Loading role permissions...
@@ -357,7 +358,7 @@ const AppContent: React.FC = () => {
   // If user tries to access unauthorized page, show AccessDenied
   if (user && !allowedPages.includes(currentPage)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen bg-[#0f0f0f]">
         <SystemNavbar
           currentPage={defaultPage}
           onNavigate={(page: string) => handlePageChange(page as AppPage)}
@@ -379,7 +380,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <DatabaseStatus />
       {/* Hide SystemNavbar for mechanic-dashboard as it has its own sidebar */}
       {currentPage !== "mechanic-dashboard" && (
@@ -392,9 +393,11 @@ const AppContent: React.FC = () => {
 
       <main
         className={
-          currentPage !== "mechanic-dashboard"
-            ? "pt-20 px-4 sm:px-6 lg:px-8 pb-12"
-            : ""
+          currentPage === "mechanic-dashboard"
+            ? ""
+            : currentPage === "update-parts"
+            ? "pt-20"
+            : "pt-20 px-4 sm:px-6 lg:px-8 pb-12"
         }
       >
         {currentPage === "dashboard" && (
@@ -404,6 +407,11 @@ const AppContent: React.FC = () => {
         )}
         {currentPage === "inventory" && (
           <InventoryPage
+            onNavigate={(page: string) => handlePageChange(page as PageType)}
+          />
+        )}
+        {currentPage === "update-parts" && (
+          <UpdatePartsPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
@@ -434,11 +442,7 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
-        {currentPage === "products" && (
-          <AdminProductsPage
-            onNavigate={(page: string) => handlePageChange(page as PageType)}
-          />
-        )}
+
         {currentPage === "browse-parts" && (
           <BrowsePartsPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}

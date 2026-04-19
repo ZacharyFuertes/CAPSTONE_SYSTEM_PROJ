@@ -4,11 +4,11 @@ export type AppPage =
   | "landing"
   | "dashboard"
   | "inventory"
+  | "update-parts"
   | "appointments"
   | "customers"
   | "customer-portal"
   | "browse-parts"
-  | "products"
   | "mechanic-portal"
   | "mechanic-dashboard"
   | "mechanic-availability"
@@ -28,9 +28,9 @@ export const rolePagesMapping: Record<UserRole, AppPage[]> = {
   owner: [
     "dashboard",
     "inventory",
+    "update-parts",
     "appointments",
     "customers",
-    "products",
     "services",
     "mechanic-availability",
     "settings",

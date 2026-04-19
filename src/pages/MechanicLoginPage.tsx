@@ -99,7 +99,7 @@ const MechanicLoginPage: React.FC<MechanicLoginPageProps> = ({
   const iconClass = "absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center p-4">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />

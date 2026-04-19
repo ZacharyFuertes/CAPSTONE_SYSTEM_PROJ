@@ -146,7 +146,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
   }, [loginAttempted, isLoading, user]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center p-4">
       {" "}
       {/* Error Modal Component */}
       <ErrorModal

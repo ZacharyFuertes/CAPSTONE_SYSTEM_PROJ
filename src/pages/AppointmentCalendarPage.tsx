@@ -200,7 +200,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const isOwner = user?.role === "owner";
   const isMechanic = user?.role === "mechanic";
   const isCustomer = user?.role === "customer";
-  const canBookAppointments = isOwner || isCustomer;
+  const canBookAppointments = isCustomer;
   const canUpdateStatus = isOwner || isMechanic;
 
   const upcomingAppointments = filteredAppointments.filter(
@@ -211,18 +211,21 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <section className="relative w-full pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-800 to-transparent">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12">
             <div className="flex items-center gap-3 mb-4">
               <Clock className="w-8 h-8 text-moto-accent" />
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white">
-                Your <span className="text-moto-accent">Appointments</span>
+                {isOwner ? 'Customer' : 'Your'} <span className="text-moto-accent">Appointments</span>
               </h1>
             </div>
             <p className="text-lg text-slate-300 max-w-2xl">
-              Schedule service appointments, track your booking status, and select your preferred mechanic. Professional service at your convenience.
+              {isOwner 
+                ? 'View and manage all customer appointments. Track booking statuses and assign mechanics.'
+                : 'Schedule service appointments, track your booking status, and select your preferred mechanic. Professional service at your convenience.'
+              }
             </p>
           </motion.div>
         </div>

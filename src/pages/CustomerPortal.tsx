@@ -107,7 +107,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f0f0f] p-6 flex items-center justify-center">
         <div className="text-white text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p>Loading your portal...</p>
@@ -117,7 +117,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="min-h-screen bg-[#0f0f0f] p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div

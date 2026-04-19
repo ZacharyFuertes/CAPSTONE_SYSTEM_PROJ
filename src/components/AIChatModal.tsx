@@ -278,6 +278,12 @@ You are a helpful, professional, and friendly shop assistant.
 - Always recommend visiting or calling the shop for complex issues.
 - If data lists are empty, honestly say so and ask the customer to contact the shop.
 ${customer ? `- Address the customer by their first name (${customer.name.split(" ")[0]}) to personalize the experience.` : ""}
+- IMPORTANT: At the END of EVERY response, always suggest 2-3 short follow-up questions the customer might want to ask next. Format them as a brief list like:
+  "You might also want to ask:
+  • [suggestion 1]
+  • [suggestion 2]
+  • [suggestion 3]"
+  This keeps the conversation going and helps the customer explore more options.
 
 ${bookingInstructions}`;
 }
@@ -379,65 +385,84 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     ]);
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || !groqClient.current || loading) return;
+  // Helper: parse follow-up suggestions from bot response
+  const parseSuggestions = (content: string): string[] => {
+    const lines = content.split('\n');
+    const suggestions: string[] = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Match lines starting with •, -, or numbered like 1.
+      const match = trimmed.match(/^(?:[•\-\*]|\d+[\.\)])\s*(.+)/);
+      if (match && match[1]) {
+        const text = match[1].replace(/^["']|["']$/g, '').replace(/\*+/g, '').trim();
+        // Only treat short lines as suggestions (< 80 chars, likely follow-up questions)
+        if (text.length > 5 && text.length < 80 && text.endsWith('?')) {
+          suggestions.push(text);
+        }
+      }
+    }
+    // Return only the last 2-3 suggestions (the follow-up ones)
+    return suggestions.slice(-3);
+  };
+
+  // Reusable: send a text message to the AI
+  const sendMessageFromText = async (text: string) => {
+    if (!text.trim() || !groqClient.current || loading) return;
     if (error) return;
 
-    const userInput = input.trim();
     const userMessage: ChatMessageType = {
       id: Date.now().toString(),
-      content: userInput,
+      content: text.trim(),
       sender: "user",
       timestamp: new Date(),
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
+    setMessages((prev) => {
+      const newMessages = [...prev, userMessage];
+      // Trigger AI call
+      (async () => {
+        setInput("");
+        setLoading(true);
+        try {
+          const systemPrompt = shopCtx
+            ? buildSystemPrompt(shopCtx, customerCtx)
+            : `You are MotoMech AI for JSBM MotoShop. Today is ${new Date().toLocaleDateString("en-PH")}. The database is loading. Advise customers to wait a moment or call the shop.`;
+          const history = newMessages
+            .filter((m) => m.id !== "initial")
+            .map((m) => ({
+              role: (m.sender === "user" ? "user" : "assistant") as "user" | "assistant",
+              content: m.content,
+            }));
+          const response = await groqClient.current!.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "system", content: systemPrompt }, ...history],
+            max_tokens: 1024,
+            temperature: 0.5,
+          });
+          const raw = response.choices[0]?.message?.content ?? "I could not generate a response. Please try again.";
+          const bookMatch = raw.match(/\[BOOK_APPOINTMENT:[^\]]+\]/);
+          const displayContent = raw.replace(/\[BOOK_APPOINTMENT:[^\]]+\]/, "").trim();
+          setMessages((p) => [
+            ...p,
+            { id: (Date.now() + 1).toString(), content: displayContent, sender: "bot", timestamp: new Date() },
+          ]);
+          if (bookMatch) await handleBooking(bookMatch[0]);
+        } catch (err: any) {
+          setMessages((p) => [
+            ...p,
+            { id: (Date.now() + 1).toString(), content: `Sorry, I encountered an error. ${err.message ?? "Please try again."}`, sender: "bot", timestamp: new Date() },
+          ]);
+        } finally {
+          setLoading(false);
+        }
+      })();
+      return newMessages;
+    });
+  };
 
-    try {
-      const systemPrompt = shopCtx
-        ? buildSystemPrompt(shopCtx, customerCtx)
-        : `You are MotoMech AI for JSBM MotoShop. Today is ${new Date().toLocaleDateString("en-PH")}. The database is loading. Advise customers to wait a moment or call the shop.`;
-
-      const history = newMessages
-        .filter((m) => m.id !== "initial")
-        .map((m) => ({
-          role: (m.sender === "user" ? "user" : "assistant") as "user" | "assistant",
-          content: m.content,
-        }));
-
-      const response = await groqClient.current.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "system", content: systemPrompt }, ...history],
-        max_tokens: 1024,
-        temperature: 0.5,
-      });
-
-      const raw = response.choices[0]?.message?.content ?? "I could not generate a response. Please try again.";
-      const bookMatch = raw.match(/\[BOOK_APPOINTMENT:[^\]]+\]/);
-      const displayContent = raw.replace(/\[BOOK_APPOINTMENT:[^\]]+\]/, "").trim();
-
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), content: displayContent, sender: "bot", timestamp: new Date() },
-      ]);
-
-      if (bookMatch) await handleBooking(bookMatch[0]);
-    } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          content: `Sorry, I encountered an error. ${err.message ?? "Please try again."}`,
-          sender: "bot",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
+    await sendMessageFromText(input);
   };
 
   if (!isOpen) return null;
@@ -514,12 +539,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
 
           {/* ── Messages ── */}
           <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a] space-y-6">
-            {messages.map((message) => (
+            {messages.map((message, idx) => {
+              const isLastBotMsg = message.sender === "bot" && idx === messages.length - 1;
+              const inlineSuggestions = (message.sender === "bot" && isLastBotMsg && !loading) ? parseSuggestions(message.content) : [];
+              return (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"}`}
               >
                 <div className={`flex gap-4 max-w-[88%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   <div className={`w-10 h-10 shrink-0 flex items-center justify-center border ${
@@ -546,8 +574,24 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 </div>
+                {/* Inline follow-up suggestion buttons */}
+                {inlineSuggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 ml-14">
+                    {inlineSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => sendMessageFromText(s)}
+                        disabled={loading}
+                        className="px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border border-[#333] text-[#6b6b6b] hover:border-[#d63a2f] hover:text-[#d63a2f] hover:bg-[#1a1010] transition-colors disabled:opacity-30"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
-            ))}
+              );
+            })}
 
             {loading && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
@@ -585,7 +629,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
               ).map((chip) => (
                 <button
                   key={chip}
-                  onClick={() => setInput(chip)}
+                  onClick={() => sendMessageFromText(chip)}
                   disabled={loading}
                   className="px-3 py-1 text-[10px] font-bold tracking-wider uppercase border border-[#333] text-[#6b6b6b] hover:border-[#d63a2f] hover:text-[#d63a2f] transition-colors disabled:opacity-30 truncate max-w-[200px]"
                 >

@@ -254,6 +254,7 @@ RULES:
 6. Be concise but thorough
 7. When asked about trends, use available data to make reasonable inferences
 8. For questions outside the shop's scope, politely redirect to business topics
+9. IMPORTANT: At the END of EVERY response, always add a section titled "You might also want to ask:" with exactly 3 short follow-up questions the admin might want to ask next. Each question should end with a "?" and be on its own line starting with "•". This keeps the conversation going.
 
 ${shopData}`;
 
@@ -301,6 +302,45 @@ ${shopData}`;
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper: parse follow-up suggestion questions from bot response
+  const parseSuggestions = (content: string): string[] => {
+    const lines = content.split('\n');
+    const suggestions: string[] = [];
+    let inSuggestionSection = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Detect the "You might also want to ask:" section
+      if (trimmed.toLowerCase().includes('you might also want to ask') || trimmed.toLowerCase().includes('you may also want to ask') || trimmed.toLowerCase().includes('you could also ask')) {
+        inSuggestionSection = true;
+        continue;
+      }
+      if (inSuggestionSection) {
+        const match = trimmed.match(/^(?:[•\-\*]|\d+[\.\)])\s*(.+)/);
+        if (match && match[1]) {
+          const text = match[1].replace(/^["']|["']$/g, '').replace(/\*+/g, '').trim();
+          if (text.length > 5 && text.endsWith('?')) {
+            suggestions.push(text);
+          }
+        }
+      }
+    }
+    // Fallback: if no section found, try to grab any question-ending bullet from the last lines
+    if (suggestions.length === 0) {
+      const lastLines = lines.slice(-6);
+      for (const line of lastLines) {
+        const trimmed = line.trim();
+        const match = trimmed.match(/^(?:[•\-\*]|\d+[\.\)])\s*(.+)/);
+        if (match && match[1]) {
+          const text = match[1].replace(/^["']|["']$/g, '').replace(/\*+/g, '').trim();
+          if (text.length > 5 && text.endsWith('?')) {
+            suggestions.push(text);
+          }
+        }
+      }
+    }
+    return suggestions.slice(0, 3);
   };
 
   if (!isOpen) return null;
@@ -398,12 +438,15 @@ ${shopData}`;
             )}
 
             {/* Chat messages */}
-            {messages.map((msg) => (
+            {messages.map((msg, idx) => {
+              const isLastAssistant = msg.role === "assistant" && idx === messages.length - 1;
+              const inlineSuggestions = (isLastAssistant && !loading) ? parseSuggestions(msg.content) : [];
+              return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
                   className={`max-w-[85%] px-5 py-4 ${
@@ -423,8 +466,24 @@ ${shopData}`;
                     {msg.timestamp.toLocaleTimeString()}
                   </p>
                 </div>
+                {/* Inline follow-up suggestion buttons */}
+                {inlineSuggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {inlineSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleSend(s)}
+                        disabled={loading}
+                        className="px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border border-[#333] text-[#6b6b6b] hover:border-[#d63a2f] hover:text-[#d63a2f] hover:bg-[#1a1010] transition-colors disabled:opacity-30"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
-            ))}
+              );
+            })}
 
             {/* Loading indicator */}
             {loading && (

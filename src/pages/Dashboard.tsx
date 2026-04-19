@@ -82,6 +82,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           // reservations table may not exist yet
         }
 
+        // ── 2.5 Fetch POS part sales (part_sales) ──
+        let allPartSales: any[] = [];
+        try {
+          const { data: posData } = await supabase
+            .from("part_sales")
+            .select("id, part_id, quantity_sold, sale_price, created_at, parts:parts!part_id(name)");
+          allPartSales = posData || [];
+        } catch {
+          // part_sales table may not exist yet
+        }
+
         // ── 3. Fetch job orders for status distribution ──
         const { data: jobOrders } = await supabase
           .from("job_orders")
@@ -122,7 +133,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .filter((j: any) => j.status === "completed")
           .reduce((sum: number, j: any) => sum + (Number(j.total_cost) || 0), 0);
 
-        const totalRevenue = revenueAppointments + revenueReservations + revenueJobOrders;
+        // POS Sales revenue (already completed transactions)
+        const revenuePOS = (allPartSales || []).reduce(
+          (sum: number, s: any) => sum + (Number(s.sale_price) || 0),
+          0
+        );
+
+        const totalRevenue = revenueAppointments + revenueReservations + revenueJobOrders + revenuePOS;
 
         // ══════════════════════════════════════════════
         // REVENUE TREND CHART (grouped by date)
@@ -155,6 +172,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             const dateKey = new Date(j.completed_at || j.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
             revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(j.total_cost) || 0);
           });
+
+        // Add POS sales revenue by date
+        (allPartSales || []).forEach((s: any) => {
+          const dateKey = new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(s.sale_price) || 0);
+        });
 
         // Convert to array sorted by date, or show week defaults
         const revenueEntries = Object.entries(revenueDateMap)
@@ -256,6 +279,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const revenueParts: string[] = [];
         if (revenueAppointments > 0) revenueParts.push(`Services: ₱${revenueAppointments.toLocaleString()}`);
         if (revenueReservations > 0) revenueParts.push(`Reservations: ₱${revenueReservations.toLocaleString()}`);
+        if (revenuePOS > 0) revenueParts.push(`POS Sales: ₱${revenuePOS.toLocaleString()}`);
         if (revenueJobOrders > 0) revenueParts.push(`Jobs: ₱${revenueJobOrders.toLocaleString()}`);
         const revenueSubtitle = revenueParts.length > 0 ? revenueParts.join(" • ") : "No revenue data yet";
 
@@ -308,6 +332,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             const partName = (r.parts as any)?.name || "Unknown";
             partUsageMap[partName] = (partUsageMap[partName] || 0) + (r.quantity || 1);
           });
+
+        // Add POS Sales (part_sales)
+        (allPartSales || []).forEach((s: any) => {
+            const partName = (s.parts as any)?.name || "Unknown";
+            partUsageMap[partName] = (partUsageMap[partName] || 0) + (s.quantity_sold || 1);
+        });
 
         const partUsageFromReservations = Object.entries(partUsageMap)
           .map(([name, usage]) => ({ name, usage }))
@@ -369,6 +399,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         )
         .on(
           "postgres_changes",
+          { event: "*", schema: "public", table: "part_sales" },
+          () => fetchDashboardData(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "parts" },
+          () => fetchDashboardData(),
+        )
+        .on(
+          "postgres_changes",
           { event: "*", schema: "public", table: "invoices" },
           () => fetchDashboardData(),
         )
@@ -386,7 +426,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="min-h-screen bg-[#0f0f0f] p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

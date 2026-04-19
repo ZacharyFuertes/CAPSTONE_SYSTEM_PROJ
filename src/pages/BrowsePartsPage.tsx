@@ -168,7 +168,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
   };
 
   return (
-    <div id={embedded ? "browse-parts-section" : undefined} className={embedded ? "" : "min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"}>
+    <div id={embedded ? "browse-parts-section" : undefined} className={embedded ? "" : "min-h-screen bg-[#0f0f0f]"}>
       {/* Hero Section */}
       <section className={`relative w-full ${embedded ? 'pt-8 pb-8' : 'pt-24 pb-16'} px-4 sm:px-6 lg:px-8 ${embedded ? '' : 'bg-gradient-to-b from-slate-800 to-transparent'}`}>
         <div className="max-w-6xl mx-auto">

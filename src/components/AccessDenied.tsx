@@ -45,7 +45,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({ requestedPage, onNavigate }
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-12"
+      className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-4 py-12"
     >
       <div className="max-w-md w-full">
         <div className="text-center">

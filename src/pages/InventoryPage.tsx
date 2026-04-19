@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ArrowUpDown,
   Plus,
   Search,
   Edit2,
@@ -32,10 +33,13 @@ const categoryColors: Record<string, string> = {
   other: "from-slate-500 to-slate-600",
 };
 
+type SortOption = "name" | "price-high" | "price-low" | "stock-low" | "popularity";
+
 interface InventoryFilters {
   category?: string;
   searchTerm: string;
   showLowStock: boolean;
+  sortBy: SortOption;
 }
 
 interface InventoryPageProps {
@@ -60,6 +64,7 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
   const [filters, setFilters] = useState<InventoryFilters>({
     searchTerm: "",
     showLowStock: false,
+    sortBy: "name",
   });
 
   // Modal states
@@ -268,7 +273,7 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
   };
 
   const filteredParts = useMemo(() => {
-    return parts.filter((part) => {
+    const filtered = parts.filter((part) => {
       const matchesSearch =
         part.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         part.sku.toLowerCase().includes(filters.searchTerm.toLowerCase());
@@ -281,6 +286,35 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
 
       return matchesSearch && matchesCategory && matchesLowStock;
     });
+
+    // Apply sorting
+    const sorted = [...filtered];
+    switch (filters.sortBy) {
+      case "price-high":
+        sorted.sort((a, b) => b.unit_price - a.unit_price);
+        break;
+      case "price-low":
+        sorted.sort((a, b) => a.unit_price - b.unit_price);
+        break;
+      case "stock-low":
+        sorted.sort((a, b) => a.quantity_in_stock - b.quantity_in_stock);
+        break;
+      case "popularity":
+        // Popularity score: higher price + lower remaining stock = more popular
+        // Items that sell well have high price and low stock relative to reorder level
+        sorted.sort((a, b) => {
+          const aScore = a.unit_price * (1 + Math.max(0, a.reorder_level - a.quantity_in_stock));
+          const bScore = b.unit_price * (1 + Math.max(0, b.reorder_level - b.quantity_in_stock));
+          return bScore - aScore;
+        });
+        break;
+      case "name":
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+
+    return sorted;
   }, [parts, filters]);
 
   const categories = Array.from(new Set(parts.map((p) => p.category)));
@@ -587,6 +621,28 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
               </option>
             ))}
           </select>
+
+          {/* Sort By */}
+          <div className="relative flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4 text-[#555] absolute left-3 pointer-events-none" />
+            <select
+              value={filters.sortBy}
+              onChange={(e) =>
+                setFilters({ ...filters, sortBy: e.target.value as SortOption })
+              }
+              className={`bg-[#0a0a0a] text-white pl-9 pr-4 py-3 border focus:outline-none transition text-xs font-bold tracking-widest uppercase rounded-none ${
+                filters.sortBy === "popularity"
+                  ? "border-[#d63a2f] text-[#d63a2f]"
+                  : "border-[#333] focus:border-[#d63a2f]"
+              }`}
+            >
+              <option value="name">Name A-Z</option>
+              <option value="price-high">Price: High → Low</option>
+              <option value="price-low">Price: Low → High</option>
+              <option value="stock-low">Stock: Low → High</option>
+              <option value="popularity">★ Popularity</option>
+            </select>
+          </div>
 
           <button
             onClick={() =>

@@ -13,6 +13,7 @@ import {
   Wrench,
   Clock,
   MessageSquare,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -66,6 +67,13 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       tooltip: "Owners and Mechanics only (read-only for Mechanics)",
     },
     {
+      id: "update-parts",
+      label: "Update Parts",
+      icon: ShoppingBag,
+      requiredRole: ["owner"],
+      tooltip: "POS — sell parts, adjust stock, track revenue",
+    },
+    {
       id: "appointments",
       label: "Appointments",
       icon: Calendar,
@@ -92,13 +100,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       requiredRole: ["owner"],
       tooltip: "Owner only",
     },
-    {
-      id: "products",
-      label: "Products",
-      icon: Package,
-      requiredRole: ["owner"],
-      tooltip: "Manage store products",
-    },
+
     {
       id: "services",
       label: "Services Pricing",
@@ -177,13 +179,13 @@ const SystemNavbar: React.FC<NavbarProps> = ({
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-[#222] shadow-2xl">
       {/* Red accent line at top */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#d63a2f]" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-2 sm:px-4 lg:px-6 2xl:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group shrink-0"
             onClick={() =>
               onNavigate(
                 user?.role === "customer" ? "appointments" : "dashboard",
@@ -213,7 +215,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
           </motion.div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex flex-1 min-w-0 items-center justify-center gap-0.5 xl:gap-1 mx-2 lg:mx-4 overflow-hidden whitespace-nowrap">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
@@ -224,7 +226,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleMenuItemClick(item.id)}
                   title={item.tooltip}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-none transition-all uppercase text-[10px] font-bold tracking-widest border ${
+                  className={`shrink-0 flex items-center gap-1.5 px-2 xl:px-3 py-2 rounded-none transition-all uppercase text-[9px] xl:text-[10px] font-bold tracking-widest border ${
                     isActive
                       ? "bg-[#111111] text-white border-[#333]"
                       : "text-white border-transparent hover:text-white hover:bg-[#111111] hover:border-[#333]"
@@ -240,7 +242,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             {/* Disabled Tooltip */}
             <AnimatePresence>
               {disabledTooltip && (
@@ -261,7 +263,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onAIChat}
-              className="flex items-center gap-2 px-3 py-2 rounded-none bg-transparent border border-[#d63a2f] hover:bg-[#d63a2f] text-[#d63a2f] hover:text-white transition uppercase text-[10px] font-bold tracking-widest"
+              className="flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-2 rounded-none bg-transparent border border-[#d63a2f] hover:bg-[#d63a2f] text-[#d63a2f] hover:text-white transition uppercase text-[9px] xl:text-[10px] font-bold tracking-widest"
               title="MotoMech AI Chat"
             >
               <MessageSquare className="w-3 h-3" />
@@ -273,7 +275,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setLanguage(language === "en" ? "tl" : "en")}
-              className="flex items-center gap-2 px-3 py-2 rounded-none bg-transparent border border-[#333] hover:bg-[#111111] hover:border-[#666] text-[#6b6b6b] hover:text-white transition uppercase text-[10px] font-bold tracking-widest"
+              className="flex items-center gap-1.5 xl:gap-2 px-2 xl:px-3 py-2 rounded-none bg-transparent border border-[#333] hover:bg-[#111111] hover:border-[#666] text-[#6b6b6b] hover:text-white transition uppercase text-[9px] xl:text-[10px] font-bold tracking-widest"
               title={
                 language === "en" ? "Switch to Tagalog" : "Switch to English"
               }
