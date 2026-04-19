@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Calendar, Clock, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Calendar, Clock, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle, X } from 'lucide-react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../services/supabaseClient'
@@ -35,6 +35,9 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
   const [loading, setLoading] = useState(true)
   const [selectedMechanic, setSelectedMechanic] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<Mechanic | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmationInput, setConfirmationInput] = useState('')
   const [formData, setFormData] = useState({
     mechanic_id: '',
     day_of_week: 'Monday',
@@ -161,6 +164,60 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
     }
   }
 
+  // Handle mechanic deletion (same pattern as customer delete)
+  const handleDeleteMechanic = async () => {
+    if (!deleteConfirm) return
+
+    try {
+      setDeleting(true)
+
+      // First, delete all job orders for this mechanic
+      const { error: jobOrderError } = await supabase
+        .from('job_orders')
+        .delete()
+        .eq('mechanic_id', deleteConfirm.id)
+
+      if (jobOrderError) throw jobOrderError
+
+      // Next, delete all availability records for this mechanic
+      const { error: availError } = await supabase
+        .from('mechanic_availability')
+        .delete()
+        .eq('mechanic_id', deleteConfirm.id)
+
+      if (availError) throw availError
+
+      // Then, delete any appointments assigned to this mechanic
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('mechanic_id', deleteConfirm.id)
+
+      if (appointmentError) throw appointmentError
+
+      // Finally, delete the mechanic user record
+      const { error: userError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', deleteConfirm.id)
+
+      if (userError) throw userError
+
+      // Update local state
+      setMechanics(mechanics.filter((m) => m.id !== deleteConfirm.id))
+      setAvailability(availability.filter((a) => a.mechanic_id !== deleteConfirm.id))
+      if (selectedMechanic === deleteConfirm.id) setSelectedMechanic(null)
+      setDeleteConfirm(null)
+      setConfirmationInput('')
+      alert('Mechanic deleted successfully!')
+    } catch (err) {
+      console.error('Error deleting mechanic:', err)
+      alert('Error deleting mechanic')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const handleToggleAvailability = async (availabilityId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -239,18 +296,29 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
               All Mechanics
             </button>
             {mechanics.map((mechanic) => (
-              <button
-                key={mechanic.id}
-                onClick={() => setSelectedMechanic(mechanic.id)}
-                className={`w-full p-3 rounded-lg transition text-left ${
-                  selectedMechanic === mechanic.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                <p className="font-semibold">{mechanic.name}</p>
-                <p className="text-xs">{mechanic.email}</p>
-              </button>
+              <div key={mechanic.id} className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedMechanic(mechanic.id)}
+                  className={`flex-1 p-3 rounded-lg transition text-left ${
+                    selectedMechanic === mechanic.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  <p className="font-semibold">{mechanic.name}</p>
+                  <p className="text-xs">{mechanic.email}</p>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDeleteConfirm(mechanic)
+                  }}
+                  className="p-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 transition"
+                  title="Remove Mechanic"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             ))}
           </div>
 
@@ -420,6 +488,90 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
           </div>
         </motion.div>
       </div>
+
+      {/* Delete Mechanic Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 rounded-lg border border-slate-700 max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Delete Mechanic</h3>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="text-slate-400 hover:text-white transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-300 mb-2">
+                  Are you sure you want to delete{' '}
+                  <span className="font-semibold text-white">{deleteConfirm.name}</span>?
+                </p>
+                <p className="text-sm text-gray-400 mb-4">
+                  This action cannot be undone. All mechanic data and associated
+                  records will be permanently removed.
+                </p>
+
+                <p className="text-sm text-gray-400 mb-2">
+                  To confirm, type{' '}
+                  <span className="font-mono font-semibold text-gray-300">CONFIRM</span>
+                </p>
+                <input
+                  type="text"
+                  placeholder="Type CONFIRM to delete"
+                  value={confirmationInput}
+                  onChange={(e) => setConfirmationInput(e.target.value)}
+                  className="w-full bg-slate-700 text-white px-4 py-2 rounded border border-slate-600 focus:border-red-500 focus:outline-none mb-4"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteConfirm(null)
+                    setConfirmationInput('')
+                  }}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteMechanic}
+                  disabled={deleting || confirmationInput !== 'CONFIRM'}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

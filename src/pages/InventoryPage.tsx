@@ -61,7 +61,6 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
     searchTerm: "",
     showLowStock: false,
   });
-  const [deniedMessage, setDeniedMessage] = useState(false);
 
   // Modal states
   const [showAddForm, setShowAddForm] = useState(false);
@@ -100,11 +99,7 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
     }
   };
 
-  // Handle unauthorized action
-  const handleUnauthorizedAction = () => {
-    setDeniedMessage(true);
-    setTimeout(() => setDeniedMessage(false), 3000);
-  };
+
 
   // Add part handler
   const handleAddPart = async (e: React.FormEvent) => {
@@ -511,25 +506,8 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
         </motion.div>
       )}
 
-      {/* Unauthorized Action Message */}
-      <AnimatePresence>
-        {deniedMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-6 bg-[#221515] border border-[#d63a2f] p-5 flex items-start gap-4"
-          >
-            <AlertCircle className="w-5 h-5 text-[#d63a2f] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-[10px] font-bold text-[#d63a2f] tracking-[0.2em] uppercase">Access Denied</h3>
-              <p className="text-[#888] text-xs font-light">
-                Only shop owners can modify inventory.
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+
 
       {/* Header */}
       <motion.div
@@ -563,8 +541,8 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
               <Download className="w-4 h-4" />
               Export CSV
             </button>
-            {/* Add Part Button - Only for Owners */}
-            {isOwner ? (
+            {/* Add Part Button - Only for Owners (TODO: implemented — hidden for mechanics) */}
+            {isOwner && (
               <button
                 onClick={() => {
                   resetForm();
@@ -575,16 +553,6 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
               >
                 <Plus className="w-5 h-5" />
                 {t("inventory.add_part")}
-              </button>
-            ) : (
-              <button
-                disabled
-                onClick={handleUnauthorizedAction}
-                className="flex items-center gap-2 bg-[#111] border border-[#222] text-[#555] px-5 py-3 cursor-not-allowed text-[10px] font-bold tracking-[0.15em] uppercase"
-                title="Only owners can add parts"
-              >
-                <Lock className="w-4 h-4" />
-                <Plus className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -725,7 +693,7 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
                     <span className="text-2xl font-black text-[#d63a2f]">
                       ₱{part.unit_price.toLocaleString()}
                     </span>
-                    {/* CRUD Buttons - Only visible to Owners */}
+                    {/* CRUD Buttons - Only visible to Owners (TODO: implemented — mechanics see nothing, pure read-only) */}
                     {isOwner && (
                       <div className="flex gap-1.5">
                         <button
@@ -742,27 +710,6 @@ const InventoryPage: React.FC<InventoryPageProps> = ({ onNavigate }) => {
                           }}
                           className="w-9 h-9 flex items-center justify-center border border-[#333] text-[#6b6b6b] hover:border-[#d63a2f] hover:text-[#d63a2f] hover:bg-[#221515] transition"
                           title="Delete part"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-                    {/* Disabled Buttons for Non-Owners */}
-                    {!isOwner && (
-                      <div className="flex gap-1.5">
-                        <button
-                          disabled
-                          onClick={handleUnauthorizedAction}
-                          className="w-9 h-9 flex items-center justify-center border border-[#222] text-[#333] cursor-not-allowed"
-                          title="Only owners can edit"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled
-                          onClick={handleUnauthorizedAction}
-                          className="w-9 h-9 flex items-center justify-center border border-[#222] text-[#333] cursor-not-allowed"
-                          title="Only owners can delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

@@ -52,20 +52,7 @@ const Newsletter: React.FC = () => {
     <section className="w-full py-16 sm:py-20 lg:py-24 bg-moto-darker border-t border-moto-gray">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          className="text-center mb-10 sm:mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-4">
-            Stay in the <span className="text-moto-accent">Loop</span>
-          </h2>
-          <p className="text-gray-300 text-lg">
-            Get exclusive deals, new product drops, and riding tips delivered to your inbox.
-          </p>
-        </motion.div>
+      
 
         {/* Newsletter Form */}
         <motion.form

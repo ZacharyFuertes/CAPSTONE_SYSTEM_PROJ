@@ -93,13 +93,6 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       tooltip: "Owner only",
     },
     {
-      id: "reports",
-      label: "Reports",
-      icon: BarChart3,
-      requiredRole: ["owner"],
-      tooltip: "Owner only",
-    },
-    {
       id: "settings",
       label: "Settings",
       icon: Lock,

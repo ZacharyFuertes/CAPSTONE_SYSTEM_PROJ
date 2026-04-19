@@ -1,0 +1,502 @@
+/**
+ * AdminChatbot.tsx
+ * TODO: implemented — Powerful context-aware Admin AI Assistant (Groq-powered)
+ *
+ * This chatbot fetches full business data (revenue, inventory, appointments,
+ * reservations, mechanic workload) and injects it into the system prompt so
+ * the AI can answer analytical business questions naturally.
+ */
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  Send,
+  Bot,
+  Sparkles,
+  BarChart3,
+  Package,
+  Calendar,
+  Users,
+  TrendingUp,
+  AlertCircle,
+  Bookmark,
+} from "lucide-react";
+import { Groq } from "groq-sdk";
+import { supabase } from "../services/supabaseClient";
+
+/* ------------------------------------------------------------------ */
+/*  TYPES                                                              */
+/* ------------------------------------------------------------------ */
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
+interface AdminChatbotProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+/* ------------------------------------------------------------------ */
+/*  QUICK PROMPT CHIPS                                                 */
+/* ------------------------------------------------------------------ */
+
+const QUICK_PROMPTS = [
+  { label: "Revenue Summary", icon: TrendingUp, prompt: "Give me a revenue summary — total earnings, recent trends, and top-selling parts." },
+  { label: "Low Stock Alert", icon: Package, prompt: "Which parts are low in stock or out of stock? List them with current quantities." },
+  { label: "Today's Appointments", icon: Calendar, prompt: "How many appointments are scheduled for today? List them with details." },
+  { label: "Mechanic Workload", icon: Users, prompt: "Show me each mechanic's current workload — how many active appointments and job orders they each have." },
+  { label: "Pending Reservations", icon: Bookmark, prompt: "Show me all pending part reservations from customers." },
+  { label: "Business Insights", icon: BarChart3, prompt: "Provide a quick business health overview — appointments, revenue, inventory status, and any concerns." },
+];
+
+/* ------------------------------------------------------------------ */
+/*  COMPONENT                                                          */
+/* ------------------------------------------------------------------ */
+
+const AdminChatbot: React.FC<AdminChatbotProps> = ({ isOpen, onClose }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [shopData, setShopData] = useState<string>("");
+  const [dataLoading, setDataLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const groqClient = useRef<Groq | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize Groq client
+  useEffect(() => {
+    // @ts-ignore - Vite env
+    const apiKey = import.meta.env.VITE_GROQ_API_KEY as string;
+    if (apiKey && typeof apiKey === "string" && apiKey !== "your_groq_api_key_here") {
+      groqClient.current = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+    }
+  }, []);
+
+  // Fetch all business data for context
+  const fetchShopData = useCallback(async () => {
+    setDataLoading(true);
+    try {
+      // Parallel fetch all data
+      // Fetch reservations separately with error handling
+      let reservationsData: any[] = [];
+      try {
+        const reservationsRes = await supabase
+          .from("reservations")
+          .select("*, part:parts(name, unit_price)");
+        reservationsData = reservationsRes.data || [];
+      } catch {
+        // reservations table may not exist yet
+        reservationsData = [];
+      }
+      const [partsRes, appointmentsRes, usersRes, jobOrdersRes] =
+        await Promise.all([
+          supabase.from("parts").select("*"),
+          supabase.from("appointments").select("*"),
+          supabase.from("users").select("id, name, role, email, created_at"),
+          supabase.from("job_orders").select("*"),
+        ]);
+
+      const parts = partsRes.data || [];
+      const appointments = appointmentsRes.data || [];
+      const users = usersRes.data || [];
+      const jobOrders = jobOrdersRes.data || [];
+      const reservations = reservationsData;
+
+      // Compute metrics
+      const mechanics = users.filter((u: any) => u.role === "mechanic");
+      const customers = users.filter((u: any) => u.role === "customer");
+      const totalInventoryValue = parts.reduce((sum: number, p: any) =>
+        sum + (p.unit_price * (p.quantity_in_stock || 0)), 0
+      );
+      const lowStockParts = parts.filter((p: any) =>
+        (p.quantity_in_stock || 0) <= (p.min_stock_level || 5)
+      );
+      const outOfStockParts = parts.filter((p: any) => (p.quantity_in_stock || 0) === 0);
+
+      // Appointment stats
+      const today = new Date().toISOString().split("T")[0];
+      const todayAppointments = appointments.filter((a: any) => a.scheduled_date === today);
+      const pendingAppointments = appointments.filter((a: any) => a.status === "pending");
+      const completedAppointments = appointments.filter((a: any) => a.status === "completed");
+      const inProgressAppointments = appointments.filter((a: any) => a.status === "in_progress");
+
+      // Revenue from completed job orders
+      const totalRevenue = jobOrders
+        .filter((j: any) => j.status === "completed")
+        .reduce((sum: number, j: any) => sum + (j.total_cost || 0), 0);
+
+      // Mechanic workload
+      const mechanicWorkload = mechanics.map((m: any) => {
+        const assignedAppts = appointments.filter((a: any) => a.mechanic_id === m.id && a.status !== "completed" && a.status !== "cancelled");
+        const completedJobs = jobOrders.filter((j: any) => j.mechanic_id === m.id && j.status === "completed");
+        return {
+          name: m.name,
+          activeAppointments: assignedAppts.length,
+          completedJobs: completedJobs.length,
+        };
+      });
+
+      // Most popular parts (by job order usage)
+      const partUsage: Record<string, number> = {};
+      jobOrders.forEach((jo: any) => {
+        if (jo.parts_used && Array.isArray(jo.parts_used)) {
+          jo.parts_used.forEach((pu: any) => {
+            const name = pu.name || pu.part_name || "Unknown";
+            partUsage[name] = (partUsage[name] || 0) + (pu.quantity || 1);
+          });
+        }
+      });
+      const popularParts = Object.entries(partUsage)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([name, count]) => `${name} (used ${count} times)`);
+
+      // Reservation stats
+      const pendingReservations = reservations.filter((r: any) => r.status === "pending");
+
+      // Build context string
+      const context = `
+=== MOTOSHOP BUSINESS DATA (LIVE) ===
+Date: ${new Date().toLocaleDateString("en-PH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+
+📊 OVERVIEW:
+- Total Mechanics: ${mechanics.length}
+- Total Customers: ${customers.length}
+- Total Parts in Inventory: ${parts.length}
+- Total Inventory Value: ₱${totalInventoryValue.toLocaleString()}
+
+💰 REVENUE:
+- Total Revenue (Completed Jobs): ₱${totalRevenue.toLocaleString()}
+- Total Completed Job Orders: ${completedAppointments.length}
+
+📅 APPOINTMENTS:
+- Today's Appointments: ${todayAppointments.length}
+- Pending: ${pendingAppointments.length}
+- In Progress: ${inProgressAppointments.length}
+- Total Completed: ${completedAppointments.length}
+- Total All-Time: ${appointments.length}
+
+📦 INVENTORY:
+- Low Stock Items (≤ min level): ${lowStockParts.length}
+${lowStockParts.map((p: any) => `  • ${p.name} — ${p.quantity_in_stock} left (min: ${p.min_stock_level || 5}), SKU: ${p.sku}`).join("\n")}
+- Out of Stock: ${outOfStockParts.length}
+${outOfStockParts.map((p: any) => `  • ${p.name} (SKU: ${p.sku})`).join("\n")}
+
+🔖 RESERVATIONS:
+- Pending Reservations: ${pendingReservations.length}
+${pendingReservations.map((r: any) => `  • Part: ${r.part?.name || "Unknown"} — Qty: ${r.quantity} — Price: ₱${r.part?.unit_price?.toLocaleString() || "N/A"}`).join("\n")}
+
+👷 MECHANIC WORKLOAD:
+${mechanicWorkload.map((m) => `  • ${m.name}: ${m.activeAppointments} active appointments, ${m.completedJobs} completed jobs`).join("\n")}
+
+🏆 MOST POPULAR PARTS (by usage in job orders):
+${popularParts.length > 0 ? popularParts.map((p) => `  • ${p}`).join("\n") : "  No usage data available yet"}
+
+📋 ALL PARTS LIST:
+${parts.map((p: any) => `  • ${p.name} | Category: ${p.category || "N/A"} | Price: ₱${p.unit_price} | Stock: ${p.quantity_in_stock || 0} | SKU: ${p.sku}`).join("\n")}
+`.trim();
+
+      setShopData(context);
+    } catch (err) {
+      console.error("Error fetching shop data for AI:", err);
+      setShopData("Unable to fetch shop data. Please try again.");
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchShopData();
+    }
+  }, [isOpen, fetchShopData]);
+
+  // Scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
+
+  const handleSend = async (overrideMessage?: string) => {
+    const userInput = overrideMessage || input.trim();
+    if (!userInput || !groqClient.current) return;
+
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: userInput,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const systemPrompt = `You are MotoShop Admin AI — a powerful business intelligence assistant for the shop owner. You have access to REAL-TIME business data below. Answer the owner's questions using this data. Be specific with numbers, names, and actionable insights.
+
+RULES:
+1. Always reference real data from the context below
+2. Format responses clearly with bullet points and sections
+3. Use Philippine Peso (₱) for all monetary values
+4. Provide actionable recommendations when relevant
+5. If data is insufficient, say so honestly
+6. Be concise but thorough
+7. When asked about trends, use available data to make reasonable inferences
+8. For questions outside the shop's scope, politely redirect to business topics
+
+${shopData}`;
+
+      const conversationHistory = messages.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }));
+
+      let responseContent = "";
+      const stream = await groqClient.current.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...conversationHistory,
+          { role: "user", content: userInput },
+        ],
+        max_tokens: 1500,
+        temperature: 0.5,
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.choices[0]?.delta?.content) {
+          responseContent += chunk.choices[0].delta.content;
+        }
+      }
+
+      const assistantMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: responseContent || "I wasn't able to generate a response. Please try again.",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (err) {
+      console.error("Admin AI error:", err);
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "⚠️ Error connecting to AI service. Please check your Groq API key.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="bg-[#0a0a0a] border border-[#222] border-t-2 border-t-[#d63a2f] w-full max-w-[700px] h-[85vh] max-h-[700px] overflow-hidden shadow-2xl flex flex-col"
+        >
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-[#222] bg-[#111111] flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#d63a2f] to-[#f97316] flex items-center justify-center">
+                <Bot size={24} className="text-white" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-lg text-white uppercase tracking-wide font-bold">
+                    Admin AI
+                  </h2>
+                  <Sparkles size={14} className="text-[#d63a2f]" />
+                </div>
+                <p className="text-[9px] text-[#6b6b6b] font-bold tracking-[0.2em] uppercase">
+                  Business Intelligence Assistant
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Refresh data button */}
+              <button
+                onClick={fetchShopData}
+                disabled={dataLoading}
+                className="px-3 py-2 border border-[#333] hover:border-[#d63a2f] text-[#6b6b6b] hover:text-[#d63a2f] transition text-[9px] font-bold tracking-widest uppercase disabled:opacity-50"
+              >
+                {dataLoading ? "LOADING..." : "REFRESH DATA"}
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white"
+              >
+                <X size={18} strokeWidth={1} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Messages ── */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-[#0a0a0a]">
+            {/* Welcome message */}
+            {messages.length === 0 && (
+              <div className="space-y-6">
+                <div className="text-center py-4">
+                  <Bot size={40} className="text-[#333] mx-auto mb-3" />
+                  <p className="text-[#6b6b6b] text-xs font-bold tracking-widest uppercase mb-1">
+                    MotoShop Admin AI
+                  </p>
+                  <p className="text-[#555] text-[11px] max-w-sm mx-auto leading-relaxed">
+                    Ask me anything about your shop — revenue, inventory, appointments,
+                    mechanic workload, and more.
+                  </p>
+                </div>
+
+                {/* Quick prompt chips */}
+                <div className="grid grid-cols-2 gap-2">
+                  {QUICK_PROMPTS.map((qp, idx) => {
+                    const Icon = qp.icon;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleSend(qp.prompt)}
+                        disabled={loading || dataLoading || !groqClient.current}
+                        className="flex items-center gap-2 px-4 py-3 bg-[#111] border border-[#222] hover:border-[#d63a2f]/50 hover:bg-[#161616] transition text-left group disabled:opacity-50"
+                      >
+                        <Icon size={14} className="text-[#d63a2f] shrink-0" />
+                        <span className="text-[10px] text-[#888] font-bold tracking-wider uppercase group-hover:text-white transition">
+                          {qp.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Chat messages */}
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] px-5 py-4 ${
+                    msg.role === "user"
+                      ? "bg-[#d63a2f] text-white border border-[#d63a2f]"
+                      : "bg-[#111] text-[#ccc] border border-[#222]"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {msg.content}
+                  </p>
+                  <p
+                    className={`text-[9px] mt-2 ${
+                      msg.role === "user" ? "text-white/50" : "text-[#555]"
+                    }`}
+                  >
+                    {msg.timestamp.toLocaleTimeString()}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Loading indicator */}
+            {loading && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="bg-[#111] border border-[#222] px-5 py-4 flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity }}
+                      className="w-2 h-2 bg-[#d63a2f] rounded-full"
+                    />
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                      className="w-2 h-2 bg-[#d63a2f] rounded-full"
+                    />
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                      className="w-2 h-2 bg-[#d63a2f] rounded-full"
+                    />
+                  </div>
+                  <span className="text-[#888] text-xs font-bold tracking-widest uppercase">
+                    Analyzing...
+                  </span>
+                </div>
+              </motion.div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* ── Input ── */}
+          <div className="border-t border-[#222] px-6 py-4 bg-[#111111] flex-shrink-0">
+            {!groqClient.current && (
+              <div className="mb-3 flex items-center gap-2 bg-[#221515] border border-[#d63a2f]/30 px-4 py-2">
+                <AlertCircle size={14} className="text-[#d63a2f] shrink-0" />
+                <span className="text-[10px] text-[#d63a2f] font-bold tracking-widest uppercase">
+                  GROQ API KEY NOT CONFIGURED
+                </span>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !loading) handleSend();
+                }}
+                placeholder={dataLoading ? "Loading shop data..." : "Ask about revenue, inventory, appointments..."}
+                disabled={loading || dataLoading || !groqClient.current}
+                className="flex-1 bg-[#0a0a0a] text-white px-5 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-wider uppercase disabled:opacity-50 placeholder:text-[#555]"
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={loading || !input.trim() || dataLoading || !groqClient.current}
+                className="px-5 py-3 bg-[#d63a2f] hover:bg-[#b82e25] text-white transition border border-[#d63a2f] disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Send size={16} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default AdminChatbot;

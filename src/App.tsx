@@ -10,6 +10,7 @@ import {
 } from "./utils/roleAccess";
 import SystemNavbar from "./components/SystemNavbar";
 import AIChatModal from "./components/AIChatModal";
+import AdminChatbot from "./components/AdminChatbot";
 import DatabaseStatus from "./components/DatabaseStatus";
 import AccessDenied from "./components/AccessDenied";
 import Dashboard from "./pages/Dashboard";
@@ -20,7 +21,7 @@ import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
 import MechanicDashboard from "./pages/MechanicDashboard";
 import BrowsePartsPage from "./pages/BrowsePartsPage";
-import ReportsPage from "./pages/ReportsPage";
+
 import SettingsPage from "./pages/SettingsPage";
 import AdminMechanicAvailability from "./pages/AdminMechanicAvailability";
 import LoginPage from "./pages/LoginPage";
@@ -35,7 +36,6 @@ import Navbar from "./components/Navbar";
 import HeroSlideshow from "./components/HeroSlideshow";
 import ServicesGrid from "./components/ServicesGrid";
 import AboutUs from "./components/AboutUs";
-import TrustSection from "./components/TrustSection";
 import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
 import ViewAppointmentsModal from "./components/ViewAppointmentsModal";
@@ -221,11 +221,11 @@ const AppContent: React.FC = () => {
             />
             <ServicesGrid />
             <AboutUs />
-            <TrustSection />
             <Footer />
             <BrowsePartsModal
               isOpen={showPartsModal}
               onClose={() => setShowPartsModal(false)}
+              onLoginRedirect={handleOpenLogin}
             />
             <MechanicsModal
               isOpen={showMechanicsModal}
@@ -311,7 +311,6 @@ const AppContent: React.FC = () => {
         />
         <ServicesGrid />
         <AboutUs />
-        <TrustSection />
         <Footer />
         <BookAppointmentModal
           isOpen={showBookingModal}
@@ -324,6 +323,7 @@ const AppContent: React.FC = () => {
         <BrowsePartsModal
           isOpen={showPartsModal}
           onClose={() => setShowPartsModal(false)}
+          onLoginRedirect={() => {}}
         />
         <CustomerPortalModal
           isOpen={showAccountModal}
@@ -438,11 +438,7 @@ const AppContent: React.FC = () => {
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}
-        {currentPage === "reports" && (
-          <ReportsPage
-            onNavigate={(page: string) => handlePageChange(page as PageType)}
-          />
-        )}
+
         {currentPage === "settings" && (
           <SettingsPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
@@ -455,12 +451,19 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Contextual AI Support */}
-      <AIChatModal
-        isOpen={showAIChat}
-        onClose={() => setShowAIChat(false)}
-        userRole={user?.role}
-      />
+      {/* Contextual AI Support — Admin gets the business-intelligence chatbot */}
+      {user?.role === "owner" ? (
+        <AdminChatbot
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+        />
+      ) : (
+        <AIChatModal
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+          userRole={user?.role}
+        />
+      )}
     </div>
   );
 };

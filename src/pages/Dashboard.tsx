@@ -20,8 +20,8 @@ import {
   Clock,
   CheckCircle,
   DollarSign,
-  ArrowLeft,
   Lock,
+  Bookmark,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -190,11 +190,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .select("id")
           .eq("role", "customer");
 
+        // Fetch reservation count
+        let pendingReservationCount = 0;
+        try {
+          const { data: reservationData } = await supabase
+            .from("reservations")
+            .select("id")
+            .eq("status", "pending");
+          pendingReservationCount = reservationData?.length || 0;
+        } catch {
+          // reservations table may not exist yet
+        }
+
         setStats([
           {
             label: t("dashboard.revenue"),
             value: `₱${totalRevenue.toLocaleString()}`,
-            change: "+12.5% from last period",
+            change: totalRevenue > 0 ? `₱${totalRevenue.toLocaleString()} total` : "No revenue data yet",
             icon: <DollarSign className="w-8 h-8" />,
             color: "from-green-500 to-emerald-600",
           },
@@ -215,9 +227,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {
             label: "Active Customers",
             value: totalCustomers.data?.length || 0,
-            change: `+${totalCustomers.data?.length || 0} this month`,
+            change: `${totalCustomers.data?.length || 0} registered`,
             icon: <Users className="w-8 h-8" />,
             color: "from-purple-500 to-pink-600",
+          },
+          {
+            label: "Pending Reservations",
+            value: pendingReservationCount,
+            change: pendingReservationCount > 0 ? `${pendingReservationCount} awaiting action` : "No reservations",
+            icon: <Bookmark className="w-8 h-8" />,
+            color: "from-amber-500 to-orange-600",
           },
         ]);
 
@@ -259,6 +278,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     if (user?.shop_id) {
       fetchDashboardData();
+
+      // Set up real-time subscriptions
+      const dashboardChannel = supabase
+        .channel("dashboard-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "appointments" },
+          () => fetchDashboardData(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "job_orders" },
+          () => fetchDashboardData(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "reservations" },
+          () => fetchDashboardData(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "invoices" },
+          () => fetchDashboardData(),
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(dashboardChannel);
+      };
     }
   }, [user?.shop_id, t]);
 
@@ -269,17 +317,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      {/* Back Button */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={() => onNavigate && onNavigate("landing")}
-        className="mb-6 flex items-center gap-2 text-moto-accent hover:text-white transition-colors"
-      >
-        <ArrowLeft size={20} />
-        <span>Back</span>
-      </motion.button>
-
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -319,7 +356,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
         {stats.map((stat, index) => (
           <motion.div
             key={index}

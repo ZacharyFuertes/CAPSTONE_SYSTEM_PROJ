@@ -1,9 +1,13 @@
+/**
+ * BrowsePartsModal.tsx
+ * TODO: implemented — Replaced "Add to Cart" / "Inquire" with "Reserve" button
+ * Only logged-in customers can reserve. Non-logged-in users are prompted to log in.
+ */
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Search,
-  ShoppingCart,
   Package,
   Zap,
   Filter,
@@ -16,14 +20,18 @@ import {
   ArrowLeft,
   Box,
   CheckCircle,
+  LogIn,
+  Bookmark,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { Part } from "../types";
+import { createReservation } from "../services/reservationService";
 
 interface BrowsePartsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginRedirect?: () => void; // callback to redirect to login page
 }
 
 const CATEGORIES = [
@@ -40,8 +48,9 @@ const CATEGORIES = [
 const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   isOpen,
   onClose,
+  onLoginRedirect,
 }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const shopId = user?.shop_id || "";
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
@@ -52,7 +61,10 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     "all" | "instock" | "outofstock"
   >("all");
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [inquirySent, setInquirySent] = useState<string | null>(null);
+  // TODO: implemented — Reservation state replaces old inquirySent
+  const [reservingId, setReservingId] = useState<string | null>(null);
+  const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
+  const [reserveError, setReserveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -63,7 +75,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   const fetchParts = async () => {
     try {
       setLoading(true);
-      // If shopId is available, filter by shop; otherwise fetch ALL parts for public view
       let query = supabase.from("parts").select("*").order("name", { ascending: true });
       if (shopId) {
         query = query.eq("shop_id", shopId);
@@ -102,12 +113,135 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     setFilteredParts(result);
   }, [parts, selectedCategory, searchQuery, stockFilter]);
 
-  const handleInquiry = (partId: string) => {
-    setInquirySent(partId);
-    setTimeout(() => setInquirySent(null), 3000);
+  // TODO: implemented — Reserve handler with login check
+  const handleReserve = async (partId: string) => {
+    // If not logged in, redirect to login
+    if (!isAuthenticated || !user) {
+      onClose();
+      if (onLoginRedirect) {
+        onLoginRedirect();
+      }
+      return;
+    }
+
+    // Only customers can reserve
+    if (user.role !== "customer") {
+      setReserveError("Only customers can reserve items.");
+      setTimeout(() => setReserveError(null), 3000);
+      return;
+    }
+
+    try {
+      setReservingId(partId);
+      setReserveError(null);
+      await createReservation(user.id, partId, 1);
+      setReservedIds((prev) => new Set([...prev, partId]));
+    } catch (err: any) {
+      console.error("Reserve error:", err);
+      setReserveError(err.message || "Failed to reserve. Please try again.");
+      setTimeout(() => setReserveError(null), 3000);
+    } finally {
+      setReservingId(null);
+    }
   };
 
   if (!isOpen) return null;
+
+  // Helper to render the reserve button
+  const renderReserveButton = (part: Part, isCompact: boolean = false) => {
+    const isInStock = (part.quantity_in_stock ?? 0) > 0;
+    const isReserved = reservedIds.has(part.id);
+    const isReserving = reservingId === part.id;
+
+    if (isReserved) {
+      // Already reserved state
+      return isCompact ? (
+        <button
+          disabled
+          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-[#d63a2f] border-[#d63a2f] text-white"
+        >
+          <CheckCircle size={16} />
+        </button>
+      ) : (
+        <button
+          disabled
+          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-[#d63a2f] border-[#d63a2f] text-white"
+        >
+          <CheckCircle size={16} /> RESERVED
+        </button>
+      );
+    }
+
+    if (!isAuthenticated) {
+      // Not logged in — show "Login to Reserve"
+      return isCompact ? (
+        <button
+          onClick={() => handleReserve(part.id)}
+          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
+          title="Login to Reserve"
+        >
+          <LogIn size={16} />
+        </button>
+      ) : (
+        <button
+          onClick={() => handleReserve(part.id)}
+          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
+        >
+          <LogIn size={16} /> LOGIN TO RESERVE
+        </button>
+      );
+    }
+
+    if (!isInStock) {
+      return isCompact ? (
+        <button
+          disabled
+          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
+        >
+          <Bookmark size={16} />
+        </button>
+      ) : (
+        <button
+          disabled
+          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
+        >
+          <Bookmark size={16} /> OUT OF STOCK
+        </button>
+      );
+    }
+
+    // Available to reserve
+    return isCompact ? (
+      <button
+        onClick={() => handleReserve(part.id)}
+        disabled={isReserving}
+        className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white disabled:opacity-50"
+      >
+        {isReserving ? (
+          <div className="w-4 h-4 border-2 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Bookmark size={16} />
+        )}
+      </button>
+    ) : (
+      <button
+        onClick={() => handleReserve(part.id)}
+        disabled={isReserving}
+        className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white disabled:opacity-50"
+      >
+        {isReserving ? (
+          <>
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            RESERVING...
+          </>
+        ) : (
+          <>
+            <Bookmark size={16} /> RESERVE
+          </>
+        )}
+      </button>
+    );
+  };
 
   // Part detail view
   if (selectedPart) {
@@ -160,6 +294,13 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
+              {/* Reserve error */}
+              {reserveError && (
+                <div className="mb-4 bg-[#221515] border border-[#d63a2f]/30 px-4 py-3 text-[#d63a2f] text-xs font-bold tracking-widest uppercase">
+                  {reserveError}
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-8">
                 {/* Image */}
                 <div className="w-full sm:w-[320px] flex-shrink-0">
@@ -228,29 +369,9 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                     </div>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Reserve Button */}
                   <div className="mt-auto">
-                    <button
-                      onClick={() => handleInquiry(selectedPart.id)}
-                      disabled={!isInStock || inquirySent === selectedPart.id}
-                      className={`w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border ${
-                        inquirySent === selectedPart.id
-                          ? "bg-[#d63a2f] border-[#d63a2f] text-white"
-                          : isInStock
-                            ? "bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
-                            : "bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
-                      }`}
-                    >
-                      {inquirySent === selectedPart.id ? (
-                        <>
-                          <CheckCircle size={16} /> INQUIRY SENT
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart size={16} /> INQUIRE NOW
-                        </>
-                      )}
-                    </button>
+                    {renderReserveButton(selectedPart, false)}
                   </div>
                 </div>
               </div>
@@ -298,6 +419,12 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Login status hint */}
+              {!isAuthenticated && (
+                <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#333] text-[#6b6b6b] text-[9px] font-bold tracking-widest uppercase">
+                  <LogIn size={12} /> LOGIN TO RESERVE
+                </div>
+              )}
               {/* Search */}
               <div className="relative hidden sm:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
@@ -352,7 +479,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                       ? f === "instock"
                         ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
                         : f === "outofstock"
-                          ? "bg-[#221n1] text-[#d63a2f] border-[#d63a2f]"
+                          ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
                           : "bg-[#111] text-white border-[#333]"
                       : "text-[#6b6b6b] border-[#222] hover:bg-[#111] hover:text-[#888]"
                   }`}
@@ -380,6 +507,20 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
               />
             </div>
           </div>
+
+          {/* ── Reserve Error Banner ── */}
+          <AnimatePresence>
+            {reserveError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="px-6 sm:px-10 py-3 bg-[#221515] border-b border-[#d63a2f]/30 text-[#d63a2f] text-xs font-bold tracking-widest uppercase flex-shrink-0"
+              >
+                {reserveError}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── Product Grid ── */}
           <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
@@ -447,7 +588,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                           </h3>
                         </div>
 
-                        {/* Action Row */}
+                        {/* Action Row — TODO: implemented — Reserve replaces old Cart */}
                         <div className="flex items-center justify-between mt-auto">
                           <button
                             onClick={() => setSelectedPart(part)}
@@ -455,23 +596,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                           >
                             <Info size={12} /> DETAILS
                           </button>
-                          <button
-                            disabled={!isInStock}
-                            onClick={() => handleInquiry(part.id)}
-                            className={`w-10 h-10 flex items-center justify-center transition border shrink-0 ${
-                              inquirySent === part.id
-                                ? "bg-[#d63a2f] border-[#d63a2f] text-white"
-                                : isInStock
-                                  ? "bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
-                                  : "bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
-                            }`}
-                          >
-                            {inquirySent === part.id ? (
-                              <CheckCircle size={16} />
-                            ) : (
-                              <ShoppingCart size={16} />
-                            )}
-                          </button>
+                          {renderReserveButton(part, true)}
                         </div>
                       </div>
                     </div>

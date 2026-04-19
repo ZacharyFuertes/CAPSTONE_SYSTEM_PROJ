@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, Loader, ArrowLeft, Home, User, Phone, MapPin } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
-import usersIcon from "../icons/users.png";
+import usersIcon from "../pictures/icons/users.png";
 
 interface CustomerLoginPageProps {
   onLoginSuccess: () => void;

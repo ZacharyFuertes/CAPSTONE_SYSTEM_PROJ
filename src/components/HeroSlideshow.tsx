@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import slide1 from "../hero-slide-images/hero-slide-image-1.png";
-import slide2 from "../hero-slide-images/hero-slide-image-2.png";
-import slide3 from "../hero-slide-images/hero-slide-image-3.png";
-import slide4 from "../hero-slide-images/hero-slide-image-4.png";
+import slide1 from "../pictures/hero-slide-images/hero-slide-image-1.png";
+import slide2 from "../pictures/hero-slide-images/hero-slide-image-2.png";
+import slide3 from "../pictures/hero-slide-images/hero-slide-image-3.png";
+import slide4 from "../pictures/hero-slide-images/hero-slide-image-4.png";
 
 interface Slide {
   id: number;

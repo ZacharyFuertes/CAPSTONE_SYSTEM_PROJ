@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
-import mechanicIcon from "../icons/mechanic.png";
+import mechanicIcon from "../pictures/icons/mechanic.png";
 
 interface MechanicLoginPageProps {
   onLoginSuccess: () => void;

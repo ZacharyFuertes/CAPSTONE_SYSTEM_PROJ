@@ -156,13 +156,6 @@ const Footer: React.FC = () => {
             </div>
 
             {/* Newsletter CTA in Footer */}
-            <button
-              className="w-full px-4 py-2 bg-moto-accent hover:bg-moto-accent-dark text-white font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2"
-              aria-label="Subscribe to newsletter"
-            >
-              <Mail size={16} />
-              Subscribe
-            </button>
           </motion.div>
         </div>
       </motion.div>

@@ -9,11 +9,26 @@ import {
   Languages,
   DollarSign,
   Package,
-  CalendarCheck,
-  ChevronRight,
   Quote,
 } from "lucide-react";
 import { getMechanics } from "../services/staffService";
+
+// About Us shop photos (arranged by filename)
+import frontViewShop from "../pictures/about-us-pics/front-view-shop.jpg";
+import insideViewShop from "../pictures/about-us-pics/inside-view-shop.jpg";
+import insideViewProducts1 from "../pictures/about-us-pics/inside-view-shop-products-1.png";
+import insideViewProducts2 from "../pictures/about-us-pics/inside-view-shop-products-2.png";
+import insideViewTools1 from "../pictures/about-us-pics/inside-view-shop-tools-1.png";
+import sideViewShop from "../pictures/about-us-pics/side-view-shop.jpg";
+
+const shopPhotos = [
+  { src: frontViewShop, alt: "Front View of MotoShop", label: "Front View" },
+  { src: insideViewShop, alt: "Inside View of MotoShop", label: "Inside the Shop" },
+  { src: insideViewProducts1, alt: "Shop Products Display 1", label: "Parts & Products" },
+  { src: insideViewProducts2, alt: "Shop Products Display 2", label: "Product Shelves" },
+  { src: insideViewTools1, alt: "Shop Tools & Equipment", label: "Tools & Equipment" },
+  { src: sideViewShop, alt: "Side View of MotoShop", label: "Side View" },
+];
 
 /* ------------------------------------------------------------------ */
 /*  TYPES                                                              */
@@ -307,6 +322,65 @@ const AboutUs: React.FC = () => {
       </div>
 
       {/* ============================================================ */}
+      {/*  OUR SHOP — PHOTO GALLERY                                     */}
+      {/* ============================================================ */}
+      <div className="py-24 lg:py-32">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mb-16"
+          >
+            <div className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5">
+              <div className="w-8 h-[1px] bg-[#d63a2f]" />
+              OUR SHOP
+            </div>
+            <h3 className="font-display text-5xl sm:text-[8vw] lg:text-[100px] font-bold leading-[0.92] tracking-[0.01em] text-[#f0ede8] uppercase mb-6">
+              INSIDE
+              <br />
+              <span className="text-[#d63a2f]">MOTOSHOP</span>
+            </h3>
+            <p className="text-[16px] font-light text-[#6b6b6b] max-w-[480px] leading-[1.7]">
+              Take a look at our fully equipped workshop, organized parts inventory, and professional workspace — where every repair begins.
+            </p>
+          </motion.div>
+
+          {/* Photo gallery grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {shopPhotos.map((photo, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.08 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className={`relative overflow-hidden group cursor-pointer bg-[#111111] border border-[rgba(255,255,255,0.07)] ${
+                  idx === 0 ? "md:col-span-2 md:row-span-2" : ""
+                }`}
+              >
+                <div className={`relative overflow-hidden ${
+                  idx === 0 ? "h-[300px] md:h-[500px] lg:h-[600px]" : "h-[250px] lg:h-[290px]"
+                }`}>
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Red accent line */}
+                  <div className="absolute bottom-0 left-0 w-0 h-[3px] bg-[#d63a2f] group-hover:w-full transition-all duration-500" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
       {/*  MEET OUR MECHANICS                                           */}
       {/* ============================================================ */}
       <div className="bg-[#080808] py-24 lg:py-32">
@@ -506,49 +580,6 @@ const AboutUs: React.FC = () => {
       {/* ============================================================ */}
       <div className="pb-24 lg:pb-32">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="relative bg-gradient-to-r from-[#d63a2f] to-[#f97316] rounded-2xl p-12 lg:p-16 overflow-hidden"
-          >
-            {/* Animated sweep */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
-              <div className="max-w-xl">
-                <h3 className="font-display text-4xl lg:text-5xl font-bold text-white uppercase tracking-wide mb-4 leading-[1.05]">
-                  Ready to Ride
-                  <br />
-                  with Confidence?
-                </h3>
-                <p className="text-white/85 text-[16px] leading-[1.7] mb-2">
-                  Whether it's your daily commuter or your weekend warrior,
-                  MotoShop is here to keep you on the road — safely, affordably,
-                  and with a smile. Visit us in Quezon City or book your
-                  appointment online today.
-                </p>
-                <p className="text-white/60 text-[14px] italic">
-                  "Halika na, i-level up natin ang ride mo!"
-                </p>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  const top = document.getElementById("services");
-                  top?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="flex items-center gap-3 bg-white text-[#d63a2f] px-8 py-4 rounded-xl font-bold text-[16px] uppercase tracking-wide hover:bg-white/90 transition-colors shadow-lg shadow-black/20 whitespace-nowrap"
-              >
-                <CalendarCheck size={22} />
-                Book a Service
-                <ChevronRight size={18} />
-              </motion.button>
-            </div>
-          </motion.div>
         </div>
       </div>
     </section>
