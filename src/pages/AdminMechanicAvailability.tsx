@@ -71,18 +71,25 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
 
       setMechanics(mechanicsData || [])
 
-      // Fetch availability
-      const { data: availabilityData, error: availabilityError } = await supabase
-        .from('mechanic_availability')
-        .select('*')
-        .order('day_of_week', { ascending: true })
+      // Fetch availability (table may not exist yet — gracefully handle 404)
+      let availabilityData: any[] = []
+      try {
+        const { data, error: availabilityError } = await supabase
+          .from('mechanic_availability')
+          .select('*')
+          .order('day_of_week', { ascending: true })
 
-      if (availabilityError && availabilityError.code !== 'PGRST116') {
-        throw availabilityError
+        if (availabilityError && availabilityError.code !== 'PGRST116') {
+          console.warn('Could not fetch mechanic_availability:', availabilityError.message)
+        } else {
+          availabilityData = data || []
+        }
+      } catch (e) {
+        console.warn('mechanic_availability table may not exist:', e)
       }
 
       // Enhance availability with mechanic names
-      const enhancedAvailability: Availability[] = (availabilityData || []).map((av: any) => {
+      const enhancedAvailability: Availability[] = availabilityData.map((av: any) => {
         const mechanic = mechanicsData?.find((m) => m.id === av.mechanic_id)
         return {
           ...av,
@@ -171,31 +178,43 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
     try {
       setDeleting(true)
 
-      // First, delete all job orders for this mechanic
-      const { error: jobOrderError } = await supabase
-        .from('job_orders')
-        .delete()
-        .eq('mechanic_id', deleteConfirm.id)
+      // Cascade-delete related records — each step is non-blocking so that
+      // a missing table (404) or RLS restriction won't abort the whole flow.
 
-      if (jobOrderError) throw jobOrderError
+      // 1. Delete job orders for this mechanic (may not exist)
+      try {
+        const { error: jobOrderError } = await supabase
+          .from('job_orders')
+          .delete()
+          .eq('mechanic_id', deleteConfirm.id)
+        if (jobOrderError) console.warn('Could not delete job_orders (non-blocking):', jobOrderError.message)
+      } catch (e) {
+        console.warn('job_orders cleanup skipped:', e)
+      }
 
-      // Next, delete all availability records for this mechanic
-      const { error: availError } = await supabase
-        .from('mechanic_availability')
-        .delete()
-        .eq('mechanic_id', deleteConfirm.id)
+      // 2. Delete availability records for this mechanic (may not exist)
+      try {
+        const { error: availError } = await supabase
+          .from('mechanic_availability')
+          .delete()
+          .eq('mechanic_id', deleteConfirm.id)
+        if (availError) console.warn('Could not delete mechanic_availability (non-blocking):', availError.message)
+      } catch (e) {
+        console.warn('mechanic_availability cleanup skipped:', e)
+      }
 
-      if (availError) throw availError
+      // 3. Delete appointments assigned to this mechanic (may not exist)
+      try {
+        const { error: appointmentError } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('mechanic_id', deleteConfirm.id)
+        if (appointmentError) console.warn('Could not delete appointments (non-blocking):', appointmentError.message)
+      } catch (e) {
+        console.warn('appointments cleanup skipped:', e)
+      }
 
-      // Then, delete any appointments assigned to this mechanic
-      const { error: appointmentError } = await supabase
-        .from('appointments')
-        .delete()
-        .eq('mechanic_id', deleteConfirm.id)
-
-      if (appointmentError) throw appointmentError
-
-      // Finally, delete the mechanic user record
+      // 4. Delete the mechanic user record — this one MUST succeed
       const { error: userError } = await supabase
         .from('users')
         .delete()
@@ -212,7 +231,7 @@ const AdminMechanicAvailability: React.FC<AdminMechanicAvailabilityProps> = ({ o
       alert('Mechanic deleted successfully!')
     } catch (err) {
       console.error('Error deleting mechanic:', err)
-      alert('Error deleting mechanic')
+      alert('Error deleting mechanic. Please try again.')
     } finally {
       setDeleting(false)
     }

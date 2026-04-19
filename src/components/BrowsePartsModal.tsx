@@ -1,7 +1,7 @@
 /**
  * BrowsePartsModal.tsx
- * TODO: implemented — Replaced "Add to Cart" / "Inquire" with "Reserve" button
- * Only logged-in customers can reserve. Non-logged-in users are prompted to log in.
+ * Read-only gallery for customers — browse items, view prices & descriptions.
+ * No purchase / reserve / cart actions.
  */
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,22 +16,19 @@ import {
   Disc3,
   Cable,
   SlidersHorizontal,
-  Info,
   ArrowLeft,
   Box,
   CheckCircle,
-  LogIn,
-  Bookmark,
+  Eye,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { Part } from "../types";
-import { createReservation } from "../services/reservationService";
 
 interface BrowsePartsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginRedirect?: () => void; // callback to redirect to login page
+  onLoginRedirect?: () => void;
 }
 
 const CATEGORIES = [
@@ -48,9 +45,8 @@ const CATEGORIES = [
 const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   isOpen,
   onClose,
-  onLoginRedirect,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const shopId = user?.shop_id || "";
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
@@ -61,10 +57,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     "all" | "instock" | "outofstock"
   >("all");
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  // TODO: implemented — Reservation state replaces old inquirySent
-  const [reservingId, setReservingId] = useState<string | null>(null);
-  const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
-  const [reserveError, setReserveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -113,137 +105,9 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     setFilteredParts(result);
   }, [parts, selectedCategory, searchQuery, stockFilter]);
 
-  // TODO: implemented — Reserve handler with login check
-  const handleReserve = async (partId: string) => {
-    // If not logged in, redirect to login
-    if (!isAuthenticated || !user) {
-      onClose();
-      if (onLoginRedirect) {
-        onLoginRedirect();
-      }
-      return;
-    }
-
-    // Only customers can reserve
-    if (user.role !== "customer") {
-      setReserveError("Only customers can reserve items.");
-      setTimeout(() => setReserveError(null), 3000);
-      return;
-    }
-
-    try {
-      setReservingId(partId);
-      setReserveError(null);
-      await createReservation(user.id, partId, 1);
-      setReservedIds((prev) => new Set([...prev, partId]));
-    } catch (err: any) {
-      console.error("Reserve error:", err);
-      setReserveError(err.message || "Failed to reserve. Please try again.");
-      setTimeout(() => setReserveError(null), 3000);
-    } finally {
-      setReservingId(null);
-    }
-  };
-
   if (!isOpen) return null;
 
-  // Helper to render the reserve button
-  const renderReserveButton = (part: Part, isCompact: boolean = false) => {
-    const isInStock = (part.quantity_in_stock ?? 0) > 0;
-    const isReserved = reservedIds.has(part.id);
-    const isReserving = reservingId === part.id;
-
-    if (isReserved) {
-      // Already reserved state
-      return isCompact ? (
-        <button
-          disabled
-          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-[#d63a2f] border-[#d63a2f] text-white"
-        >
-          <CheckCircle size={16} />
-        </button>
-      ) : (
-        <button
-          disabled
-          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-[#d63a2f] border-[#d63a2f] text-white"
-        >
-          <CheckCircle size={16} /> RESERVED
-        </button>
-      );
-    }
-
-    if (!isAuthenticated) {
-      // Not logged in — show "Login to Reserve"
-      return isCompact ? (
-        <button
-          onClick={() => handleReserve(part.id)}
-          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
-          title="Login to Reserve"
-        >
-          <LogIn size={16} />
-        </button>
-      ) : (
-        <button
-          onClick={() => handleReserve(part.id)}
-          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white"
-        >
-          <LogIn size={16} /> LOGIN TO RESERVE
-        </button>
-      );
-    }
-
-    if (!isInStock) {
-      return isCompact ? (
-        <button
-          disabled
-          className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
-        >
-          <Bookmark size={16} />
-        </button>
-      ) : (
-        <button
-          disabled
-          className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-[#111] border-[#222] text-[#555] cursor-not-allowed"
-        >
-          <Bookmark size={16} /> OUT OF STOCK
-        </button>
-      );
-    }
-
-    // Available to reserve
-    return isCompact ? (
-      <button
-        onClick={() => handleReserve(part.id)}
-        disabled={isReserving}
-        className="w-10 h-10 flex items-center justify-center transition border shrink-0 bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white disabled:opacity-50"
-      >
-        {isReserving ? (
-          <div className="w-4 h-4 border-2 border-[#d63a2f] border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <Bookmark size={16} />
-        )}
-      </button>
-    ) : (
-      <button
-        onClick={() => handleReserve(part.id)}
-        disabled={isReserving}
-        className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 font-bold text-[10px] tracking-[0.2em] uppercase transition-all border bg-transparent border-[#d63a2f] text-[#d63a2f] hover:bg-[#d63a2f] hover:text-white disabled:opacity-50"
-      >
-        {isReserving ? (
-          <>
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            RESERVING...
-          </>
-        ) : (
-          <>
-            <Bookmark size={16} /> RESERVE
-          </>
-        )}
-      </button>
-    );
-  };
-
-  // Part detail view
+  // ── Part detail view (read-only) ──
   if (selectedPart) {
     const isInStock = (selectedPart.quantity_in_stock ?? 0) > 0;
     const stockQty = selectedPart.quantity_in_stock ?? 0;
@@ -294,13 +158,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
-              {/* Reserve error */}
-              {reserveError && (
-                <div className="mb-4 bg-[#221515] border border-[#d63a2f]/30 px-4 py-3 text-[#d63a2f] text-xs font-bold tracking-widest uppercase">
-                  {reserveError}
-                </div>
-              )}
-
               <div className="flex flex-col sm:flex-row gap-8">
                 {/* Image */}
                 <div className="w-full sm:w-[320px] flex-shrink-0">
@@ -321,12 +178,12 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
 
                 {/* Details */}
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <span className="text-[10px] font-bold tracking-[0.2em] bg-[#111] text-[#6b6b6b] px-3 py-1.5 border border-[#222] uppercase">
                       {selectedPart.category}
                     </span>
                     {isInStock ? (
-                      <span className="text-[10px] font-bold tracking-[0.2em] bg-[#221515] text-[#d63a2f] px-3 py-1.5 border border-[#d63a2f] uppercase flex items-center gap-1">
+                      <span className="text-[10px] font-bold tracking-[0.2em] bg-[#152215] text-[#4ade80] px-3 py-1.5 border border-[#4ade80]/40 uppercase flex items-center gap-1">
                         <CheckCircle size={10} /> IN STOCK ({stockQty})
                       </span>
                     ) : (
@@ -353,7 +210,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                       <h4 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-3">
                         DESCRIPTION
                       </h4>
-                      <p className="text-[#888] text-xs font-light leading-relaxed">
+                      <p className="text-[#888] text-sm font-light leading-relaxed">
                         {selectedPart.description}
                       </p>
                     </div>
@@ -361,7 +218,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
 
                   {/* SKU */}
                   {selectedPart.sku && (
-                    <div className="flex items-center gap-2 mb-8">
+                    <div className="flex items-center gap-2 mb-4">
                       <Box size={14} className="text-[#555]" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-[#555]">
                         SKU: {selectedPart.sku}
@@ -369,9 +226,11 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                     </div>
                   )}
 
-                  {/* Reserve Button */}
-                  <div className="mt-auto">
-                    {renderReserveButton(selectedPart, false)}
+                  {/* Gallery-only note */}
+                  <div className="mt-auto pt-4 border-t border-[#222]">
+                    <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest text-center">
+                      Visit our shop for purchases &amp; inquiries
+                    </p>
                   </div>
                 </div>
               </div>
@@ -382,6 +241,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     );
   }
 
+  // ── Main gallery grid ──
   return (
     <AnimatePresence>
       <motion.div
@@ -408,29 +268,23 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
               </div>
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
-                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> INVENTORY
+                  <div className="w-6 h-[1px] bg-[#d63a2f]" /> SHOP GALLERY
                 </div>
                 <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
-                  BROWSE PARTS
+                  OUR ITEMS
                 </h2>
                 <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
-                  Genuine motorcycle parts and accessories
+                  Browse our genuine motorcycle parts and accessories
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* Login status hint */}
-              {!isAuthenticated && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#111] border border-[#333] text-[#6b6b6b] text-[9px] font-bold tracking-widest uppercase">
-                  <LogIn size={12} /> LOGIN TO RESERVE
-                </div>
-              )}
               {/* Search */}
               <div className="relative hidden sm:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="SEARCH PARTS..."
+                  placeholder="SEARCH ITEMS..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-72 bg-[#0a0a0a] text-white pl-12 pr-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition text-xs font-bold tracking-widest uppercase rounded-none"
@@ -500,7 +354,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
               <input
                 type="text"
-                placeholder="SEARCH PARTS..."
+                placeholder="SEARCH ITEMS..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[#111111] text-white pl-12 pr-4 py-4 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold"
@@ -508,21 +362,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
             </div>
           </div>
 
-          {/* ── Reserve Error Banner ── */}
-          <AnimatePresence>
-            {reserveError && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-6 sm:px-10 py-3 bg-[#221515] border-b border-[#d63a2f]/30 text-[#d63a2f] text-xs font-bold tracking-widest uppercase flex-shrink-0"
-              >
-                {reserveError}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── Product Grid ── */}
+          {/* ── Product Grid (Gallery — view only) ── */}
           <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 bg-[#0a0a0a]">
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -535,7 +375,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                   strokeWidth={1}
                 />
                 <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">
-                  NO PARTS FOUND
+                  NO ITEMS FOUND
                 </p>
               </div>
             ) : (
@@ -543,20 +383,20 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                 {filteredParts.map((part) => {
                   const isInStock = (part.quantity_in_stock ?? 0) > 0;
                   return (
-                    <div
+                    <motion.div
                       key={part.id}
-                      className="group bg-[#111111] border border-[#222] hover:border-[#333] transition flex flex-col items-stretch max-w-full"
+                      whileHover={{ y: -4 }}
+                      transition={{ duration: 0.2 }}
+                      className="group bg-[#111111] border border-[#222] hover:border-[#d63a2f]/40 transition-all flex flex-col items-stretch max-w-full cursor-pointer"
+                      onClick={() => setSelectedPart(part)}
                     >
                       {/* Product Image */}
-                      <div
-                        className="relative aspect-square bg-[#0a0a0a] border-b border-[#222] overflow-hidden cursor-pointer w-full"
-                        onClick={() => setSelectedPart(part)}
-                      >
+                      <div className="relative aspect-square bg-[#0a0a0a] border-b border-[#222] overflow-hidden w-full">
                         {part.image_url ? (
                           <img
                             src={part.image_url}
                             alt={part.name}
-                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
+                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -566,7 +406,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                         {/* Stock Badge */}
                         <div className="absolute top-3 right-3">
                           {isInStock ? (
-                            <span className="bg-[#221515] border border-[#d63a2f] text-[#d63a2f] text-[8px] font-bold px-2 py-1 tracking-widest uppercase">
+                            <span className="bg-[#152215] border border-[#4ade80]/40 text-[#4ade80] text-[8px] font-bold px-2 py-1 tracking-widest uppercase">
                               IN STOCK
                             </span>
                           ) : (
@@ -574,6 +414,12 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                               SOLD OUT
                             </span>
                           )}
+                        </div>
+                        {/* View overlay on hover */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="flex items-center gap-2 text-white text-[10px] font-bold tracking-widest uppercase">
+                            <Eye size={16} /> VIEW
+                          </div>
                         </div>
                       </div>
 
@@ -583,27 +429,28 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                           <p className="font-display text-2xl font-black text-[#d63a2f] mb-2 leading-none">
                             ₱{part.unit_price.toLocaleString()}
                           </p>
-                          <h3 className="font-display text-lg text-white mb-3 leading-tight uppercase group-hover:text-[#d63a2f] transition-colors break-words">
+                          <h3 className="font-display text-sm sm:text-base text-white mb-1 leading-tight uppercase group-hover:text-[#d63a2f] transition-colors break-words">
                             {part.name}
                           </h3>
-                        </div>
-
-                        {/* Action Row — TODO: implemented — Reserve replaces old Cart */}
-                        <div className="flex items-center justify-between mt-auto">
-                          <button
-                            onClick={() => setSelectedPart(part)}
-                            className="text-[9px] text-[#6b6b6b] hover:text-[#d63a2f] transition flex items-center gap-1 font-bold tracking-widest uppercase"
-                          >
-                            <Info size={12} /> DETAILS
-                          </button>
-                          {renderReserveButton(part, true)}
+                          {part.description && (
+                            <p className="text-[11px] text-[#555] line-clamp-2 mt-1 leading-relaxed">
+                              {part.description}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             )}
+          </div>
+
+          {/* ── Footer note ── */}
+          <div className="px-6 sm:px-10 py-4 border-t border-[#222] bg-[#111] flex-shrink-0">
+            <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest text-center">
+              Visit our shop for purchases &amp; inquiries
+            </p>
           </div>
         </motion.div>
       </motion.div>

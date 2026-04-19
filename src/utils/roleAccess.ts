@@ -12,6 +12,7 @@ export type AppPage =
   | "mechanic-portal"
   | "mechanic-dashboard"
   | "mechanic-availability"
+  | "services"
   | "settings"
   | "ai-inquiries";
 
@@ -30,6 +31,7 @@ export const rolePagesMapping: Record<UserRole, AppPage[]> = {
     "appointments",
     "customers",
     "products",
+    "services",
     "mechanic-availability",
     "settings",
     "ai-inquiries",

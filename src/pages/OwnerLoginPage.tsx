@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import adminIcon from "../pictures/icons/admin.png";
+import ErrorModal from "../components/ErrorModal";
 
 interface OwnerLoginPageProps {
   onLoginSuccess: () => void;
@@ -44,14 +45,16 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
       if (err instanceof Error) {
         const message = err.message.toLowerCase();
         if (message.includes("invalid login credentials")) {
-          errorMessage = "❌ Invalid email or password. Please check and try again.";
+          errorMessage = "Invalid email or password. Please check and try again.";
+        } else if (message.includes("too many requests")) {
+          errorMessage = "Too many login attempts. Please try again in a few minutes.";
         } else {
           errorMessage = err.message;
         }
       }
 
+      console.log("🔥 Setting Error State to:", errorMessage);
       setError(errorMessage);
-      console.error("Auth error:", err);
       setLoading(false);
     }
   };
@@ -98,30 +101,17 @@ const OwnerLoginPage: React.FC<OwnerLoginPageProps> = ({
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Error Notification at Top */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.95 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-md border border-red-400/50 rounded-xl shadow-2xl shadow-red-500/20"
-          >
-            <div className="flex items-start gap-3">
-              <div className="text-red-200 text-xl mt-0.5">⚠️</div>
-              <div>
-                <p className="text-white font-semibold text-sm">{error}</p>
-              </div>
-              <button
-                onClick={() => setError("")}
-                className="ml-2 text-red-200 hover:text-white transition text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Error Modal Component */}
+      <ErrorModal
+        isOpen={!!error}
+        title="Admin Login Failed"
+        message={error}
+        onClose={() => setError("")}
+        onTryAgain={() => {
+          setError("");
+          setFormData((prev) => ({ ...prev, password: "" }));
+        }}
+      />
 
       {/* Back Button */}
       <motion.button

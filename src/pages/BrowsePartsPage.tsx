@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Search, ShoppingCart, Zap, Package } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Zap, Package, Eye, ArrowLeft, CheckCircle, Box, X } from "lucide-react";
 
 import { supabase } from "../services/supabaseClient";
 
@@ -18,6 +18,7 @@ interface Part {
   quantity?: number;
   quantity_in_stock?: number;
   description?: string;
+  sku?: string;
 }
 
 interface BrowsePartsPageProps {
@@ -32,6 +33,7 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const fetchAbortRef = React.useRef<AbortController | null>(null);
   const fetchedRef = React.useRef(false);
 
@@ -150,8 +152,8 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
+        staggerChildren: 0.06,
+        delayChildren: 0.15,
       },
     },
   };
@@ -180,12 +182,11 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
             <div className="flex items-center gap-3 mb-4">
               <Package className="w-8 h-8 text-moto-accent" />
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white">
-                Quality <span className="text-moto-accent">Parts</span>
+                Shop <span className="text-moto-accent">Gallery</span>
               </h1>
             </div>
             <p className="text-lg text-slate-300 max-w-2xl">
-              Genuine motorcycle parts and accessories for your bike. Fast
-              delivery, competitive prices, and expert support.
+              Browse our genuine motorcycle parts and accessories. View product details, prices, and availability.
             </p>
           </motion.div>
 
@@ -230,13 +231,13 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
         </div>
       </section>
 
-      {/* Parts Grid */}
+      {/* Parts Grid (Gallery — view only) */}
       <section className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-6xl mx-auto">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin w-12 h-12 border-4 border-slate-600 border-t-moto-accent rounded-full mx-auto"></div>
-              <p className="text-slate-400 mt-4">Loading parts...</p>
+              <p className="text-slate-400 mt-4">Loading items...</p>
             </div>
           ) : filteredParts.length === 0 ? (
             <div className="text-center py-12">
@@ -257,7 +258,8 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
                   key={part.id}
                   variants={itemVariants}
                   whileHover={{ y: -8 }}
-                  className="group bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl border border-slate-600 overflow-hidden hover:border-moto-accent/50 transition-all"
+                  className="group bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl border border-slate-600 overflow-hidden hover:border-moto-accent/50 transition-all cursor-pointer"
+                  onClick={() => setSelectedPart(part)}
                 >
                   {/* Part Header with Image or Icon */}
                   <div className="h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center relative overflow-hidden">
@@ -283,6 +285,12 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
                         <Zap className="w-16 h-16 text-moto-accent-neon relative z-10" />
                       </>
                     )}
+                    {/* View overlay on hover */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="flex items-center gap-2 text-white text-sm font-bold tracking-widest uppercase">
+                        <Eye size={20} /> VIEW DETAILS
+                      </div>
+                    </div>
                   </div>
 
                   {/* Part Info */}
@@ -316,30 +324,15 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
                       </p>
                     )}
 
-                    {/* Price and Action */}
+                    {/* Price */}
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold text-moto-accent">
                         ₱{getPrice(part).toLocaleString()}
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        disabled={!isInStock(part)}
-                        className={`p-2.5 rounded-lg transition-all ${
-                          isInStock(part)
-                            ? "bg-moto-accent hover:bg-moto-accent-dark text-white"
-                            : "bg-slate-600 text-slate-400 cursor-not-allowed"
-                        }`}
-                      >
-                        <ShoppingCart size={20} />
-                      </motion.button>
+                      <span className="text-xs text-slate-500">
+                        {getStock(part)} units available
+                      </span>
                     </div>
-
-                    {/* Stock Count */}
-                    <p className="text-xs text-slate-500 mt-3">
-                      {getStock(part)} units
-                      available
-                    </p>
                   </div>
                 </motion.div>
               ))}
@@ -347,6 +340,133 @@ const BrowsePartsPage: React.FC<BrowsePartsPageProps> = ({ embedded = false }) =
           )}
         </div>
       </section>
+
+      {/* ── Detail Modal ── */}
+      <AnimatePresence>
+        {selectedPart && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedPart(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-slate-800 rounded-xl border border-slate-600 w-full max-w-[750px] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-800/80 flex-shrink-0">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setSelectedPart(null)}
+                    className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <div>
+                    <p className="text-xs text-moto-accent font-bold uppercase tracking-widest">Item Details</p>
+                    <h2 className="text-xl font-bold text-white truncate max-w-[350px]">
+                      {selectedPart.name}
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedPart(null)}
+                  className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {/* Image */}
+                  <div className="w-full sm:w-[280px] flex-shrink-0">
+                    <div className="aspect-square bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                      {selectedPart.image || selectedPart.image_url ? (
+                        <img
+                          src={selectedPart.image || selectedPart.image_url}
+                          alt={selectedPart.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Zap className="w-16 h-16 text-slate-600" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="text-xs font-semibold bg-slate-700 text-slate-300 px-3 py-1 rounded-full capitalize">
+                        {selectedPart.category}
+                      </span>
+                      {isInStock(selectedPart) ? (
+                        <span className="text-xs font-semibold bg-green-500/20 text-green-400 px-3 py-1 rounded-full flex items-center gap-1">
+                          <CheckCircle size={12} /> In Stock ({getStock(selectedPart)})
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold bg-red-500/20 text-red-400 px-3 py-1 rounded-full">
+                          Out of Stock
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      {selectedPart.name}
+                    </h3>
+
+                    {/* Price */}
+                    <div className="mb-6 pb-4 border-b border-slate-700">
+                      <span className="text-4xl font-black text-moto-accent">
+                        ₱{getPrice(selectedPart).toLocaleString()}
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    {selectedPart.description && (
+                      <div className="mb-4">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                          Description
+                        </h4>
+                        <p className="text-slate-300 text-sm leading-relaxed">
+                          {selectedPart.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* SKU */}
+                    {selectedPart.sku && (
+                      <div className="flex items-center gap-2 mt-4">
+                        <Box size={14} className="text-slate-500" />
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                          SKU: {selectedPart.sku}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Gallery-only note */}
+                    <div className="mt-6 pt-4 border-t border-slate-700">
+                      <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest text-center">
+                        Visit our shop for purchases &amp; inquiries
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

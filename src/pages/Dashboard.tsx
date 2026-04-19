@@ -66,21 +66,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch job orders to get status distribution
+        // ── 1. Fetch ALL appointments (with estimated_price for revenue) ──
+        const { data: allAppointments } = await supabase
+          .from("appointments")
+          .select("id, status, estimated_price, scheduled_date, updated_at, created_at");
+
+        // ── 2. Fetch ALL reservations (with part price for revenue) ──
+        let allReservations: any[] = [];
+        try {
+          const { data: resData } = await supabase
+            .from("reservations")
+            .select("id, status, quantity, created_at, updated_at, part_id, parts:parts!part_id(unit_price, name)");
+          allReservations = resData || [];
+        } catch {
+          // reservations table may not exist yet
+        }
+
+        // ── 3. Fetch job orders for status distribution ──
         const { data: jobOrders } = await supabase
           .from("job_orders")
-          .select("status")
+          .select("status, total_cost, completed_at, created_at")
           .eq("shop_id", user?.shop_id);
 
-        // Fetch invoices for revenue
-        const { data: invoices } = await supabase
-          .from("invoices")
-          .select("total_amount, created_at")
-          .eq("shop_id", user?.shop_id)
-          .order("created_at", { ascending: false })
-          .limit(30);
-
-        // Fetch parts with low stock
+        // ── 4. Fetch parts with low stock ──
         const { data: parts } = await supabase
           .from("parts")
           .select("name, quantity_in_stock, reorder_level")
@@ -89,24 +97,73 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .order("quantity_in_stock", { ascending: true })
           .limit(5);
 
-        // Calculate revenue data
-        const revenueByDay =
-          invoices?.reduce((acc: any, inv: any) => {
-            const date = new Date(inv.created_at);
-            const dayName = date.toLocaleDateString("en-US", {
-              weekday: "short",
-            });
-            const existing = acc.find((d: any) => d.date === dayName);
-            if (existing) {
-              existing.revenue += inv.total_amount || 0;
-            } else {
-              acc.push({ date: dayName, revenue: inv.total_amount || 0 });
-            }
-            return acc;
-          }, []) || [];
+        // ══════════════════════════════════════════════
+        // REVENUE CALCULATION
+        // Revenue = confirmed/completed appointments (estimated_price)
+        //         + confirmed/fulfilled reservations  (parts.unit_price × quantity)
+        //         + completed job orders               (total_cost)
+        // ══════════════════════════════════════════════
 
-        // Set default week data if empty
-        if (revenueByDay.length === 0) {
+        // Appointment revenue (confirmed, in_progress, completed count as earned)
+        const revenueAppointments = (allAppointments || [])
+          .filter((a: any) => ["confirmed", "in_progress", "completed"].includes(a.status))
+          .reduce((sum: number, a: any) => sum + (Number(a.estimated_price) || 0), 0);
+
+        // Reservation revenue (confirmed or fulfilled)
+        const revenueReservations = allReservations
+          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+          .reduce((sum: number, r: any) => {
+            const unitPrice = (r.parts as any)?.unit_price || 0;
+            return sum + (Number(unitPrice) * (r.quantity || 1));
+          }, 0);
+
+        // Job order revenue (completed)
+        const revenueJobOrders = (jobOrders || [])
+          .filter((j: any) => j.status === "completed")
+          .reduce((sum: number, j: any) => sum + (Number(j.total_cost) || 0), 0);
+
+        const totalRevenue = revenueAppointments + revenueReservations + revenueJobOrders;
+
+        // ══════════════════════════════════════════════
+        // REVENUE TREND CHART (grouped by date)
+        // ══════════════════════════════════════════════
+        const revenueDateMap: Record<string, number> = {};
+
+        // Add appointment revenue by date
+        (allAppointments || [])
+          .filter((a: any) => ["confirmed", "in_progress", "completed"].includes(a.status))
+          .forEach((a: any) => {
+            const dateKey = a.updated_at
+              ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : new Date(a.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(a.estimated_price) || 0);
+          });
+
+        // Add reservation revenue by date
+        allReservations
+          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+          .forEach((r: any) => {
+            const dateKey = new Date(r.updated_at || r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const unitPrice = (r.parts as any)?.unit_price || 0;
+            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(unitPrice) * (r.quantity || 1));
+          });
+
+        // Add job order revenue by date
+        (jobOrders || [])
+          .filter((j: any) => j.status === "completed")
+          .forEach((j: any) => {
+            const dateKey = new Date(j.completed_at || j.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(j.total_cost) || 0);
+          });
+
+        // Convert to array sorted by date, or show week defaults
+        const revenueEntries = Object.entries(revenueDateMap)
+          .map(([date, revenue]) => ({ date, revenue }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        if (revenueEntries.length > 0) {
+          setRevenueData(revenueEntries.slice(-14)); // Last 14 data points
+        } else {
           setRevenueData([
             { date: "Mon", revenue: 0 },
             { date: "Tue", revenue: 0 },
@@ -114,16 +171,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             { date: "Thu", revenue: 0 },
             { date: "Fri", revenue: 0 },
             { date: "Sat", revenue: 0 },
-            { date: "Sun", revenue: 0 },
           ]);
-        } else {
-          setRevenueData(revenueByDay);
         }
 
-        // Calculate status distribution
+        // ══════════════════════════════════════════════
+        // STATUS DISTRIBUTION (pie chart)
+        // ══════════════════════════════════════════════
+        const combinedItems = [...(jobOrders || []), ...(allAppointments || [])];
         const statusCounts =
-          jobOrders?.reduce((acc: any, jo: any) => {
-            const existing = acc.find((s: any) => s.name === jo.status);
+          combinedItems.reduce((acc: any, item: any) => {
+            const statusKey = item.status === "confirmed" ? "pending" : item.status;
+            const existing = acc.find((s: any) => s.name === statusKey);
             if (existing) {
               existing.value += 1;
             } else {
@@ -131,12 +189,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 completed: "#10b981",
                 in_progress: "#f59e0b",
                 pending: "#ef4444",
+                cancelled: "#6b7280",
               };
-              acc.push({
-                name: jo.status,
-                value: 1,
-                color: statusColors[jo.status] || "#6b7280",
-              });
+              if (["completed", "in_progress", "pending", "cancelled"].includes(statusKey)) {
+                acc.push({
+                  name: statusKey,
+                  value: 1,
+                  color: statusColors[statusKey] || "#6b7280",
+                });
+              }
             }
             return acc;
           }, []) || [];
@@ -151,7 +212,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               ],
         );
 
-        // Set low stock parts
+        // ══════════════════════════════════════════════
+        // LOW STOCK PARTS
+        // ══════════════════════════════════════════════
         const formattedLowStock =
           parts?.map((p: any) => ({
             name: p.name,
@@ -165,55 +228,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             : [{ name: "No low stock items", current: 0, reorder: 0 }],
         );
 
-        // Calculate stats
-        const totalRevenue =
-          invoices?.reduce(
-            (sum: number, inv: any) => sum + (inv.total_amount || 0),
-            0,
-          ) || 0;
-        const completedJobs =
+        // ══════════════════════════════════════════════
+        // STATS CARDS
+        // ══════════════════════════════════════════════
+        const jobCompleted =
           jobOrders?.filter((j: any) => j.status === "completed").length || 0;
-        const pendingJobs =
+        const jobPending =
           jobOrders?.filter((j: any) => j.status === "pending").length || 0;
 
-        // Also fetch pending appointments to include in stats
-        const { data: pendingAppointments } = await supabase
-          .from("appointments")
-          .select("id, status")
-          .in("status", ["pending", "confirmed"]);
+        const apptCompleted = 
+          allAppointments?.filter((a: any) => a.status === "completed").length || 0;
+        const apptPending = 
+          allAppointments?.filter((a: any) => a.status === "pending" || a.status === "confirmed").length || 0;
 
-        const pendingApptCount = pendingAppointments?.length || 0;
-        const totalPending = pendingJobs + pendingApptCount;
+        const totalCompleted = jobCompleted + apptCompleted;
+        const totalPending = jobPending + apptPending;
 
         const totalCustomers = await supabase
           .from("users")
           .select("id")
           .eq("role", "customer");
 
-        // Fetch reservation count
-        let pendingReservationCount = 0;
-        try {
-          const { data: reservationData } = await supabase
-            .from("reservations")
-            .select("id")
-            .eq("status", "pending");
-          pendingReservationCount = reservationData?.length || 0;
-        } catch {
-          // reservations table may not exist yet
-        }
+        // Pending reservation count
+        const pendingReservationCount = allReservations.filter((r: any) => r.status === "pending").length;
+
+        // Revenue breakdown for subtitle
+        const revenueParts: string[] = [];
+        if (revenueAppointments > 0) revenueParts.push(`Services: ₱${revenueAppointments.toLocaleString()}`);
+        if (revenueReservations > 0) revenueParts.push(`Reservations: ₱${revenueReservations.toLocaleString()}`);
+        if (revenueJobOrders > 0) revenueParts.push(`Jobs: ₱${revenueJobOrders.toLocaleString()}`);
+        const revenueSubtitle = revenueParts.length > 0 ? revenueParts.join(" • ") : "No revenue data yet";
 
         setStats([
           {
             label: t("dashboard.revenue"),
             value: `₱${totalRevenue.toLocaleString()}`,
-            change: totalRevenue > 0 ? `₱${totalRevenue.toLocaleString()} total` : "No revenue data yet",
+            change: revenueSubtitle,
             icon: <DollarSign className="w-8 h-8" />,
             color: "from-green-500 to-emerald-600",
           },
           {
             label: t("dashboard.today_jobs"),
-            value: completedJobs,
-            change: `${completedJobs} completed`,
+            value: totalCompleted,
+            change: `${totalCompleted} total completed`,
             icon: <CheckCircle className="w-8 h-8" />,
             color: "from-blue-500 to-cyan-600",
           },
@@ -240,11 +297,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           },
         ]);
 
-        // Fetch part usage data (top used parts from job_order_items)
+        // ══════════════════════════════════════════════
+        // TOP PARTS USED (bar chart)
+        // ══════════════════════════════════════════════
+        // Build from reservations data (confirmed/fulfilled) as part usage
+        const partUsageMap: Record<string, number> = {};
+        allReservations
+          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+          .forEach((r: any) => {
+            const partName = (r.parts as any)?.name || "Unknown";
+            partUsageMap[partName] = (partUsageMap[partName] || 0) + (r.quantity || 1);
+          });
+
+        const partUsageFromReservations = Object.entries(partUsageMap)
+          .map(([name, usage]) => ({ name, usage }))
+          .sort((a, b) => b.usage - a.usage)
+          .slice(0, 5);
+
+        // Also try job_order_items
         const { data: partUsage } = await supabase
           .from("job_order_items")
           .select("part_id, quantity, parts(name)")
-          .eq("job_orders.shop_id", user?.shop_id)
           .limit(5);
 
         if (partUsage && partUsage.length > 0) {
@@ -259,20 +332,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               });
             }
             return acc;
-          }, []);
-          setPartUsageData(usageByPart);
+          }, [...partUsageFromReservations]);
+          setPartUsageData(usageByPart.slice(0, 5));
+        } else if (partUsageFromReservations.length > 0) {
+          setPartUsageData(partUsageFromReservations);
         } else {
           setPartUsageData([
-            { name: "Brake Pads", usage: 0 },
-            { name: "Oil Filter", usage: 0 },
-            { name: "Air Filter", usage: 0 },
-            { name: "Spark Plugs", usage: 0 },
-            { name: "Coolant", usage: 0 },
+            { name: "No data yet", usage: 0 },
           ]);
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        // Use empty/default data on error
       }
     };
 

@@ -58,6 +58,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedService, setSelectedService] = useState("");
+  const [selectedServicePrice, setSelectedServicePrice] = useState(0);
   const [selectedMechanic, setSelectedMechanic] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -66,6 +67,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
   const [notes, setNotes] = useState("");
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
+  const [dynamicServices, setDynamicServices] = useState<any[]>(SERVICE_TYPES);
   const [defaultShopId, setDefaultShopId] = useState<string>("");
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [loadingMechanics, setLoadingMechanics] = useState(false);
@@ -78,6 +80,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
     if (isOpen) {
       fetchMechanics();
       fetchVehicles();
+      fetchServices();
     }
   }, [isOpen]);
 
@@ -146,6 +149,28 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
     }
   };
 
+  const fetchServices = async () => {
+    try {
+      const { data, error } = await supabase.from("services_pricing").select("*").eq("is_active", true);
+      if (error) return; // Silent fallback to defaults
+      if (data && data.length > 0) {
+        const iconMap: Record<string, any> = {
+          Droplet, Wrench, CircleDashed, Settings, Hammer, Sparkles, ClipboardList, Car
+        };
+        const mapped = data.map(s => ({
+          id: s.id,
+          label: s.label,
+          desc: s.description,
+          icon: iconMap[s.icon] || Wrench,
+          price: s.price
+        }));
+        setDynamicServices(mapped);
+      }
+    } catch (e) {
+      // Keep static SERVICE_TYPES on error
+    }
+  };
+
   const fetchBookedSlots = async () => {
     try {
       let query = supabase
@@ -208,6 +233,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
         status: "pending",
         mechanic_id: selectedMechanic || null,
         notes: notes || null,
+        estimated_price: selectedServicePrice,
       }]);
       if (error) throw error;
       setSuccess(true);
@@ -320,21 +346,28 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                     <motion.div key="service" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                       <p className="text-[#6b6b6b] text-[10px] tracking-[0.2em] font-medium uppercase mb-8">What service do you need?</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
-                        {SERVICE_TYPES.map((svc) => {
+                        {dynamicServices.map((svc) => {
                           const Icon = svc.icon;
                           const isActive = selectedService === svc.id;
                           return (
                             <button
                               key={svc.id}
-                              onClick={() => setSelectedService(svc.id)}
+                              onClick={() => { setSelectedService(svc.id); setSelectedServicePrice(svc.price || 0); }}
                               className={`relative p-6 text-left transition-all group ${
                                 isActive
                                   ? "bg-[#221515] border-t-2 border-t-[#d63a2f]"
                                   : "bg-transparent border-t-2 border-t-transparent hover:bg-[#111111]"
                               }`}
                             >
-                              <div className={`mb-5 transition-colors duration-300 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b] group-hover:text-[#888]"}`}>
-                                <Icon size={32} strokeWidth={1.2} />
+                              <div className="flex justify-between items-start mb-5">
+                                <div className={`transition-colors duration-300 ${isActive ? "text-[#d63a2f]" : "text-[#6b6b6b] group-hover:text-[#888]"}`}>
+                                  <Icon size={32} strokeWidth={1.2} />
+                                </div>
+                                {svc.price !== undefined && (
+                                  <div className={`font-mono font-bold tracking-widest text-xs ${isActive ? "text-[#d63a2f]" : "text-[#555]"}`}>
+                                    ₱{Number(svc.price).toFixed(2)}
+                                  </div>
+                                )}
                               </div>
                               <p className={`font-display text-xl tracking-wide uppercase mb-2 leading-tight transition-colors ${isActive ? "text-[#f0ede8]" : "text-white"}`}>{svc.label}</p>
                               <p className="text-[#6b6b6b] text-xs leading-relaxed font-light">{svc.desc}</p>
@@ -458,8 +491,14 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ isOpen, onC
                         <div className="grid grid-cols-2 gap-6">
                           <div className="flex flex-col gap-1">
                             <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Service</span>
-                            <span className="text-white font-medium text-sm">{SERVICE_TYPES.find((s) => s.id === selectedService)?.label}</span>
+                            <span className="text-white font-medium text-sm">{dynamicServices.find((s) => s.id === selectedService)?.label}</span>
                           </div>
+                          {selectedServicePrice > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Estimated Cost</span>
+                              <span className="text-[#d63a2f] font-mono font-bold text-sm">${selectedServicePrice.toFixed(2)}</span>
+                            </div>
+                          )}
                           <div className="flex flex-col gap-1">
                             <span className="text-[#555555] text-[10px] uppercase tracking-widest font-bold">Mechanic</span>
                             <span className="text-white font-medium text-sm">{mechanics.find((m) => m.id === selectedMechanic)?.name || "Any Available"}</span>

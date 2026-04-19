@@ -4,6 +4,7 @@ import { Mail, Lock, Loader, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { UserRole } from "../types";
+import ErrorModal from "../components/ErrorModal";
 
 interface AdminLoginPageProps {
   onLoginSuccess: () => void;
@@ -94,26 +95,21 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
         if (message.includes("invalid login credentials")) {
           errorMessage = isSignup
             ? "Email already registered or invalid credentials. Please use a different email or sign in instead."
-            : "❌ Invalid email or password. Please check and try again.";
+            : "Invalid email or password. Please check and try again.";
         } else if (message.includes("user already registered")) {
-          errorMessage =
-            "This email is already registered. Please sign in instead.";
+          errorMessage = "This email is already registered. Please sign in instead.";
         } else if (message.includes("email not confirmed")) {
-          errorMessage =
-            "⚠️ Email not confirmed. Please check your email for the verification link.";
+          errorMessage = "Email not confirmed. Please check your email for the verification link.";
         } else if (message.includes("too many requests")) {
-          errorMessage =
-            "⏳ Too many login attempts. Please try again in a few minutes.";
+          errorMessage = "Too many login attempts. Please try again in a few minutes.";
         } else if (message.includes("invalid email")) {
-          errorMessage =
-            "❌ Invalid email format. Please enter a valid email address.";
+          errorMessage = "Invalid email format. Please enter a valid email address.";
         } else {
           errorMessage = err.message;
         }
       }
 
       setError(errorMessage);
-      console.error("Auth error:", err);
       setLoading(false);
     }
   };
@@ -152,22 +148,19 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       {" "}
-      {/* Error Notification at Top */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-sm border border-red-400/50 rounded-lg shadow-lg"
-        >
-          <div className="flex items-start gap-3">
-            <div className="text-red-200 text-xl mt-0.5">⚠️</div>
-            <div>
-              <p className="text-white font-semibold text-sm">{error}</p>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      {/* Error Modal Component */}
+      <ErrorModal
+        isOpen={!!error}
+        title="Admin Login Failed"
+        message={error}
+        onClose={() => setError("")}
+        onTryAgain={() => {
+          setError("");
+          if (!isSignup) {
+            setFormData((prev) => ({ ...prev, password: "" }));
+          }
+        }}
+      />
       {/* Home Button */}
       <motion.button
         onClick={onHome || onBack}
@@ -213,16 +206,6 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
           <h2 className="text-2xl font-bold text-white mb-6">
             {isSignup ? "Create Admin Account" : "Admin Login"}
           </h2>
-
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-red-400 text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}

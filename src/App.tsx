@@ -20,6 +20,7 @@ import AppointmentCalendarPage from "./pages/AppointmentCalendarPage";
 import CustomersListPage from "./pages/CustomersListPage";
 import MechanicPortal from "./pages/MechanicPortal";
 import MechanicDashboard from "./pages/MechanicDashboard";
+import AdminServicesPage from "./pages/AdminServicesPage";
 import BrowsePartsPage from "./pages/BrowsePartsPage";
 
 import SettingsPage from "./pages/SettingsPage";
@@ -425,6 +426,11 @@ const AppContent: React.FC = () => {
         {currentPage === "mechanic-dashboard" && <MechanicDashboard />}
         {currentPage === "mechanic-availability" && (
           <AdminMechanicAvailability
+            onNavigate={(page: string) => handlePageChange(page as PageType)}
+          />
+        )}
+        {currentPage === "services" && (
+          <AdminServicesPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}

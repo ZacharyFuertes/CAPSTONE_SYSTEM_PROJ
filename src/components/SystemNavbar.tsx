@@ -93,6 +93,20 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       tooltip: "Owner only",
     },
     {
+      id: "products",
+      label: "Products",
+      icon: Package,
+      requiredRole: ["owner"],
+      tooltip: "Manage store products",
+    },
+    {
+      id: "services",
+      label: "Services Pricing",
+      icon: Wrench,
+      requiredRole: ["owner"],
+      tooltip: "Manage service catalog & pricing",
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: Lock,

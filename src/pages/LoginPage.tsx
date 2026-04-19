@@ -4,6 +4,7 @@ import { Mail, Lock, Loader, ArrowLeft, Home, User, Phone, MapPin } from "lucide
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import usersIcon from "../pictures/icons/users.png";
+import ErrorModal from "../components/ErrorModal";
 
 interface CustomerLoginPageProps {
   onLoginSuccess: () => void;
@@ -89,26 +90,21 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
         if (message.includes("invalid login credentials")) {
           errorMessage = isSignup
             ? "Email already registered or invalid credentials. Please use a different email or sign in instead."
-            : "❌ Invalid email or password. Please check and try again.";
+            : "Invalid email or password. Please check and try again.";
         } else if (message.includes("user already registered")) {
-          errorMessage =
-            "This email is already registered. Please sign in instead.";
+          errorMessage = "This email is already registered. Please sign in instead.";
         } else if (message.includes("email not confirmed")) {
-          errorMessage =
-            "⚠️ Email not confirmed. Please check your email for the verification link.";
+          errorMessage = "Email not confirmed. Please check your email for the verification link.";
         } else if (message.includes("too many requests")) {
-          errorMessage =
-            "⏳ Too many login attempts. Please try again in a few minutes.";
+          errorMessage = "Too many login attempts. Please try again in a few minutes.";
         } else if (message.includes("invalid email")) {
-          errorMessage =
-            "❌ Invalid email format. Please enter a valid email address.";
+          errorMessage = "Invalid email format. Please enter a valid email address.";
         } else {
           errorMessage = err.message;
         }
       }
 
       setError(errorMessage);
-      console.error("Auth error:", err);
       setLoading(false);
     }
   };
@@ -158,30 +154,19 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Error Notification at Top */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.95 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md px-6 py-4 bg-red-500/90 backdrop-blur-md border border-red-400/50 rounded-xl shadow-2xl shadow-red-500/20"
-          >
-            <div className="flex items-start gap-3">
-              <div className="text-red-200 text-xl mt-0.5">⚠️</div>
-              <div>
-                <p className="text-white font-semibold text-sm">{error}</p>
-              </div>
-              <button
-                onClick={() => setError("")}
-                className="ml-2 text-red-200 hover:text-white transition text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Error Modal Component */}
+      <ErrorModal
+        isOpen={!!error}
+        title="Login Failed"
+        message={error}
+        onClose={() => setError("")}
+        onTryAgain={() => {
+          setError("");
+          if (!isSignup) {
+            setFormData((prev) => ({ ...prev, password: "" }));
+          }
+        }}
+      />
 
       {/* Back Button */}
       <motion.button
