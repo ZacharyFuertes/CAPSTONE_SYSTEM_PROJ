@@ -172,7 +172,7 @@ const Footer: React.FC = () => {
         viewport={{ once: true }}
       >
         <p>
-          Made with ❤️ for riders everywhere. All rights reserved. |{' '}
+          All rights reserved. |{' '}
           <a href="#" className="text-moto-accent hover:text-moto-accent-dark">
             Privacy
           </a>{' '}

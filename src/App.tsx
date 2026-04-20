@@ -2,6 +2,7 @@ import "./globals.css";
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { PartsListProvider } from "./contexts/PartsListContext";
 import {
   AppPage,
   getDefaultPageByRole,
@@ -41,6 +42,8 @@ import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
 import ViewAppointmentsModal from "./components/ViewAppointmentsModal";
 import BrowsePartsModal from "./components/BrowsePartsModal";
+import ViewPartsListModal from "./components/ViewPartsListModal";
+import ReceiptModal from "./components/ReceiptModal";
 import CustomerPortalModal from "./components/CustomerPortalModal";
 import CustomerSettingsModal from "./components/CustomerSettingsModal";
 import ServiceHistoryModal from "./components/ServiceHistoryModal";
@@ -63,6 +66,9 @@ const AppContent: React.FC = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
   const [showPartsModal, setShowPartsModal] = useState(false);
+  const [showPartsListModal, setShowPartsListModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -215,6 +221,7 @@ const AppContent: React.FC = () => {
               onMechanics={() => setShowMechanicsModal(true)}
               onViewAccount={handleOpenLogin}
               onAIChat={() => setShowAIChat(true)}
+              onShowPartsList={() => setShowPartsListModal(true)}
             />
             <HeroSlideshow
               onBookNow={handleOpenLogin}
@@ -305,6 +312,8 @@ const AppContent: React.FC = () => {
           onSettings={() => setShowSettingsModal(true)}
           onServiceHistory={() => setShowHistoryModal(true)}
           onAIChat={() => setShowAIChat(true)}
+          onShowPartsList={() => setShowPartsListModal(true)}
+          onShowReceipts={() => setShowReceiptModal(true)}
         />
         <HeroSlideshow
           onBookNow={() => setShowBookingModal(true)}
@@ -316,6 +325,11 @@ const AppContent: React.FC = () => {
         <BookAppointmentModal
           isOpen={showBookingModal}
           onClose={() => setShowBookingModal(false)}
+          onAppointmentBooked={(appointmentData) => {
+            setSelectedReceipt(appointmentData);
+            setShowReceiptModal(true);
+            setShowBookingModal(false);
+          }}
         />
         <ViewAppointmentsModal
           isOpen={showAppointmentsModal}
@@ -325,6 +339,15 @@ const AppContent: React.FC = () => {
           isOpen={showPartsModal}
           onClose={() => setShowPartsModal(false)}
           onLoginRedirect={() => {}}
+        />
+        <ViewPartsListModal
+          isOpen={showPartsListModal}
+          onClose={() => setShowPartsListModal(false)}
+        />
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          receipt={selectedReceipt}
         />
         <CustomerPortalModal
           isOpen={showAccountModal}
@@ -476,7 +499,9 @@ function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <AppContent />
+        <PartsListProvider>
+          <AppContent />
+        </PartsListProvider>
       </AuthProvider>
     </LanguageProvider>
   );

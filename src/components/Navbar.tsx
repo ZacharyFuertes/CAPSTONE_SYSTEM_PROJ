@@ -9,8 +9,12 @@ import {
   ChevronDown,
   CalendarDays,
   History,
+  ShoppingCart,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { usePartsList } from "../contexts/PartsListContext";
+import { supabase } from "../services/supabaseClient";
 
 interface NavbarProps {
   onShowAppointments?: () => void;
@@ -23,6 +27,8 @@ interface NavbarProps {
   onSettings?: () => void;
   onServiceHistory?: () => void;
   onAIChat?: () => void;
+  onShowReceipts?: () => void;
+  onShowPartsList?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -36,11 +42,15 @@ const Navbar: React.FC<NavbarProps> = ({
   onSettings,
   onServiceHistory,
   onAIChat,
+  onShowReceipts,
+  onShowPartsList,
 }) => {
   const { user, logout } = useAuth();
+  const { cartCount } = usePartsList();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [receiptCount, setReceiptCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Track scroll for navbar style change
@@ -49,6 +59,28 @@ const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  // Fetch receipt count
+  useEffect(() => {
+    if (user?.id) {
+      const fetchReceiptCount = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("orders")
+            .select("id", { count: "exact", head: true })
+            .eq("customer_id", user.id);
+
+          if (!error && data !== null) {
+            setReceiptCount(data.length || 0);
+          }
+        } catch (error) {
+          console.error("Error fetching receipt count:", error);
+        }
+      };
+
+      fetchReceiptCount();
+    }
+  }, [user?.id]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -115,7 +147,7 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             {/* Logo Image */}
             <div className="relative w-14 h-14 lg:w-[68px] lg:h-[68px] xl:w-[78px] xl:h-[78px] rounded-full bg-white flex items-center justify-center border-2 border-[#333] group-hover:border-[#d63a2f] shadow-[0_0_20px_rgba(0,0,0,0.8)] overflow-hidden shrink-0 transition-all duration-300">
-              <div className="absolute inset-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] rounded-full pointer-events-none" z-10 />
+              <div className="absolute inset-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] rounded-full pointer-events-none z-10" />
               <img
                 src="/logo.png"
                 alt="JBMS MotoShop Logo"
@@ -160,6 +192,38 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {/* ── Right Side ── */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
+            {user && (
+              <>
+                <motion.button
+                  onClick={onShowPartsList}
+                  className="relative p-3 border border-[#333] hover:border-[#d63a2f] text-[#6b6b6b] hover:text-white transition-all group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  title="My Parts List"
+                >
+                  <ShoppingBag size={18} strokeWidth={1.5} />
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 w-5 h-5 bg-[#4ade80] text-[#0a0a0a] text-[10px] font-bold flex items-center justify-center rounded-full">
+                      {cartCount}
+                    </span>
+                  )}
+                </motion.button>
+                <motion.button
+                  onClick={onShowReceipts}
+                  className="relative p-3 border border-[#333] hover:border-[#d63a2f] text-[#6b6b6b] hover:text-white transition-all group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  title="My Receipts"
+                >
+                  <ShoppingCart size={18} strokeWidth={1.5} />
+                  {receiptCount > 0 && (
+                    <span className="absolute top-0 right-0 w-5 h-5 bg-[#d63a2f] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                      {receiptCount}
+                    </span>
+                  )}
+                </motion.button>
+              </>
+            )}
             {user ? (
               <div ref={profileRef} className="relative">
                 {/* Profile Trigger */}

@@ -167,7 +167,7 @@ const AdminServicesPage: React.FC<AdminServicesPageProps> = ({ onNavigate }) => 
                       <td className="px-6 py-5">
                         {editingId === service.id && !isAddingMode ? (
                           <div className="flex items-center gap-1">
-                            <span className="text-slate-500">$</span>
+                            <span className="text-slate-500">₱</span>
                             <input
                               type="number"
                               value={editForm.price || 0}
@@ -176,7 +176,7 @@ const AdminServicesPage: React.FC<AdminServicesPageProps> = ({ onNavigate }) => 
                             />
                           </div>
                         ) : (
-                          <div className="font-mono text-[#d63a2f] font-bold">${Number(service.price).toFixed(2)}</div>
+                          <div className="font-mono text-[#d63a2f] font-bold">₱{Number(service.price).toFixed(2)}</div>
                         )}
                       </td>
                       <td className="px-6 py-5 text-right">
@@ -218,7 +218,7 @@ const AdminServicesPage: React.FC<AdminServicesPageProps> = ({ onNavigate }) => 
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-1">
-                          <span className="text-slate-500">$</span>
+                          <span className="text-slate-500">₱</span>
                           <input
                             type="number"
                             placeholder="Price"
