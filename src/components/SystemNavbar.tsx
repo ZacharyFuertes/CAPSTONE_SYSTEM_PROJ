@@ -129,13 +129,6 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       requiredRole: ["customer"],
       tooltip: "Browse available parts to reserve",
     },
-    {
-      id: "ai-inquiries",
-      label: "AI Inquiries",
-      icon: MessageSquare,
-      requiredRole: ["owner"],
-      tooltip: "View booking requests from AI chat",
-    },
   ];
 
   // Filter menu items based on role-based access control mapping

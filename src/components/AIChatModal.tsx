@@ -126,54 +126,7 @@ async function fetchCustomerContext(userId: string): Promise<CustomerContext | n
   }
 }
 
-async function createDraftAppointment(
-  customerName: string,
-  vehicleInfo: string,
-  serviceType: string,
-  preferredDate: string,
-  customerId?: string | null,
-  contactInfo?: string | null
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const payload: Record<string, any> = {
-      customer_name: customerName,
-      vehicle_info: vehicleInfo,
-      service_type: serviceType,
-      preferred_date: preferredDate,
-      status: "new",
-      contact_info: contactInfo ?? null,
-    };
 
-    // Link to real customer record if logged in
-    if (customerId) {
-      payload.customer_id = customerId;
-    }
-
-    const { data, error } = await supabase
-      .from("ai_inquiries")
-      .insert(payload)
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("AI inquiry insert error:", error);
-      return {
-        success: false,
-        message: `Sorry, I could not save your booking request. (${error.message}) Please call the shop directly.`,
-      };
-    }
-
-    return {
-      success: true,
-      message: `Your appointment request has been submitted!\n\nSummary:\n- Name: ${customerName}\n- Vehicle: ${vehicleInfo}\n- Service: ${serviceType}\n- Preferred Date: ${preferredDate}\n\nReference: ${data.id.slice(0, 8).toUpperCase()}\n\nOur staff will reach out to confirm your booking.`,
-    };
-  } catch {
-    return {
-      success: false,
-      message: "Sorry, I could not save your request. Please call or visit the shop to book.",
-    };
-  }
-}
 
 // ─── System Prompt Builder ──────────────────────────────────────────────────────
 
@@ -236,27 +189,7 @@ Recent Appointments:
 ${apptList}`;
   }
 
-  // --- Booking flow instructions ---
-  const bookingInstructions = customer
-    ? `BOOKING FLOW (customer is LOGGED IN):
-Since the customer is already logged in, you already know their name (${customer.name}) and their vehicles.
-When they want to book:
-1. ${customer.vehicles.length > 0 ? `Ask which of their vehicles: ${customer.vehicles.map((v) => `${v.year} ${v.make} ${v.model}`).join(", ")}` : "Ask for their vehicle info (make, model, year)."}
-2. Ask what service they need.
-3. Ask for their preferred date.
-When you have all three, emit the booking command on its own line:
-[BOOK_APPOINTMENT: name="${customer.name}" vehicle="<vehicle>" service="<service>" date="<YYYY-MM-DD>"]
-Then write a friendly confirmation below it.`
-    : `BOOKING FLOW (customer is NOT logged in / guest):
-Collect these one at a time:
-1. Full name
-2. Vehicle info (make, model, year)
-3. Service needed
-4. Preferred date
-When you have ALL four, emit:
-[BOOK_APPOINTMENT: name="<name>" vehicle="<vehicle>" service="<service>" date="<YYYY-MM-DD>"]
-Then write a friendly confirmation below it.
-Also note: Logged-in customers get a faster booking experience. Encourage guests to sign up if they haven't.`;
+
 
   return `You are MotoMech AI, the 24/7 virtual assistant for JSBM MotoShop.
 Today is ${today}. Live shop data loaded at ${ctx.loadedAt}.
@@ -283,9 +216,7 @@ ${customer ? `- Address the customer by their first name (${customer.name.split(
   • [suggestion 1]
   • [suggestion 2]
   • [suggestion 3]"
-  This keeps the conversation going and helps the customer explore more options.
-
-${bookingInstructions}`;
+  This keeps the conversation going and helps the customer explore more options.`;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────────
@@ -359,31 +290,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const handleBooking = async (bookCommand: string) => {
-    const parse = (key: string) => {
-      const match = bookCommand.match(new RegExp(`${key}="([^"]+)"`));
-      return match?.[1] ?? "";
-    };
 
-    const result = await createDraftAppointment(
-      parse("name"),
-      parse("vehicle"),
-      parse("service"),
-      parse("date"),
-      customerCtx?.id ?? null,
-      customerCtx?.phone ?? customerCtx?.email ?? null
-    );
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `booking-${Date.now()}`,
-        content: result.message,
-        sender: "bot",
-        timestamp: new Date(),
-      },
-    ]);
-  };
 
   // Helper: parse follow-up suggestions from bot response
   const parseSuggestions = (content: string): string[] => {
@@ -440,13 +347,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
             temperature: 0.5,
           });
           const raw = response.choices[0]?.message?.content ?? "I could not generate a response. Please try again.";
-          const bookMatch = raw.match(/\[BOOK_APPOINTMENT:[^\]]+\]/);
-          const displayContent = raw.replace(/\[BOOK_APPOINTMENT:[^\]]+\]/, "").trim();
           setMessages((p) => [
             ...p,
-            { id: (Date.now() + 1).toString(), content: displayContent, sender: "bot", timestamp: new Date() },
+            { id: (Date.now() + 1).toString(), content: raw, sender: "bot", timestamp: new Date() },
           ]);
-          if (bookMatch) await handleBooking(bookMatch[0]);
         } catch (err: any) {
           setMessages((p) => [
             ...p,

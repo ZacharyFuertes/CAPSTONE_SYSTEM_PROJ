@@ -92,6 +92,17 @@ const AdminChatbot: React.FC<AdminChatbotProps> = ({ isOpen, onClose }) => {
         // reservations table may not exist yet
         reservationsData = [];
       }
+      // Fetch part_sales separately with error handling
+      let partSalesData: any[] = [];
+      try {
+        const partSalesRes = await supabase
+          .from("part_sales")
+          .select("*");
+        partSalesData = partSalesRes.data || [];
+      } catch {
+        partSalesData = [];
+      }
+
       const [partsRes, appointmentsRes, usersRes, jobOrdersRes] =
         await Promise.all([
           supabase.from("parts").select("*"),
@@ -105,6 +116,7 @@ const AdminChatbot: React.FC<AdminChatbotProps> = ({ isOpen, onClose }) => {
       const users = usersRes.data || [];
       const jobOrders = jobOrdersRes.data || [];
       const reservations = reservationsData;
+      const partSales = partSalesData;
 
       // Compute metrics
       const mechanics = users.filter((u: any) => u.role === "mechanic");
@@ -124,10 +136,28 @@ const AdminChatbot: React.FC<AdminChatbotProps> = ({ isOpen, onClose }) => {
       const completedAppointments = appointments.filter((a: any) => a.status === "completed");
       const inProgressAppointments = appointments.filter((a: any) => a.status === "in_progress");
 
-      // Revenue from completed job orders
-      const totalRevenue = jobOrders
+      // Revenue calculation matching the Dashboard
+      const revenueAppointments = appointments
+        .filter((a: any) => ["confirmed", "in_progress", "completed"].includes(a.status))
+        .reduce((sum: number, a: any) => sum + (Number(a.estimated_price) || 0), 0);
+
+      const revenueReservations = reservations
+        .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+        .reduce((sum: number, r: any) => {
+          const unitPrice = (r.parts as any)?.unit_price || (r.part as any)?.unit_price || 0;
+          return sum + (Number(unitPrice) * (r.quantity || 1));
+        }, 0);
+
+      const revenueJobOrders = jobOrders
         .filter((j: any) => j.status === "completed")
-        .reduce((sum: number, j: any) => sum + (j.total_cost || 0), 0);
+        .reduce((sum: number, j: any) => sum + (Number(j.total_cost) || 0), 0);
+
+      const revenuePOS = partSales.reduce(
+        (sum: number, s: any) => sum + (Number(s.sale_price) || 0),
+        0
+      );
+
+      const totalRevenue = revenueAppointments + revenueReservations + revenueJobOrders + revenuePOS;
 
       // Mechanic workload
       const mechanicWorkload = mechanics.map((m: any) => {
@@ -170,7 +200,7 @@ Date: ${new Date().toLocaleDateString("en-PH", { weekday: "long", year: "numeric
 - Total Inventory Value: ₱${totalInventoryValue.toLocaleString()}
 
 💰 REVENUE:
-- Total Revenue (Completed Jobs): ₱${totalRevenue.toLocaleString()}
+- Total Overall Revenue: ₱${totalRevenue.toLocaleString()}
 - Total Completed Job Orders: ${completedAppointments.length}
 
 📅 APPOINTMENTS:
@@ -249,9 +279,9 @@ RULES:
 1. Always reference real data from the context below
 2. Format responses clearly with bullet points and sections
 3. Use Philippine Peso (₱) for all monetary values
-4. Provide actionable recommendations when relevant
+4. Provide actionable recommendations only when absolutely necessary
 5. If data is insufficient, say so honestly
-6. Be concise but thorough
+6. Be highly concise and straight to the point. Give brief answers without fluff.
 7. When asked about trends, use available data to make reasonable inferences
 8. For questions outside the shop's scope, politely redirect to business topics
 9. IMPORTANT: At the END of EVERY response, always add a section titled "You might also want to ask:" with exactly 3 short follow-up questions the admin might want to ask next. Each question should end with a "?" and be on its own line starting with "•". This keeps the conversation going.
@@ -456,7 +486,9 @@ ${shopData}`;
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {msg.content}
+                    {msg.role === "assistant" 
+                      ? msg.content.split(/(?:You might also want to ask:|You may also want to ask:|You could also ask:)/i)[0].trim()
+                      : msg.content}
                   </p>
                   <p
                     className={`text-[9px] mt-2 ${

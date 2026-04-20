@@ -11,7 +11,18 @@ import {
   Package,
   Quote,
 } from "lucide-react";
-import { getMechanics } from "../services/staffService";
+import { supabase } from "../services/supabaseClient";
+
+// Inline replacement for deleted staffService.getMechanics
+const getMechanics = async () => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("role", "mechanic")
+    .order("name");
+  if (error) throw error;
+  return data || [];
+};
 
 // About Us shop photos (arranged by filename)
 import frontViewShop from "../pictures/about-us-pics/front-view-shop.jpg";

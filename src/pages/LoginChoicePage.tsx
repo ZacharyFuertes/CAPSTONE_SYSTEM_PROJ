@@ -58,7 +58,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-green-500 rounded-xl overflow-hidden transition-all"
+            className="group relative p-8 bg-black border-2 border-zinc-800 hover:border-green-500 rounded-xl overflow-hidden transition-all"
           >
             {/* Background effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -89,7 +89,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-blue-500 rounded-xl overflow-hidden transition-all"
+            className="group relative p-8 bg-black border-2 border-zinc-800 hover:border-blue-500 rounded-xl overflow-hidden transition-all"
           >
             {/* Background effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -120,7 +120,7 @@ const LoginChoicePage: React.FC<LoginChoicePageProps> = ({
             transition={{ delay: 0.4 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 hover:border-red-500 rounded-xl overflow-hidden transition-all"
+            className="group relative p-8 bg-black border-2 border-zinc-800 hover:border-red-500 rounded-xl overflow-hidden transition-all"
           >
             {/* Background effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

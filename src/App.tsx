@@ -29,7 +29,6 @@ import LoginPage from "./pages/LoginPage";
 import MechanicLoginPage from "./pages/MechanicLoginPage";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
 import LoginChoicePage from "./pages/LoginChoicePage";
-import AIInquiriesPage from "./pages/AIInquiriesPage";
 import UpdatePartsPage from "./pages/UpdatePartsPage";
 
 
@@ -451,11 +450,6 @@ const AppContent: React.FC = () => {
 
         {currentPage === "settings" && (
           <SettingsPage
-            onNavigate={(page: string) => handlePageChange(page as PageType)}
-          />
-        )}
-        {currentPage === "ai-inquiries" && (
-          <AIInquiriesPage
             onNavigate={(page: string) => handlePageChange(page as PageType)}
           />
         )}

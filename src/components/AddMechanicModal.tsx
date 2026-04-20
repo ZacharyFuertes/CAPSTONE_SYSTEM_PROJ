@@ -1,6 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { X, Mail, Plus, User, KeyRound, CheckCircle2, AlertCircle } from "lucide-react";
-import { createMechanicAccount, getMechanics } from "../services/staffService";
+import { supabase } from "../services/supabaseClient";
+
+// Inline replacements for deleted staffService
+const getMechanics = async () => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("role", "mechanic")
+    .order("name");
+  if (error) throw error;
+  return data || [];
+};
+
+const createMechanicAccount = async (name: string, email: string, password: string, ownerId: string) => {
+  // Sign up the mechanic via Supabase auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+  if (authError) throw authError;
+  if (!authData.user) throw new Error("Failed to create auth user");
+
+  // Insert into users table
+  const { error: insertError } = await supabase.from("users").insert({
+    id: authData.user.id,
+    email,
+    name,
+    role: "mechanic",
+    created_by: ownerId,
+  });
+  if (insertError) throw insertError;
+  return authData.user;
+};
 import { useAuth } from "../contexts/AuthContext";
 
 interface AddMechanicModalProps {

@@ -13,8 +13,7 @@ export type AppPage =
   | "mechanic-dashboard"
   | "mechanic-availability"
   | "services"
-  | "settings"
-  | "ai-inquiries";
+  | "settings";
 
 // Role-based mapping (central source of truth for allowed pages per role)
 export const rolePagesMapping: Record<UserRole, AppPage[]> = {
@@ -34,7 +33,6 @@ export const rolePagesMapping: Record<UserRole, AppPage[]> = {
     "services",
     "mechanic-availability",
     "settings",
-    "ai-inquiries",
   ],
 };
 
