@@ -37,20 +37,7 @@ interface PerformanceMetric {
   color: string;
 }
 
-interface JobOrder {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  customer_id: string;
-  vehicle_id: string;
-  customer_name?: string;
-  customer_contact?: string;
-  vehicle_make?: string;
-  vehicle_model?: string;
-  vehicle_plate?: string;
-  completed_at?: string;
-}
+
 
 interface Appointment {
   id: string;
@@ -83,7 +70,7 @@ const MechanicDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Tabs data
-  const [jobOrders, setJobOrders] = useState<JobOrder[]>([]);
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
@@ -103,26 +90,7 @@ const MechanicDashboard: React.FC = () => {
       try {
         setLoading(true);
 
-        // Fetch job orders with customer and vehicle info
-        const { data: jobs } = await supabase
-          .from("job_orders")
-          .select(
-            `
-            id,
-            title,
-            status,
-            created_at,
-            completed_at,
-            customer_id,
-            vehicle_id,
-            customer:users!customer_id (name, phone),
-            vehicle:vehicles!vehicle_id (make, model, plate_number)
-          `,
-          )
-          .eq("mechanic_id", user.id)
-          .order("created_at", { ascending: false });
-
-        // Fetch appointments for this mechanic
+        // Fetch appointments for this mechanic (all assigned)
         const { data: appts } = await supabase
           .from("appointments")
           .select(
@@ -130,132 +98,106 @@ const MechanicDashboard: React.FC = () => {
             id,
             scheduled_date,
             scheduled_time,
+            service_type,
             status,
-            customer:users!customer_id (name)
+            total_amount,
+            customer:users!customer_id (name, phone),
+            vehicle:vehicles!vehicle_id (make, model, plate_number)
           `,
           )
           .eq("mechanic_id", user.id)
-          .gte("scheduled_date", new Date().toISOString().split("T")[0])
           .order("scheduled_date", { ascending: true });
 
-        // Fetch inventory (read-only)
-        const { data: inv } = await supabase
-          .from("inventory")
-          .select(
-            `
-            id,
-            part_name,
-            quantity_on_hand,
-            unit_of_measure,
-            reorder_level
-          `,
-          )
-          .gt("quantity_on_hand", 0)
-          .order("part_name", { ascending: true });
+        // Fetch parts (read-only)
+        const partsQuery = supabase
+          .from("parts")
+          .select("*")
+          .order("name", { ascending: true });
+        
+        if (user?.shop_id) {
+          partsQuery.eq("shop_id", user.shop_id);
+        }
+        
+        const { data: inv } = await partsQuery;
 
-        // Format job orders
-        const formattedJobs: JobOrder[] =
-          jobs?.map((job: any) => ({
-            id: job.id,
-            title: job.title,
-            status: job.status,
-            created_at: job.created_at,
-            customer_id: job.customer_id,
-            vehicle_id: job.vehicle_id,
-            completed_at: job.completed_at,
-            customer_name: job.customer?.name,
-            customer_contact: job.customer?.phone,
-            vehicle_make: job.vehicle?.make,
-            vehicle_model: job.vehicle?.model,
-            vehicle_plate: job.vehicle?.plate_number,
-          })) || [];
-
-        // Format appointments
-        const formattedAppts: Appointment[] =
+        // Format appointments as unified Jobs/Tasks
+        const formattedAppts: any[] =
           appts?.map((appt: any) => ({
             id: appt.id,
+            title: appt.service_type || "Service",
             customer_id: appt.customer_id,
-            customer_name: appt.customer?.name || "Unknown Customer",
+            customer_name: appt.customer?.name || "Unknown",
+            customer_contact: appt.customer?.phone,
+            vehicle_make: appt.vehicle?.make,
+            vehicle_model: appt.vehicle?.model,
+            vehicle_plate: appt.vehicle?.plate_number,
             date: appt.scheduled_date,
             time: appt.scheduled_time,
             status: appt.status,
+            total_amount: appt.total_amount,
+            updated_at: appt.updated_at
           })) || [];
 
-        // Format inventory
-        const formattedInv: InventoryItem[] =
+        // Format inventory items for grid
+        const formattedInv: any[] =
           inv?.map((item: any) => ({
-            id: item.id,
-            name: item.part_name,
-            quantity: item.quantity_on_hand,
-            unit: item.unit_of_measure || "units",
-            max_stock: item.reorder_level * 2 || 50,
+            ...item,
+            is_low_stock: item.quantity_in_stock <= (item.reorder_level || 5)
           })) || [];
 
-        setJobOrders(formattedJobs);
         setAppointments(formattedAppts);
         setInventory(formattedInv);
 
-        // Calculate metrics from jobs + appointments combined
-        const completedJobs = formattedJobs.filter(
-          (j) => j.status === "completed",
-        );
-        const pendingJobs = formattedJobs.filter((j) => j.status === "pending");
-        const inProgressJobs = formattedJobs.filter(
-          (j) => j.status === "in_progress",
-        );
-
-        // Also count appointments as pending/total work
-        const pendingAppts = formattedAppts.filter((a) => a.status === "pending" || a.status === "confirmed");
+        // Calculate metrics from appointments
+        const confirmedAppts = formattedAppts.filter((a) => a.status === "confirmed");
+        const pendingAppts = formattedAppts.filter((a) => a.status === "pending");
+        const readyAppts = formattedAppts.filter((a) => a.status === "ready_for_finalization");
         const completedAppts = formattedAppts.filter((a) => a.status === "completed");
 
-        const totalCustomers = new Set([
-          ...formattedJobs.map((j) => j.customer_id),
-          ...formattedAppts.map((a) => a.customer_id),
-        ]).size;
+        const totalCustomers = new Set(formattedAppts.map((a) => a.customer_id)).size;
 
-        // Build performance metrics (combining jobs + appointments)
+        // Build performance metrics
         const newMetrics: PerformanceMetric[] = [
           {
-            label: "Total Jobs",
-            value: formattedJobs.length + formattedAppts.length,
-            icon: <Wrench className="w-6 h-6" />,
-            color: "bg-blue-500",
-          },
-          {
-            label: "Pending",
-            value: pendingJobs.length + pendingAppts.length,
+            label: "Pending Works",
+            value: pendingAppts.length,
             icon: <AlertCircle className="w-6 h-6" />,
             color: "bg-yellow-500",
           },
           {
-            label: "In Progress",
-            value: inProgressJobs.length,
+            label: "Confirmed",
+            value: confirmedAppts.length,
             icon: <Clock className="w-6 h-6" />,
             color: "bg-blue-500",
           },
           {
+            label: "Wait for Finalize",
+            value: readyAppts.length,
+            icon: <Clock className="w-6 h-6" />,
+            color: "bg-purple-500",
+          },
+          {
             label: "Completed",
-            value: completedJobs.length + completedAppts.length,
+            value: completedAppts.length,
             icon: <CheckCircle className="w-6 h-6" />,
             color: "bg-green-500",
           },
           {
-            label: "Customers Served",
+            label: "Total Tasks",
+            value: formattedAppts.length,
+            icon: <Wrench className="w-6 h-6" />,
+            color: "bg-blue-500",
+          },
+          {
+            label: "Customers",
             value: totalCustomers,
             icon: <Users className="w-6 h-6" />,
             color: "bg-pink-500",
-          },
-          {
-            label: "Upcoming Appts",
-            value: formattedAppts.length,
-            icon: <Calendar className="w-6 h-6" />,
-            color: "bg-blue-400",
           },
         ];
 
         setMetrics(newMetrics);
 
-        // Build performance trend data from last 7 days
         const last7Days: { date: string; completed: number; rated: number }[] =
           [];
         for (let i = 6; i >= 0; i--) {
@@ -266,21 +208,21 @@ const MechanicDashboard: React.FC = () => {
             day: "numeric",
           });
 
-          const jobsCompletedOnDate = formattedJobs.filter((job) => {
-            if (!job.completed_at) return false;
-            const jobDate = new Date(job.completed_at);
+          const completedOnDate = formattedAppts.filter((appt) => {
+            if (appt.status !== "completed" && appt.status !== "ready_for_finalization") return false;
+            const updatedDate = new Date(appt.updated_at || appt.date);
             return (
-              jobDate.toLocaleDateString("en-US", {
+              updatedDate.toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
-              }) === dateStr && job.status === "completed"
+              }) === dateStr
             );
           }).length;
 
           last7Days.push({
             date: dateStr,
-            completed: jobsCompletedOnDate,
-            rated: jobsCompletedOnDate,
+            completed: completedOnDate,
+            rated: completedOnDate,
           });
         }
         setPerformanceData(last7Days);
@@ -306,41 +248,29 @@ const MechanicDashboard: React.FC = () => {
     fetchAllData();
   }, [user?.id]);
 
-  // Update job status
-  const updateJobStatus = async (jobId: string, newStatus: string) => {
+  // Update appointment status (The "Job" logic)
+  const updateAppointmentStatus = async (apptId: string, newStatus: string) => {
     try {
-      setStatusUpdating(jobId);
-      const updateData: any = { status: newStatus };
-
-      if (newStatus === "completed") {
-        updateData.completed_at = new Date().toISOString();
-      }
-
+      setStatusUpdating(apptId);
       const { error } = await supabase
-        .from("job_orders")
-        .update(updateData)
-        .eq("id", jobId);
+        .from("appointments")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", apptId);
 
       if (error) throw error;
 
-      // Refresh data
-      setJobOrders(
-        jobOrders.map((job) =>
-          job.id === jobId
-            ? {
-                ...job,
-                status: newStatus,
-                completed_at:
-                  newStatus === "completed"
-                    ? new Date().toISOString()
-                    : job.completed_at,
-              }
-            : job,
-        ),
+      // Refresh local state
+      setAppointments(
+        appointments.map((appt) =>
+          appt.id === apptId ? { ...appt, status: newStatus } : appt
+        )
       );
+      
+      // Update metrics
+      // (This will normally be handled by a re-fetch or manual stat update if needed)
     } catch (error) {
-      console.error("Error updating job status:", error);
-      alert("Failed to update job status");
+      console.error("Error updating appointment:", error);
+      alert("Failed to update status");
     } finally {
       setStatusUpdating(null);
     }
@@ -637,117 +567,131 @@ const MechanicDashboard: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <h2 className="text-white font-black text-3xl mb-6">MY JOBS</h2>
-                {jobOrders.length === 0 ? (
+            {/* Jobs Tab Content */}
+            {activeTab === "jobs" && (
+              <motion.div
+                className="bg-slate-800/50 border border-slate-700 rounded-lg p-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-white font-black text-3xl">ASSIGNED TASKS</h2>
+                  <div className="bg-blue-600/20 text-blue-400 px-4 py-1 rounded-full text-xs font-bold border border-blue-600/30">
+                    {appointments.length} Total
+                  </div>
+                </div>
+
+                {appointments.length === 0 ? (
                   <div className="text-slate-400 text-center py-12">
-                    No jobs assigned yet.
+                    No tasks assigned yet.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-4">
-                    {jobOrders.map((job) => (
+                    {appointments.map((appt) => (
                       <div
-                        key={job.id}
-                        className="bg-slate-700/50 rounded-lg p-6 border border-slate-600"
+                        key={appt.id}
+                        className={`bg-slate-700/50 rounded-lg p-6 border transition-all ${
+                          appt.status === "pending" 
+                            ? "border-yellow-600/30 shadow-[4px_0_0_#d97706]" 
+                            : appt.status === "confirmed"
+                              ? "border-blue-600/30 shadow-[4px_0_0_#2563eb]"
+                              : appt.status === "ready_for_finalization"
+                                ? "border-purple-600/30 shadow-[4px_0_0_#9333ea]"
+                                : "border-slate-600"
+                        }`}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          {/* Job Title and Details */}
+                          {/* Task details */}
                           <div className="md:col-span-2">
-                            <h3 className="text-white font-bold text-lg">
-                              {job.title}
+                            <h3 className="text-white font-bold text-lg uppercase tracking-tight">
+                              {(appt as any).title}
                             </h3>
-                            <p className="text-slate-400 text-sm mb-3">
-                              Job ID: #{job.id.substring(0, 8).toUpperCase()}
+                            <p className="text-slate-500 text-xs mb-4">
+                              #{(appt.id || "").substring(0, 8).toUpperCase()} • {appt.date} At {appt.time}
                             </p>
 
-                            {/* Customer Info */}
-                            <div className="mb-2">
-                              <p className="text-slate-300 text-xs font-semibold">
-                                Customer
-                              </p>
-                              <p className="text-white text-sm">
-                                {job.customer_name || "Unknown"}
-                              </p>
-                              {job.customer_contact && (
-                                <p className="text-slate-400 text-xs">
-                                  {job.customer_contact}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Vehicle Info */}
-                            <div>
-                              <p className="text-slate-300 text-xs font-semibold">
-                                Vehicle
-                              </p>
-                              <p className="text-white text-sm">
-                                {job.vehicle_make && job.vehicle_model
-                                  ? `${job.vehicle_make} ${job.vehicle_model}`
-                                  : "Unknown Vehicle"}
-                              </p>
-                              {job.vehicle_plate && (
-                                <p className="text-slate-400 text-xs">
-                                  Plate: {job.vehicle_plate}
-                                </p>
-                              )}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Customer</p>
+                                <p className="text-white text-sm font-semibold">{(appt as any).customer_name}</p>
+                                <p className="text-slate-500 text-xs">{(appt as any).customer_contact}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Vehicle</p>
+                                <p className="text-white text-sm font-semibold">{(appt as any).vehicle_make} {(appt as any).vehicle_model}</p>
+                                <p className="text-slate-500 text-xs">{(appt as any).vehicle_plate}</p>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Status and Actions */}
                           <div className="md:col-span-2 flex flex-col justify-between">
-                            <div>
-                              <p className="text-slate-300 text-xs font-semibold mb-2">
-                                Status
-                              </p>
-                              <span
-                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-block ${
-                                  job.status === "completed"
-                                    ? "bg-green-600/30 text-green-300"
-                                    : job.status === "in_progress"
-                                      ? "bg-blue-600/30 text-blue-300"
-                                      : "bg-yellow-600/30 text-yellow-300"
-                                }`}
-                              >
-                                {job.status.replace(/_/g, " ").toUpperCase()}
-                              </span>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Current Status</p>
+                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                                  appt.status === "completed" 
+                                    ? "bg-green-600/20 text-green-400 border border-green-600/30" 
+                                    : appt.status === "confirmed"
+                                      ? "bg-blue-600/20 text-blue-400 border border-blue-600/30"
+                                      : appt.status === "ready_for_finalization"
+                                        ? "bg-purple-600/20 text-purple-400 border border-purple-600/30"
+                                        : "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
+                                }`}>
+                                  {appt.status.replace(/_/g, " ")}
+                                </span>
+                              </div>
+                              {((appt as any).total_amount) && (
+                                <div className="text-right">
+                                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Amt</p>
+                                  <p className="text-emerald-400 font-black">₱{(appt as any).total_amount.toLocaleString()}</p>
+                                </div>
+                              )}
                             </div>
 
-                            {/* Status Update Buttons */}
-                            {job.status !== "completed" && (
-                              <div className="flex gap-2 mt-4">
-                                {job.status === "pending" && (
-                                  <button
-                                    onClick={() =>
-                                      updateJobStatus(job.id, "in_progress")
-                                    }
-                                    disabled={statusUpdating === job.id}
-                                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
-                                  >
-                                    {statusUpdating === job.id
-                                      ? "Updating..."
-                                      : "Start Job"}
-                                  </button>
-                                )}
-                                {job.status === "in_progress" && (
-                                  <button
-                                    onClick={() =>
-                                      updateJobStatus(job.id, "completed")
-                                    }
-                                    disabled={statusUpdating === job.id}
-                                    className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
-                                  >
-                                    {statusUpdating === job.id
-                                      ? "Updating..."
-                                      : "Mark Completed"}
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                            {/* Workflow Actions */}
+                            <div className="mt-6">
+                              {appt.status === "pending" && (
+                                <button
+                                  onClick={() => updateAppointmentStatus(appt.id, "confirmed")}
+                                  disabled={statusUpdating === appt.id}
+                                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
+                                >
+                                  {statusUpdating === appt.id ? "SYCHRONIZING..." : "ACCEPT & CONFIRM TASK"}
+                                </button>
+                              )}
+                              
+                              {appt.status === "confirmed" && (
+                                <button
+                                  onClick={() => updateAppointmentStatus(appt.id, "ready_for_finalization")}
+                                  disabled={statusUpdating === appt.id}
+                                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
+                                >
+                                  {statusUpdating === appt.id ? "SYCHRONIZING..." : "MARK AS COMPLETED"}
+                                </button>
+                              )}
+
+                              {appt.status === "ready_for_finalization" && (
+                                <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg text-center flex items-center justify-center gap-3">
+                                  <Clock className="w-4 h-4 text-purple-400 animate-spin" />
+                                  <p className="text-purple-400 text-[10px] font-bold uppercase tracking-wider">WAITING FOR OWNER FINALIZATION</p>
+                                </div>
+                              )}
+                              
+                              {appt.status === "completed" && (
+                                <div className="flex items-center justify-center gap-2 text-emerald-400 py-2 border border-emerald-500/20 rounded-lg bg-emerald-500/5">
+                                  <CheckCircle size={14} />
+                                  <span className="text-[10px] font-bold uppercase tracking-widest">TASK FINALIZED & ARCHIVED</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
               </motion.div>
             )}
 
@@ -809,77 +753,86 @@ const MechanicDashboard: React.FC = () => {
             {/* Inventory Tab Content */}
             {activeTab === "inventory" && (
               <motion.div
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                className="space-y-8"
               >
-                <div className="mb-6">
-                  <h2 className="text-white font-black text-3xl mb-2">
-                    INVENTORY
-                  </h2>
-                  <p className="text-slate-400 text-sm">
-                    Read-only access to parts availability
-                  </p>
-                </div>
-                {inventory.length === 0 ? (
-                  <div className="text-slate-400 text-center py-12">
-                    No inventory items available.
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-white font-black text-4xl uppercase tracking-tight">SHOP INVENTORY</h2>
+                    <p className="text-slate-400 mt-1">Real-time view of available parts and supplies</p>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {inventory.map((item) => {
-                      const stockPercentage = Math.min(
-                        (item.quantity / item.max_stock) * 100,
-                        100,
-                      );
-                      const isLowStock = item.quantity < item.max_stock * 0.3;
+                  <div className="bg-slate-800/50 border border-slate-700 px-4 py-2 rounded-lg flex items-center gap-3">
+                    <Package className="text-blue-500 w-5 h-5" />
+                    <span className="text-white font-bold tracking-widest uppercase text-xs">{inventory.length} Categories Loaded</span>
+                  </div>
+                </div>
 
-                      return (
-                        <div
-                          key={item.id}
-                          className={`bg-slate-700/50 rounded-lg p-6 border ${
-                            isLowStock
-                              ? "border-red-600/50"
-                              : "border-slate-600"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-white font-bold text-lg flex-1">
-                              {item.name}
-                            </h3>
-                            <span
-                              className={`text-2xl font-black ml-2 ${
-                                isLowStock ? "text-red-400" : "text-blue-400"
-                              }`}
-                            >
-                              {item.quantity}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {inventory.map((item: any, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden group hover:border-blue-500/50 transition-all shadow-lg flex flex-col"
+                    >
+                      <div className="h-44 bg-slate-900 relative overflow-hidden shrink-0">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105 transition-transform" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center opacity-20">
+                            <Package className="w-16 h-16 text-slate-400" />
+                          </div>
+                        )}
+                        {item.is_low_stock && (
+                          <div className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded-sm uppercase tracking-tighter animate-pulse shadow-lg z-10">
+                            LOW STOCK
+                          </div>
+                        )}
+                        <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm px-2 py-1 rounded text-[9px] text-blue-400 font-bold uppercase tracking-widest border border-slate-700">
+                          {item.category || "General"}
+                        </div>
+                      </div>
+                      
+                      <div className="p-5 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1 min-w-0 pr-2">
+                            <h3 className="text-white font-bold text-lg uppercase leading-tight group-hover:text-blue-400 transition-colors truncate">{item.name}</h3>
+                            <p className="text-slate-500 text-[10px] font-bold tracking-widest mt-1">SKU: {item.sku}</p>
+                          </div>
+                          <span className="text-blue-400 font-bold shrink-0">₱{item.unit_price?.toLocaleString()}</span>
+                        </div>
+
+                        <div className="mt-auto space-y-3">
+                          <div className="flex justify-between items-end">
+                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Available Stock</span>
+                            <span className={`text-sm font-black ${item.is_low_stock ? 'text-red-400' : 'text-emerald-400'}`}>
+                              {item.quantity_in_stock}
                             </span>
                           </div>
-
-                          <p className="text-slate-400 text-xs mb-3">
-                            {item.unit} • Max: {item.max_stock}
-                            {isLowStock && (
-                              <span className="ml-2 text-red-400 font-semibold">
-                                ⚠ LOW STOCK
-                              </span>
-                            )}
-                          </p>
-
-                          <div className="w-full bg-slate-600 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all ${
-                                isLowStock
-                                  ? "bg-red-500"
-                                  : stockPercentage > 70
-                                    ? "bg-green-500"
-                                    : "bg-yellow-500"
-                              }`}
-                              style={{ width: `${stockPercentage}%` }}
-                            ></div>
+                          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min((item.quantity_in_stock / ((item.reorder_level || 5) * 4)) * 100, 100)}%` }}
+                              className={`h-full rounded-full transition-all duration-1000 ${item.is_low_stock ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`}
+                            />
                           </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {inventory.length === 0 && (
+                  <div className="text-center py-20 bg-slate-800/20 border border-slate-700/50 rounded-2xl">
+                    <Package className="w-16 h-16 text-slate-700 mx-auto mb-4" strokeWidth={1} />
+                    <h3 className="text-slate-400 font-black text-xl uppercase tracking-tight">No inventory data</h3>
+                    <p className="text-slate-600 mt-1 max-w-sm mx-auto">Check back later or contact the owner if you believe items should be visible here.</p>
                   </div>
                 )}
               </motion.div>

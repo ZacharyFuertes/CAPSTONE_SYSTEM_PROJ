@@ -42,6 +42,8 @@ interface ServiceRecord {
     payment_method?: string;
     paid_date?: string;
   };
+  total_amount?: number;
+  estimated_price?: number;
 }
 
 interface ServiceHistoryModalProps {
@@ -51,7 +53,6 @@ interface ServiceHistoryModalProps {
 
 const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }> = {
   completed: { color: "text-[#d63a2f]", bg: "bg-[#221515] border-[#d63a2f]", label: "COMPLETED" },
-  in_progress: { color: "text-yellow-500", bg: "bg-[#221515] border-yellow-500/50", label: "IN PROGRESS" },
   confirmed: { color: "text-white", bg: "bg-[#d63a2f] border-[#d63a2f]", label: "CONFIRMED" },
   pending: { color: "text-yellow-500", bg: "bg-[#221515] border-yellow-500/50", label: "PENDING" },
   cancelled: { color: "text-red-500", bg: "bg-red-900/20 border-red-500/50", label: "CANCELLED" },
@@ -61,7 +62,6 @@ const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }
 const FILTER_TABS = [
   { key: "all" as const, label: "All" },
   { key: "completed" as const, label: "Completed" },
-  { key: "in_progress" as const, label: "In Progress" },
   { key: "cancelled" as const, label: "Cancelled" },
 ];
 
@@ -69,7 +69,7 @@ const ServiceHistoryModal: React.FC<ServiceHistoryModalProps> = ({ isOpen, onClo
   const { user } = useAuth();
   const [records, setRecords] = useState<ServiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "completed" | "in_progress" | "cancelled">("all");
+  const [filter, setFilter] = useState<"all" | "completed" | "cancelled">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,9 +84,9 @@ const ServiceHistoryModal: React.FC<ServiceHistoryModalProps> = ({ isOpen, onClo
       // Fetch all appointments (completed, in_progress, cancelled)
       const { data: appointments, error: aptErr } = await supabase
         .from("appointments")
-        .select("id, service_type, description, scheduled_date, scheduled_time, status, notes, mechanic_id")
+        .select("id, service_type, description, scheduled_date, scheduled_time, status, notes, mechanic_id, total_amount, estimated_price")
         .eq("customer_id", user.id)
-        .in("status", ["completed", "in_progress", "cancelled", "confirmed", "pending"])
+        .in("status", ["completed", "cancelled", "confirmed", "pending"])
         .order("scheduled_date", { ascending: false });
 
       if (aptErr) throw aptErr;
@@ -139,6 +139,8 @@ const ServiceHistoryModal: React.FC<ServiceHistoryModalProps> = ({ isOpen, onClo
           mechanic_name: apt.mechanic_id ? mechanicMap[apt.mechanic_id] : undefined,
           job_order: job || undefined,
           invoice: inv || undefined,
+          total_amount: apt.total_amount,
+          estimated_price: apt.estimated_price,
         };
       });
 
@@ -163,8 +165,8 @@ const ServiceHistoryModal: React.FC<ServiceHistoryModalProps> = ({ isOpen, onClo
   };
 
   const totalSpent = records
-    .filter((r) => r.invoice?.payment_status === "paid")
-    .reduce((sum, r) => sum + (r.invoice?.total_amount || 0), 0);
+    .filter((r) => r.status === "completed")
+    .reduce((sum, r) => sum + (Number(r.invoice?.total_amount || r.total_amount || r.estimated_price) || 0), 0);
 
   const completedCount = records.filter((r) => r.status === "completed").length;
 
@@ -323,9 +325,9 @@ const ServiceHistoryModal: React.FC<ServiceHistoryModalProps> = ({ isOpen, onClo
                         </div>
 
                         <div className="flex flex-col items-end gap-3 flex-shrink-0 self-end sm:self-auto">
-                          {record.invoice && (
+                          {(record.invoice || record.total_amount || record.estimated_price) && (
                             <span className="font-display text-2xl text-white">
-                              ₱{record.invoice.total_amount.toLocaleString()}
+                              ₱{(record.invoice?.total_amount || record.total_amount || record.estimated_price || 0).toLocaleString()}
                             </span>
                           )}
                           <div className="flex items-center gap-3">

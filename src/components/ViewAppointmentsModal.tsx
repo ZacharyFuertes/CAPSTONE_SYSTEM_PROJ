@@ -24,6 +24,13 @@ interface AppointmentItem {
   notes?: string;
   description?: string;
   mechanic_name?: string;
+  parts?: Array<{
+    part_id: string;
+    part_name: string;
+    unit_price: number;
+    quantity: number;
+  }>;
+  total_amount?: number;
 }
 
 interface ViewAppointmentsModalProps {
@@ -31,7 +38,10 @@ interface ViewAppointmentsModalProps {
   onClose: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode; label: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { color: string; bg: string; icon: React.ReactNode; label: string }
+> = {
   pending: {
     color: "text-yellow-500",
     bg: "bg-[#221515] border-yellow-500/50",
@@ -44,12 +54,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.Rea
     icon: <CheckCircle size={12} strokeWidth={2} />,
     label: "CONFIRMED",
   },
-  in_progress: {
-    color: "text-[#d63a2f]",
-    bg: "bg-[#221515] border-[#d63a2f]",
-    icon: <Wrench size={12} strokeWidth={2} />,
-    label: "IN PROGRESS",
-  },
+
   completed: {
     color: "text-green-500",
     bg: "bg-green-900/20 border-green-500/50",
@@ -70,7 +75,10 @@ const FILTER_TABS = [
   { key: "all" as const, label: "All" },
 ];
 
-const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, onClose }) => {
+const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,17 +96,22 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
     try {
       setLoading(true);
 
-      // Fetch appointments with mechanic info
       const { data: aptData, error } = await supabase
         .from("appointments")
-        .select("id, scheduled_date, scheduled_time, service_type, status, notes, description, mechanic_id")
+        .select("*")
         .eq("customer_id", user.id)
         .order("scheduled_date", { ascending: false });
 
       if (error) throw error;
 
       // Fetch mechanic names for all appointments that have mechanic_id
-      const mechanicIds = [...new Set((aptData || []).filter((a: any) => a.mechanic_id).map((a: any) => a.mechanic_id))];
+      const mechanicIds = [
+        ...new Set(
+          (aptData || [])
+            .filter((a: any) => a.mechanic_id)
+            .map((a: any) => a.mechanic_id),
+        ),
+      ];
       let mechanicMap: Record<string, string> = {};
 
       if (mechanicIds.length > 0) {
@@ -106,7 +119,9 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
           .from("users")
           .select("id, name")
           .in("id", mechanicIds);
-        (mechanics || []).forEach((m: any) => { mechanicMap[m.id] = m.name; });
+        (mechanics || []).forEach((m: any) => {
+          mechanicMap[m.id] = m.name;
+        });
       }
 
       const enriched: AppointmentItem[] = (aptData || []).map((apt: any) => ({
@@ -117,7 +132,11 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
         status: apt.status,
         notes: apt.notes,
         description: apt.description,
-        mechanic_name: apt.mechanic_id ? mechanicMap[apt.mechanic_id] : undefined,
+        mechanic_name: apt.mechanic_id
+          ? mechanicMap[apt.mechanic_id]
+          : undefined,
+        parts: apt.parts || [],
+        total_amount: apt.total_amount || apt.estimated_price || 0,
       }));
 
       setAppointments(enriched);
@@ -147,7 +166,9 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
 
       // Update locally
       setAppointments((prev) =>
-        prev.map((a) => a.id === appointmentId ? { ...a, status: "cancelled" } : a)
+        prev.map((a) =>
+          a.id === appointmentId ? { ...a, status: "cancelled" } : a,
+        ),
       );
       setConfirmCancelId(null);
     } catch (err) {
@@ -160,19 +181,34 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
 
   const today = new Date().toISOString().split("T")[0];
   const filteredAppointments = appointments.filter((apt) => {
-    if (filter === "upcoming") return apt.scheduled_date >= today && apt.status !== "cancelled" && apt.status !== "completed";
-    if (filter === "past") return apt.scheduled_date < today || apt.status === "cancelled" || apt.status === "completed";
+    if (filter === "upcoming") {
+      return (
+        apt.scheduled_date >= today &&
+        !["completed", "cancelled"].includes(apt.status)
+      );
+    }
+    if (filter === "past") {
+      return (
+        apt.scheduled_date < today ||
+        ["completed", "cancelled"].includes(apt.status)
+      );
+    }
     return true;
   });
 
   const formatTime = (time: string) => {
     if (!time) return "";
     const hour = parseInt(time.split(":")[0]);
-    return hour >= 12 ? `${hour === 12 ? 12 : hour - 12}:00 PM` : `${hour}:00 AM`;
+    return hour >= 12
+      ? `${hour === 12 ? 12 : hour - 12}:00 PM`
+      : `${hour}:00 AM`;
   };
 
   const canCancel = (apt: AppointmentItem) => {
-    return (apt.status === "pending" || apt.status === "confirmed") && apt.scheduled_date >= today;
+    return (
+      (apt.status === "pending" || apt.status === "confirmed") &&
+      apt.scheduled_date >= today
+    );
   };
 
   if (!isOpen) return null;
@@ -184,7 +220,9 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-3 z-50"
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 30 }}
@@ -197,7 +235,11 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
           <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
             <div className="flex items-center gap-6">
               <div className="w-14 h-14 bg-[#d63a2f] flex items-center justify-center shrink-0">
-                <CalendarDays size={28} className="text-white" strokeWidth={1.5} />
+                <CalendarDays
+                  size={28}
+                  className="text-white"
+                  strokeWidth={1.5}
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
@@ -218,9 +260,16 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                 className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0"
                 title="Refresh"
               >
-                <RefreshCw size={20} strokeWidth={1} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={20}
+                  strokeWidth={1}
+                  className={refreshing ? "animate-spin" : ""}
+                />
               </button>
-              <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+              <button
+                onClick={onClose}
+                className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0"
+              >
                 <X size={20} strokeWidth={1} />
               </button>
             </div>
@@ -242,7 +291,8 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
               </button>
             ))}
             <div className="ml-auto text-[10px] font-bold tracking-widest uppercase text-[#555]">
-              {filteredAppointments.length} APPOINTMENT{filteredAppointments.length !== 1 ? "S" : ""}
+              {filteredAppointments.length} APPOINTMENT
+              {filteredAppointments.length !== 1 ? "S" : ""}
             </div>
           </div>
 
@@ -254,15 +304,23 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
               </div>
             ) : filteredAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 border border-[#222] bg-[#111]">
-                <AlertCircle className="w-14 h-14 text-[#333] mb-4" strokeWidth={1} />
+                <AlertCircle
+                  className="w-14 h-14 text-[#333] mb-4"
+                  strokeWidth={1}
+                />
                 <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">
-                  {filter === "upcoming" ? "NO UPCOMING APPOINTMENTS" : filter === "past" ? "NO PAST APPOINTMENTS" : "NO APPOINTMENTS FOUND"}
+                  {filter === "upcoming"
+                    ? "NO UPCOMING APPOINTMENTS"
+                    : filter === "past"
+                      ? "NO PAST APPOINTMENTS"
+                      : "NO APPOINTMENTS FOUND"}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredAppointments.map((apt, index) => {
-                  const status = STATUS_CONFIG[apt.status] || STATUS_CONFIG.pending;
+                  const status =
+                    STATUS_CONFIG[apt.status] || STATUS_CONFIG.pending;
                   const showCancel = canCancel(apt);
                   const isCancelling = cancellingId === apt.id;
                   const isConfirmingCancel = confirmCancelId === apt.id;
@@ -280,19 +338,31 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                           {/* Date Badge */}
                           <div className="w-16 h-16 bg-[#0a0a0a] border border-[#333] flex flex-col items-center justify-center flex-shrink-0">
                             <span className="text-[10px] text-[#555] font-bold tracking-widest uppercase mb-1">
-                              {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                              {new Date(
+                                apt.scheduled_date + "T00:00:00",
+                              ).toLocaleDateString("en-US", { month: "short" })}
                             </span>
                             <span className="font-display text-2xl text-white leading-none">
-                              {new Date(apt.scheduled_date + "T00:00:00").getDate()}
+                              {new Date(
+                                apt.scheduled_date + "T00:00:00",
+                              ).getDate()}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-display text-xl text-white uppercase leading-none mb-3 group-hover:text-[#d63a2f] transition-colors">{apt.service_type}</h4>
+                            <h4 className="font-display text-xl text-white uppercase leading-none mb-3 group-hover:text-[#d63a2f] transition-colors">
+                              {apt.service_type}
+                            </h4>
                             <div className="flex flex-col gap-2">
                               <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
                                 <Calendar size={12} className="text-[#555]" />
-                                {new Date(apt.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                                {new Date(
+                                  apt.scheduled_date + "T00:00:00",
+                                ).toLocaleDateString("en-US", {
+                                  weekday: "long",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
                               </span>
                               <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
                                 <Clock size={12} className="text-[#555]" />
@@ -300,22 +370,74 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                               </span>
                               {apt.mechanic_name && (
                                 <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
-                                  <Wrench size={12} className="text-[#d63a2f]" />
+                                  <Wrench
+                                    size={12}
+                                    className="text-[#d63a2f]"
+                                  />
                                   {apt.mechanic_name}
                                 </span>
                               )}
                             </div>
                             {apt.description && (
-                              <p className="text-[#555] text-xs mt-4 font-light italic border-l block border-[#d63a2f] pl-2">{apt.description}</p>
+                              <p className="text-[#555] text-xs mt-4 font-light italic border-l block border-[#d63a2f] pl-2">
+                                {apt.description}
+                              </p>
                             )}
                           </div>
                         </div>
                       </div>
-                      
+
+                      {/* Parts Section */}
+                      {apt.parts && apt.parts.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-[#222]">
+                          <p className="text-[10px] font-bold tracking-[0.2em] text-[#d63a2f] uppercase mb-3">
+                            PARTS INCLUDED
+                          </p>
+                          <div className="space-y-2">
+                            {apt.parts.map((part, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-[#0a0a0a] p-2 rounded-none border border-[#333] flex items-center justify-between"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-white font-bold text-xs truncate">
+                                    {part.part_name}
+                                  </p>
+                                  <p className="text-[9px] text-[#6b6b6b]">
+                                    {part.quantity}x @ ₱
+                                    {part.unit_price.toLocaleString()}
+                                  </p>
+                                </div>
+                                <p className="text-[#4ade80] font-bold text-xs ml-2 flex-shrink-0">
+                                  ₱
+                                  {(
+                                    part.quantity * part.unit_price
+                                  ).toLocaleString()}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                          {apt.total_amount && (
+                            <div className="mt-3 pt-3 border-t border-[#333]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-widest">
+                                  Total:
+                                </span>
+                                <span className="text-[#d63a2f] font-bold">
+                                  ₱{apt.total_amount.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Action Row */}
                       <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#222]">
                         {/* Status Badge */}
-                        <span className={`flex items-center gap-1.5 text-[9px] px-3 py-1.5 border font-bold tracking-widest ${status.bg} ${status.color}`}>
+                        <span
+                          className={`flex items-center gap-1.5 text-[9px] px-3 py-1.5 border font-bold tracking-widest ${status.bg} ${status.color}`}
+                        >
                           {status.icon}
                           {status.label}
                         </span>
@@ -341,7 +463,10 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                             className="overflow-hidden"
                           >
                             <div className="mt-4 pt-4 border-t border-[#333] border-dashed flex flex-col justify-between gap-4">
-                              <p className="text-[10px] text-red-500 tracking-widest font-bold uppercase">ARE YOU SURE YOU WANT TO CANCEL THIS APPOINTMENT?</p>
+                              <p className="text-[10px] text-red-500 tracking-widest font-bold uppercase">
+                                ARE YOU SURE YOU WANT TO CANCEL THIS
+                                APPOINTMENT?
+                              </p>
                               <div className="flex items-center gap-3 w-full">
                                 <button
                                   onClick={() => setConfirmCancelId(null)}
@@ -350,7 +475,9 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                                   KEEP
                                 </button>
                                 <button
-                                  onClick={() => handleCancelAppointment(apt.id)}
+                                  onClick={() =>
+                                    handleCancelAppointment(apt.id)
+                                  }
                                   disabled={isCancelling}
                                   className="flex-1 px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-white bg-[#d63a2f] hover:bg-[#c0322a] transition flex items-center justify-center gap-2 border border-[#d63a2f]"
                                 >
@@ -359,7 +486,9 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
                                   ) : (
                                     <XCircle size={12} />
                                   )}
-                                  {isCancelling ? "CANCELLING..." : "YES, CANCEL"}
+                                  {isCancelling
+                                    ? "CANCELLING..."
+                                    : "YES, CANCEL"}
                                 </button>
                               </div>
                             </div>
@@ -372,7 +501,6 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({ isOpen, o
               </div>
             )}
           </div>
-
         </motion.div>
       </motion.div>
     </AnimatePresence>

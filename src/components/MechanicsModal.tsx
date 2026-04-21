@@ -3,10 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Wrench,
-  Star,
   Award,
-  ChevronDown,
-  MessageSquare,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 
@@ -36,12 +33,11 @@ interface Mechanic {
 const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (isOpen) {
       fetchMechanics();
-      setExpandedId(null);
     }
   }, [isOpen]);
 
@@ -117,9 +113,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
+
 
   return (
     <AnimatePresence>
@@ -231,81 +225,7 @@ const MechanicsModal: React.FC<MechanicsModalProps> = ({ isOpen, onClose }) => {
                           </div>
                         </div>
 
-                        <div className="mt-6 flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[#d63a2f]">
-                            <Star size={14} className="fill-current" />
-                            <span className="font-bold text-sm text-white">
-                              {mechanic.rating
-                                ? mechanic.rating.toFixed(1)
-                                : 4.8}
-                            </span>
-                            <span className="text-xs text-[#6b6b6b] ml-1 tracking-widest font-light">
-                              ({mechanic.reviews?.length || 2})
-                            </span>
-                          </div>
 
-                          <button
-                            onClick={() =>
-                              toggleExpand(mechanic.id || String(idx))
-                            }
-                            className="text-[10px] font-bold tracking-[0.15em] text-[#d63a2f] hover:text-white uppercase flex items-center gap-2 transition-colors px-4 py-2 bg-[#221515] border border-[#d63a2f]"
-                          >
-                            <MessageSquare size={12} />
-                            {expandedId === (mechanic.id || String(idx))
-                              ? "HIDE"
-                              : "REVIEWS"}
-                            <ChevronDown
-                              size={14}
-                              className={`transition-transform duration-300 ${expandedId === (mechanic.id || String(idx)) ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                        </div>
-
-                        <AnimatePresence>
-                          {expandedId === (mechanic.id || String(idx)) && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-6 pt-6 border-t border-[#222] space-y-4">
-                                {(mechanic.reviews || []).map((review) => (
-                                  <div
-                                    key={review.id}
-                                    className="bg-[#0a0a0a] p-4 text-left border border-[#222]"
-                                  >
-                                    <div className="flex items-center justify-between mb-3">
-                                      <span className="text-[10px] font-bold tracking-widest uppercase text-white">
-                                        {review.author}
-                                      </span>
-                                      <span className="text-[10px] font-light text-[#6b6b6b]">
-                                        {review.date}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 mb-3">
-                                      {[...Array(5)].map((_, i) => (
-                                        <Star
-                                          key={i}
-                                          size={10}
-                                          className={
-                                            i < review.rating
-                                              ? "text-[#d63a2f] fill-current"
-                                              : "text-[#333]"
-                                          }
-                                        />
-                                      ))}
-                                    </div>
-                                    <p className="text-xs text-[#888] font-light leading-relaxed italic border-l block border-[#d63a2f] pl-3 py-1">
-                                      "{review.text}"
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </motion.div>
                     ))}
                   </div>

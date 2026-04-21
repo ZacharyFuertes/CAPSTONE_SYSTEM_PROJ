@@ -20,12 +20,10 @@ import {
   Box,
   CheckCircle,
   Eye,
-  ShoppingCart,
-  Plus,
 } from "lucide-react";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { usePartsList } from "../contexts/PartsListContext";
+
 import { Part } from "../types";
 
 interface BrowsePartsModalProps {
@@ -50,7 +48,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   onClose,
 }) => {
   const { user } = useAuth();
-  const { addToList } = usePartsList();
   const shopId = user?.shop_id || "";
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
@@ -61,117 +58,15 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
     "all" | "instock" | "outofstock"
   >("all");
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [addedToCart, setAddedToCart] = useState<string | null>(null);
-  const [addedToList, setAddedToList] = useState<string | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
+
 
   useEffect(() => {
     if (isOpen) {
       fetchParts();
-      if (user?.id) {
-        fetchOrders();
-      }
     }
-  }, [isOpen, user?.id]);
+  }, [isOpen]);
 
-  const fetchOrders = async () => {
-    if (!user?.id) return;
-    try {
-      setLoadingOrders(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("customer_id", user.id)
-        .in("status", ["pending", "completed"])
-        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setOrders([]);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  const handleAddToCart = async (part: Part) => {
-    if (!user?.id) return;
-    
-    if (loadingOrders) {
-      alert("Loading your appointments. Please wait a moment and try again.");
-      return;
-    }
-    
-    if (orders.length === 0) {
-      alert("Please book an appointment first to add parts to your receipt.");
-      return;
-    }
-
-    try {
-      // Use selected order or the latest one
-      const targetOrder = selectedOrder 
-        ? orders.find(o => o.id === selectedOrder)
-        : orders[0];
-
-      if (!targetOrder) {
-        alert("No order found. Please book an appointment first.");
-        return;
-      }
-
-      const newPart = {
-        part_id: part.id,
-        part_name: part.name,
-        quantity: 1,
-        unit_price: part.unit_price,
-      };
-
-      const existingParts = targetOrder.parts || [];
-      const existingPartIndex = existingParts.findIndex(
-        (p: any) => p.part_id === part.id
-      );
-
-      let updatedParts;
-      if (existingPartIndex >= 0) {
-        existingParts[existingPartIndex].quantity += 1;
-        updatedParts = existingParts;
-      } else {
-        updatedParts = [...existingParts, newPart];
-      }
-
-      const totalAmount = updatedParts.reduce(
-        (sum: number, p: any) => sum + p.unit_price * p.quantity,
-        0
-      );
-
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          parts: updatedParts,
-          total_amount: totalAmount,
-        })
-        .eq("id", targetOrder.id);
-
-      if (error) throw error;
-
-      setAddedToCart(part.id);
-      setTimeout(() => setAddedToCart(null), 2000);
-
-      // Refresh orders
-      fetchOrders();
-    } catch (error) {
-      console.error("Error adding part to order:", error);
-      alert("Failed to add part. Please try again.");
-    }
-  };
-
-  const handleAddToList = (part: Part) => {
-    addToList(part);
-    setAddedToList(part.id);
-    setTimeout(() => setAddedToList(null), 2000);
-  };
 
   const fetchParts = async () => {
     try {
@@ -335,67 +230,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                     </div>
                   )}
 
-                  {/* Gallery-only note */}
-                  <div className="mt-auto pt-4 border-t border-[#222] space-y-3">
-                    {orders.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="text-[10px] tracking-[0.2em] font-medium uppercase text-[#6b6b6b]">
-                          Add to Receipt
-                        </label>
-                        <select
-                          value={selectedOrder || ""}
-                          onChange={(e) => setSelectedOrder(e.target.value || null)}
-                          className="w-full bg-[#0a0a0a] border border-[#333] text-white px-3 py-2 text-xs focus:border-[#d63a2f] focus:outline-none rounded-none uppercase font-bold tracking-wider"
-                        >
-                          <option value="">Select Receipt (Latest)</option>
-                          {orders.map((order) => (
-                            <option key={order.id} value={order.id}>
-                              {order.service_type || "Unnamed"} -{" "}
-                              {order.scheduled_date}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {/* Add to List Button */}
-                    <button
-                      onClick={() => handleAddToList(selectedPart)}
-                      className={`w-full py-3 px-4 font-bold uppercase tracking-widest text-sm transition flex items-center justify-center gap-2 border ${
-                        addedToList === selectedPart.id
-                          ? "bg-[#4ade80] text-white border-[#4ade80]"
-                          : "bg-[#111] text-white border-[#333] hover:border-[#555] hover:bg-[#1a1a1a]"
-                      }`}
-                    >
-                      <Plus size={18} />
-                      {addedToList === selectedPart.id
-                        ? "ADDED TO MY LIST"
-                        : "ADD TO MY LIST"}
-                    </button>
-                    {/* Add to Receipt Button */}
-                    <button
-                      onClick={() => handleAddToCart(selectedPart)}
-                      disabled={!isInStock || orders.length === 0}
-                      className={`w-full py-3 px-4 font-bold uppercase tracking-widest text-sm transition flex items-center justify-center gap-2 ${
-                        !isInStock || orders.length === 0
-                          ? "bg-[#111] border border-[#333] text-[#555] cursor-not-allowed"
-                          : addedToCart === selectedPart.id
-                            ? "bg-[#4ade80] text-white border border-[#4ade80]"
-                            : "bg-[#d63a2f] text-white border border-[#d63a2f] hover:bg-[#c0322a]"
-                      }`}
-                    >
-                      <ShoppingCart size={18} />
-                      {orders.length === 0
-                        ? "BOOK APPOINTMENT FIRST"
-                        : addedToCart === selectedPart.id
-                          ? "ADDED TO RECEIPT"
-                          : "ADD TO RECEIPT"}
-                    </button>
-                    {orders.length === 0 && (
-                      <p className="text-[10px] text-[#d63a2f] font-bold uppercase tracking-widest text-center">
-                        Book an appointment to start adding parts
-                      </p>
-                    )}
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -607,35 +442,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                             </p>
                           )}
                         </div>
-                        <div className="flex gap-2 mt-3">
-                          <button
-                            onClick={() => handleAddToList(part)}
-                            className={`flex-1 py-2 px-2 font-bold uppercase tracking-widest text-[10px] transition flex items-center justify-center gap-1 border ${
-                              addedToList === part.id
-                                ? "bg-[#4ade80] text-white border-[#4ade80]"
-                                : "bg-[#111] border-[#333] text-[#888] hover:border-[#555] hover:text-white"
-                            }`}
-                            title="Add to your personal parts list"
-                          >
-                            <Plus size={12} />
-                            <span className="hidden sm:inline">LIST</span>
-                          </button>
-                          <button
-                            onClick={() => handleAddToCart(part)}
-                            disabled={!isInStock}
-                            className={`flex-1 py-2 px-2 font-bold uppercase tracking-widest text-[10px] transition flex items-center justify-center gap-1 border ${
-                              !isInStock
-                                ? "bg-[#111] border-[#333] text-[#555] cursor-not-allowed"
-                                : addedToCart === part.id
-                                  ? "bg-[#4ade80] text-white border-[#4ade80]"
-                                  : "bg-[#d63a2f] text-white border-[#d63a2f] hover:bg-[#c0322a]"
-                            }`}
-                            title="Add to appointment receipt"
-                          >
-                            <ShoppingCart size={12} />
-                            <span className="hidden sm:inline">RECEIPT</span>
-                          </button>
-                        </div>
+
                       </div>
                     </motion.div>
                   );

@@ -45,27 +45,39 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch ONLY users with role = 'customer' (case-sensitive)
-        const { data, error: fetchError } = await supabase
+        // Fetch ONLY users with role = 'customer'
+        const { data: usersData, error: fetchError } = await supabase
           .from("users")
           .select("*")
           .eq("role", "customer")
           .order("created_at", { ascending: false });
 
-        if (fetchError) {
-          throw fetchError;
-        }
+        if (fetchError) throw fetchError;
 
-        // Double-check: Filter out any non-customers (in case of data inconsistency)
-        const customersOnly = (data || []).filter(
-          (user) => user.role === "customer",
-        );
+        // Fetch completed appointments for revenue calculation
+        const { data: appointmentsData, error: aptError } = await supabase
+          .from("appointments")
+          .select("customer_id, total_amount, estimated_price")
+          .eq("status", "completed");
 
-        setCustomers(customersOnly);
-        setFilteredCustomers(customersOnly);
-        console.log(
-          `✅ Loaded ${customersOnly.length} customers (mechanics excluded)`,
-        );
+        if (aptError) throw aptError;
+
+        // Aggregate revenue by customer
+        const revenueMap: Record<string, number> = {};
+        (appointmentsData || []).forEach(apt => {
+          const amount = Number(apt.total_amount || apt.estimated_price) || 0;
+          revenueMap[apt.customer_id] = (revenueMap[apt.customer_id] || 0) + amount;
+        });
+
+        // Enrich customer data
+        const enrichedCustomers = (usersData || []).map(user => ({
+          ...user,
+          total_spent: revenueMap[user.id] || 0
+        }));
+
+        setCustomers(enrichedCustomers);
+        setFilteredCustomers(enrichedCustomers);
+        console.log(`✅ Loaded ${enrichedCustomers.length} customers with revenue data`);
       } catch (err) {
         console.error("Error fetching customers:", err);
         setError(

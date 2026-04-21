@@ -21,7 +21,6 @@ import {
   CheckCircle,
   DollarSign,
   Lock,
-  Bookmark,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -69,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // ── 1. Fetch ALL appointments (with estimated_price for revenue) ──
         const { data: allAppointments } = await supabase
           .from("appointments")
-          .select("id, status, estimated_price, scheduled_date, updated_at, created_at");
+          .select("id, status, total_amount, estimated_price, scheduled_date, updated_at, created_at");
 
         // ── 2. Fetch ALL reservations (with part price for revenue) ──
         let allReservations: any[] = [];
@@ -111,22 +110,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // ══════════════════════════════════════════════
         // REVENUE CALCULATION
         // Revenue = confirmed/completed appointments (estimated_price)
-        //         + confirmed/fulfilled reservations  (parts.unit_price × quantity)
         //         + completed job orders               (total_cost)
         // ══════════════════════════════════════════════
 
-        // Appointment revenue (confirmed, in_progress, completed count as earned)
+        // Appointment revenue (ONLY completed count as finalized revenue)
         const revenueAppointments = (allAppointments || [])
-          .filter((a: any) => ["confirmed", "in_progress", "completed"].includes(a.status))
-          .reduce((sum: number, a: any) => sum + (Number(a.estimated_price) || 0), 0);
+          .filter((a: any) => a.status === "completed")
+          .reduce((sum: number, a: any) => sum + (Number(a.total_amount || a.estimated_price) || 0), 0);
 
-        // Reservation revenue (confirmed or fulfilled)
-        const revenueReservations = allReservations
-          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
-          .reduce((sum: number, r: any) => {
-            const unitPrice = (r.parts as any)?.unit_price || 0;
-            return sum + (Number(unitPrice) * (r.quantity || 1));
-          }, 0);
+
 
         // Job order revenue (completed)
         const revenueJobOrders = (jobOrders || [])
@@ -139,31 +131,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           0
         );
 
-        const totalRevenue = revenueAppointments + revenueReservations + revenueJobOrders + revenuePOS;
+        const totalRevenue = revenueAppointments + revenueJobOrders + revenuePOS;
 
         // ══════════════════════════════════════════════
         // REVENUE TREND CHART (grouped by date)
         // ══════════════════════════════════════════════
         const revenueDateMap: Record<string, number> = {};
 
-        // Add appointment revenue by date
+        // Add appointment revenue by date (ONLY completed)
         (allAppointments || [])
-          .filter((a: any) => ["confirmed", "in_progress", "completed"].includes(a.status))
+          .filter((a: any) => a.status === "completed")
           .forEach((a: any) => {
             const dateKey = a.updated_at
               ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
               : new Date(a.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(a.estimated_price) || 0);
+            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(a.total_amount || a.estimated_price) || 0);
           });
 
-        // Add reservation revenue by date
-        allReservations
-          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
-          .forEach((r: any) => {
-            const dateKey = new Date(r.updated_at || r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            const unitPrice = (r.parts as any)?.unit_price || 0;
-            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(unitPrice) * (r.quantity || 1));
-          });
+
 
         // Add job order revenue by date
         (jobOrders || [])
@@ -210,11 +195,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             } else {
               const statusColors: Record<string, string> = {
                 completed: "#10b981",
-                in_progress: "#f59e0b",
                 pending: "#ef4444",
                 cancelled: "#6b7280",
               };
-              if (["completed", "in_progress", "pending", "cancelled"].includes(statusKey)) {
+              if (["completed", "pending", "cancelled"].includes(statusKey)) {
                 acc.push({
                   name: statusKey,
                   value: 1,
@@ -230,7 +214,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             ? statusCounts
             : [
                 { name: "Completed", value: 0, color: "#10b981" },
-                { name: "In Progress", value: 0, color: "#f59e0b" },
                 { name: "Pending", value: 0, color: "#ef4444" },
               ],
         );
@@ -272,16 +255,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .select("id")
           .eq("role", "customer");
 
-        // Pending reservation count
-        const pendingReservationCount = allReservations.filter((r: any) => r.status === "pending").length;
-
         // Revenue breakdown for subtitle
-        const revenueParts: string[] = [];
-        if (revenueAppointments > 0) revenueParts.push(`Services: ₱${revenueAppointments.toLocaleString()}`);
-        if (revenueReservations > 0) revenueParts.push(`Reservations: ₱${revenueReservations.toLocaleString()}`);
-        if (revenuePOS > 0) revenueParts.push(`POS Sales: ₱${revenuePOS.toLocaleString()}`);
-        if (revenueJobOrders > 0) revenueParts.push(`Jobs: ₱${revenueJobOrders.toLocaleString()}`);
-        const revenueSubtitle = revenueParts.length > 0 ? revenueParts.join(" • ") : "No revenue data yet";
+        const revenuePartsArr: string[] = [];
+        if (revenueAppointments > 0) revenuePartsArr.push(`Services: ₱${revenueAppointments.toLocaleString()}`);
+        if (revenuePOS > 0) revenuePartsArr.push(`POS Sales: ₱${revenuePOS.toLocaleString()}`);
+        if (revenueJobOrders > 0) revenuePartsArr.push(`Jobs: ₱${revenueJobOrders.toLocaleString()}`);
+        const revenueSubtitle = revenuePartsArr.length > 0 ? revenuePartsArr.join(" • ") : "No revenue data yet";
 
         setStats([
           {
@@ -312,13 +291,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             icon: <Users className="w-8 h-8" />,
             color: "from-purple-500 to-pink-600",
           },
-          {
-            label: "Pending Reservations",
-            value: pendingReservationCount,
-            change: pendingReservationCount > 0 ? `${pendingReservationCount} awaiting action` : "No reservations",
-            icon: <Bookmark className="w-8 h-8" />,
-            color: "from-amber-500 to-orange-600",
-          },
+
         ]);
 
         // ══════════════════════════════════════════════

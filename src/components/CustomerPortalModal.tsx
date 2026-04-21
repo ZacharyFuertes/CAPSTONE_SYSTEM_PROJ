@@ -52,25 +52,23 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
     try {
       setLoading(true);
 
-      // Fetch all appointment data
+      // Fetch all appointment data for stats and spending
       const { data: appointments, error: aptError } = await supabase
         .from("appointments")
-        .select("id, status")
+        .select("id, status, total_amount, estimated_price")
         .eq("customer_id", user.id);
 
       if (!aptError && appointments) {
         setTotalAppointments(appointments.length);
-        setPendingAppointments(appointments.filter((a: any) => a.status === "pending" || a.status === "confirmed").length);
-      }
-
-      // Fetch total spent from invoices
-      const { data: invoices, error: invError } = await supabase
-        .from("invoices")
-        .select("total_amount")
-        .eq("customer_id", user.id)
-        .eq("payment_status", "paid");
-      if (!invError && invoices) {
-        setTotalSpent(invoices.reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0));
+        setPendingAppointments(
+          appointments.filter((a: any) => a.status === "pending" || a.status === "confirmed").length
+        );
+        
+        // Calculate total spent from completed appointments
+        const spent = appointments
+          .filter((a: any) => a.status === "completed")
+          .reduce((sum: number, a: any) => sum + (Number(a.total_amount || a.estimated_price) || 0), 0);
+        setTotalSpent(spent);
       }
 
       // Fetch vehicles

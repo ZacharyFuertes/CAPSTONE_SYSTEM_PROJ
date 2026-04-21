@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
-  Wrench,
   ArrowLeft,
   CheckCircle,
   AlertCircle,
@@ -141,8 +140,6 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
         return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
       case "confirmed":
         return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "in_progress":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
       case "completed":
         return "bg-green-500/20 text-green-400 border-green-500/30";
       case "cancelled":
@@ -233,22 +230,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-slate-800 rounded-lg p-6 border border-slate-700"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm mb-1">In Progress</p>
-              <p className="text-3xl font-bold text-purple-400">
-                {appointments.filter((a) => a.status === "in_progress").length}
-              </p>
-            </div>
-            <Wrench className="w-10 h-10 text-purple-400" />
-          </div>
-        </motion.div>
+
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -343,7 +325,6 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                     >
                       <option value="pending">Pending</option>
                       <option value="confirmed">Confirmed</option>
-                      <option value="in_progress">In Progress</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>

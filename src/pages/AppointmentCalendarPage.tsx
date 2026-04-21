@@ -23,9 +23,9 @@ const statusConfig: Record<
     color: "bg-[#112211] border-green-500/50 text-green-500",
     label: "Confirmed",
   },
-  in_progress: {
-    color: "bg-[#1f1627] border-purple-500/50 text-purple-400",
-    label: "In Progress",
+  ready_for_finalization: {
+    color: "bg-[#1f1a2e] border-purple-500/50 text-purple-400",
+    label: "Needs Finalization",
   },
   completed: {
     color: "bg-[#111] border-[#333] text-[#888]",
@@ -135,6 +135,41 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const handleStatusChange = async (appointmentId: string, newStatus: AppointmentStatus) => {
     if (user?.role === "owner" || user?.role === "mechanic") {
       try {
+        const appointment = appointments.find((a) => a.id === appointmentId);
+        if (!appointment) return;
+
+        // Workflow Enforcements
+        if (newStatus === "completed") {
+          if (user.role !== "owner") {
+            alert("Only administrators can finalize appointments for the dashboard.");
+            return;
+          }
+          if (appointment.status !== "ready_for_finalization") {
+            alert("The mechanic must mark the work as complete before you can finalize it.");
+            return;
+          }
+        }
+
+        // Handle stock deduction when finalizing (completed)
+        if (newStatus === "completed" && appointment.status !== "completed") {
+          const parts = appointment.parts || [];
+          for (const part of parts) {
+            const { data: partData } = await supabase
+              .from("parts")
+              .select("quantity_in_stock")
+              .eq("id", part.part_id)
+              .single();
+            
+            if (partData) {
+              const newQty = Math.max(0, partData.quantity_in_stock - part.quantity);
+              await supabase
+                .from("parts")
+                .update({ quantity_in_stock: newQty, updated_at: new Date().toISOString() })
+                .eq("id", part.part_id);
+            }
+          }
+        }
+
         const { error } = await supabase
           .from("appointments")
           .update({ status: newStatus, updated_at: new Date().toISOString() })
@@ -204,7 +239,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const canUpdateStatus = isOwner || isMechanic;
 
   const upcomingAppointments = filteredAppointments.filter(
-    (a) => a.status === "pending" || a.status === "confirmed" || a.status === "in_progress"
+    (a) => a.status === "pending" || a.status === "confirmed" || a.status === "ready_for_finalization"
   );
   const pastAppointments = filteredAppointments.filter(
     (a) => a.status === "completed" || a.status === "cancelled"
@@ -285,15 +320,32 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
                           <p className="text-[#6b6b6b] text-[10px] font-bold tracking-[0.2em] uppercase mt-1">{apt.service_type}</p>
                         </div>
                         {canUpdateStatus ? (
-                          <select
-                            value={apt.status}
-                            onChange={(e) => handleStatusChange(apt.id, e.target.value as AppointmentStatus)}
-                            className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border appearance-none outline-none transition cursor-pointer text-center ${statusConfig[apt.status].color}`}
-                          >
-                            {Object.entries(statusConfig).map(([status, config]) => (
-                               <option key={status} value={status} className="bg-[#111] text-white hidden md:block">{config.label}</option>
-                            ))}
-                          </select>
+                          <div className="flex items-center gap-2">
+                             {apt.status === "ready_for_finalization" && isOwner && (
+                               <button 
+                                 onClick={() => handleStatusChange(apt.id, "completed")}
+                                 className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[9px] font-black uppercase tracking-widest transition shadow-lg shadow-green-900/20"
+                               >
+                                 Finalize Revenue
+                               </button>
+                             )}
+                             <select
+                               value={apt.status}
+                               onChange={(e) => handleStatusChange(apt.id, e.target.value as AppointmentStatus)}
+                               className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border appearance-none outline-none transition cursor-pointer text-center ${statusConfig[apt.status].color}`}
+                             >
+                               {Object.entries(statusConfig).map(([status, config]) => {
+                                 // Simple logic to hide confusing options from mechanics
+                                 if (isMechanic && (status === "completed")) return null;
+                                 if (isMechanic && status === "cancelled") return null;
+                                 return (
+                                   <option key={status} value={status} className="bg-[#111] text-white">
+                                     {config.label}
+                                   </option>
+                                 );
+                               })}
+                             </select>
+                          </div>
                         ) : (
                           <span className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border ${statusConfig[apt.status].color}`}>
                             {statusConfig[apt.status].label}

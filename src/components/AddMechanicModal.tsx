@@ -13,7 +13,7 @@ const getMechanics = async () => {
   return data || [];
 };
 
-const createMechanicAccount = async (name: string, email: string, password: string, ownerId: string) => {
+const createMechanicAccount = async (name: string, email: string, password: string) => {
   // Sign up the mechanic via Supabase auth
   const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
   if (authError) throw authError;
@@ -25,7 +25,6 @@ const createMechanicAccount = async (name: string, email: string, password: stri
     email,
     name,
     role: "mechanic",
-    created_by: ownerId,
   });
   if (insertError) throw insertError;
   return authData.user;
@@ -83,7 +82,7 @@ const AddMechanicModal: React.FC<AddMechanicModalProps> = ({ isOpen, onClose }) 
     setLoading(true);
     
     try {
-      await createMechanicAccount(formData.name, formData.email, formData.password, user.id);
+      await createMechanicAccount(formData.name, formData.email, formData.password);
       setStatusMsg({ text: "Mechanic account created successfully!", type: "success" });
       setFormData({ name: "", email: "", password: "" });
       loadMechanics();

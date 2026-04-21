@@ -21,8 +21,6 @@ export const rolePagesMapping: Record<UserRole, AppPage[]> = {
   mechanic: [
     "mechanic-dashboard",
     "appointments",
-    "inventory",
-    "mechanic-portal",
   ],
   owner: [
     "dashboard",

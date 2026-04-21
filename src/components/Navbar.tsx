@@ -9,12 +9,8 @@ import {
   ChevronDown,
   CalendarDays,
   History,
-  ShoppingCart,
-  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { usePartsList } from "../contexts/PartsListContext";
-import { supabase } from "../services/supabaseClient";
 
 interface NavbarProps {
   onShowAppointments?: () => void;
@@ -27,8 +23,6 @@ interface NavbarProps {
   onSettings?: () => void;
   onServiceHistory?: () => void;
   onAIChat?: () => void;
-  onShowReceipts?: () => void;
-  onShowPartsList?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -42,15 +36,11 @@ const Navbar: React.FC<NavbarProps> = ({
   onSettings,
   onServiceHistory,
   onAIChat,
-  onShowReceipts,
-  onShowPartsList,
 }) => {
   const { user, logout } = useAuth();
-  const { cartCount } = usePartsList();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [receiptCount, setReceiptCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Track scroll for navbar style change
@@ -60,27 +50,6 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  // Fetch receipt count
-  useEffect(() => {
-    if (user?.id) {
-      const fetchReceiptCount = async () => {
-        try {
-          const { data, error } = await supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("customer_id", user.id);
-
-          if (!error && data !== null) {
-            setReceiptCount(data.length || 0);
-          }
-        } catch (error) {
-          console.error("Error fetching receipt count:", error);
-        }
-      };
-
-      fetchReceiptCount();
-    }
-  }, [user?.id]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -119,7 +88,7 @@ const Navbar: React.FC<NavbarProps> = ({
     { label: "BROWSE PARTS", onClick: onBrowseParts },
     { label: "BOOK APPOINTMENT", onClick: onBookAppointment },
     { label: "SERVICES", onClick: () => scrollToSection("services") },
-    { label: "ABOUT US", onClick: () => scrollToSection("about") },
+    { label: "ABOUT US", onClick: () => scrollToSection("about-us") },
     { label: "MECHANICS", onClick: onMechanics },
     ...(user
       ? [{ label: "MY APPOINTMENTS", onClick: onShowAppointments }]
@@ -138,8 +107,8 @@ const Navbar: React.FC<NavbarProps> = ({
       {/* Red accent line at top */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#d63a2f]" />
 
-      <div className="max-w-[1440px] mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between h-[72px] lg:h-[100px] gap-2 lg:gap-6">
+      <div className="max-w-[1920px] mx-auto px-4 lg:px-6 xl:px-10">
+        <div className="flex items-center justify-between h-[72px] lg:h-[100px] gap-4 lg:gap-8 xl:gap-12">
           <motion.div
             className="flex items-center gap-3 lg:gap-4 cursor-pointer select-none shrink-0 group"
             whileHover={{ scale: 1.03 }}
@@ -157,13 +126,14 @@ const Navbar: React.FC<NavbarProps> = ({
             {/* Brand Text */}
             <div className="flex flex-col leading-none">
               <span
-                className="text-lg lg:text-xl xl:text-2xl font-display font-black tracking-wider uppercase"
+                className="text-lg xl:text-2xl font-display font-black tracking-wider uppercase"
                 style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #888888 70%, #666666 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  textShadow: 'none',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+                  background:
+                    "linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #888888 70%, #666666 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  textShadow: "none",
+                  filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
                 }}
               >
                 JBMS MOTOSHOP
@@ -172,7 +142,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </motion.div>
 
           {/* ── Center Nav Items (Desktop) ── */}
-          <div className="hidden lg:flex flex-1 justify-center items-center gap-1 xl:gap-2 overflow-hidden">
+          <div className="hidden lg:flex flex-1 justify-center items-center gap-0.5 xl:gap-2 overflow-hidden px-2">
             {navItems.map((item, idx) => (
               <motion.button
                 key={idx}
@@ -180,7 +150,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   item.onClick?.();
                   setMobileOpen(false);
                 }}
-                className="relative px-2 xl:px-3 py-2 text-[10px] xl:text-xs font-bold tracking-widest uppercase text-white hover:text-white transition-all duration-300 border border-transparent hover:border-[#333] hover:bg-[#111] group whitespace-nowrap shrink-0"
+                className="relative px-1 xl:px-3 py-2 text-[9px] xl:text-xs font-bold tracking-widest uppercase text-white hover:text-white transition-all duration-300 border border-transparent hover:border-[#333] hover:bg-[#111] group whitespace-nowrap shrink-0"
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.97 }}
               >
@@ -192,38 +162,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {/* ── Right Side ── */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
-            {user && (
-              <>
-                <motion.button
-                  onClick={onShowPartsList}
-                  className="relative p-3 border border-[#333] hover:border-[#d63a2f] text-[#6b6b6b] hover:text-white transition-all group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  title="My Parts List"
-                >
-                  <ShoppingBag size={18} strokeWidth={1.5} />
-                  {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 w-5 h-5 bg-[#4ade80] text-[#0a0a0a] text-[10px] font-bold flex items-center justify-center rounded-full">
-                      {cartCount}
-                    </span>
-                  )}
-                </motion.button>
-                <motion.button
-                  onClick={onShowReceipts}
-                  className="relative p-3 border border-[#333] hover:border-[#d63a2f] text-[#6b6b6b] hover:text-white transition-all group"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  title="My Receipts"
-                >
-                  <ShoppingCart size={18} strokeWidth={1.5} />
-                  {receiptCount > 0 && (
-                    <span className="absolute top-0 right-0 w-5 h-5 bg-[#d63a2f] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
-                      {receiptCount}
-                    </span>
-                  )}
-                </motion.button>
-              </>
-            )}
+
             {user ? (
               <div ref={profileRef} className="relative">
                 {/* Profile Trigger */}
@@ -239,7 +178,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-col items-start gap-1">
-                    <span className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-widest group-hover:text-white truncate max-w-[120px] transition-colors leading-none">
+                    <span className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-widest group-hover:text-white truncate max-w-[80px] xl:max-w-[120px] transition-colors leading-none">
                       {user.name}
                     </span>
                     <span className="text-[8px] font-bold text-[#d63a2f] uppercase tracking-widest leading-none">

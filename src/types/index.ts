@@ -54,7 +54,7 @@ export interface Part {
 export type AppointmentStatus =
   | "pending"
   | "confirmed"
-  | "in_progress"
+  | "ready_for_finalization"
   | "completed"
   | "cancelled";
 
@@ -70,6 +70,8 @@ export interface Appointment {
   mechanic_id?: string;
   status: AppointmentStatus;
   notes?: string;
+  parts?: any[];
+  total_amount?: number;
   created_at: string;
   updated_at: string;
 }

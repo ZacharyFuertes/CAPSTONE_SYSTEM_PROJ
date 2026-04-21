@@ -63,8 +63,8 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       id: "inventory",
       label: "Inventory",
       icon: Package,
-      requiredRole: ["owner", "mechanic"],
-      tooltip: "Owners and Mechanics only (read-only for Mechanics)",
+      requiredRole: ["owner"],
+      tooltip: "Owners only",
     },
     {
       id: "update-parts",
@@ -79,13 +79,7 @@ const SystemNavbar: React.FC<NavbarProps> = ({
       icon: Calendar,
       requiredRole: ["owner", "mechanic", "customer"],
     },
-    {
-      id: "mechanic-portal",
-      label: "My Appointments",
-      icon: Wrench,
-      requiredRole: ["mechanic"],
-      tooltip: "View your assigned appointments",
-    },
+
     {
       id: "customer-portal",
       label: "My Portal",

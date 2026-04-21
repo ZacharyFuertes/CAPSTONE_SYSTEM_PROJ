@@ -32,7 +32,6 @@ import OwnerLoginPage from "./pages/OwnerLoginPage";
 import LoginChoicePage from "./pages/LoginChoicePage";
 import UpdatePartsPage from "./pages/UpdatePartsPage";
 
-
 // Landing page imports (original)
 import Navbar from "./components/Navbar";
 import HeroSlideshow from "./components/HeroSlideshow";
@@ -42,7 +41,6 @@ import Footer from "./components/Footer";
 import BookAppointmentModal from "./components/BookAppointmentModal";
 import ViewAppointmentsModal from "./components/ViewAppointmentsModal";
 import BrowsePartsModal from "./components/BrowsePartsModal";
-import ViewPartsListModal from "./components/ViewPartsListModal";
 import ReceiptModal from "./components/ReceiptModal";
 import CustomerPortalModal from "./components/CustomerPortalModal";
 import CustomerSettingsModal from "./components/CustomerSettingsModal";
@@ -51,7 +49,13 @@ import MechanicsModal from "./components/MechanicsModal";
 
 type PageType = AppPage;
 
-type LoginType = "landing" | "choice" | "customer" | "customer-signup" | "mechanic" | "owner";
+type LoginType =
+  | "landing"
+  | "choice"
+  | "customer"
+  | "customer-signup"
+  | "mechanic"
+  | "owner";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -66,7 +70,6 @@ const AppContent: React.FC = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
   const [showPartsModal, setShowPartsModal] = useState(false);
-  const [showPartsListModal, setShowPartsListModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -221,7 +224,6 @@ const AppContent: React.FC = () => {
               onMechanics={() => setShowMechanicsModal(true)}
               onViewAccount={handleOpenLogin}
               onAIChat={() => setShowAIChat(true)}
-              onShowPartsList={() => setShowPartsListModal(true)}
             />
             <HeroSlideshow
               onBookNow={handleOpenLogin}
@@ -312,8 +314,6 @@ const AppContent: React.FC = () => {
           onSettings={() => setShowSettingsModal(true)}
           onServiceHistory={() => setShowHistoryModal(true)}
           onAIChat={() => setShowAIChat(true)}
-          onShowPartsList={() => setShowPartsListModal(true)}
-          onShowReceipts={() => setShowReceiptModal(true)}
         />
         <HeroSlideshow
           onBookNow={() => setShowBookingModal(true)}
@@ -339,10 +339,6 @@ const AppContent: React.FC = () => {
           isOpen={showPartsModal}
           onClose={() => setShowPartsModal(false)}
           onLoginRedirect={() => {}}
-        />
-        <ViewPartsListModal
-          isOpen={showPartsListModal}
-          onClose={() => setShowPartsListModal(false)}
         />
         <ReceiptModal
           isOpen={showReceiptModal}
@@ -418,8 +414,8 @@ const AppContent: React.FC = () => {
           currentPage === "mechanic-dashboard"
             ? ""
             : currentPage === "update-parts"
-            ? "pt-20"
-            : "pt-20 px-4 sm:px-6 lg:px-8 pb-12"
+              ? "pt-20"
+              : "pt-20 px-4 sm:px-6 lg:px-8 pb-12"
         }
       >
         {currentPage === "dashboard" && (
