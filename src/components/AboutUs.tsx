@@ -213,17 +213,6 @@ const AboutUs: React.FC = () => {
         </div>
 
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5"
-          >
-            <div className="w-8 h-[1px] bg-[#d63a2f]" />
-            ABOUT US
-          </motion.div>
-
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -270,10 +259,6 @@ const AboutUs: React.FC = () => {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <div className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5">
-              <div className="w-8 h-[1px] bg-[#d63a2f]" />
-              OUR STORY
-            </div>
             <h3 className="font-display text-5xl lg:text-7xl font-bold text-[#f0ede8] uppercase leading-[0.95] mb-8">
               Built by <span className="text-[#d63a2f]">Riders,</span>
               <br />
@@ -345,10 +330,6 @@ const AboutUs: React.FC = () => {
             viewport={{ once: true }}
             className="mb-16"
           >
-            <div className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5">
-              <div className="w-8 h-[1px] bg-[#d63a2f]" />
-              OUR SHOP
-            </div>
             <h3 className="font-display text-5xl sm:text-[8vw] lg:text-[100px] font-bold leading-[0.92] tracking-[0.01em] text-[#f0ede8] uppercase mb-6">
               INSIDE
               <br />
@@ -394,7 +375,7 @@ const AboutUs: React.FC = () => {
       {/* ============================================================ */}
       {/*  MEET OUR MECHANICS                                           */}
       {/* ============================================================ */}
-      <div className="bg-[#080808] py-24 lg:py-32">
+      <div id="mechanics" className="bg-[#080808] py-24 lg:py-32">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
           {/* Section header */}
           <motion.div
@@ -404,10 +385,7 @@ const AboutUs: React.FC = () => {
             viewport={{ once: true }}
             className="mb-16"
           >
-            <div className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5">
-              <div className="w-8 h-[1px] bg-[#d63a2f]" />
-              THE TEAM
-            </div>
+
             <h3 className="font-display text-5xl sm:text-[8vw] lg:text-[100px] font-bold leading-[0.92] tracking-[0.01em] text-[#f0ede8] uppercase mb-6">
               MEET OUR
               <br />
@@ -488,31 +466,7 @@ const AboutUs: React.FC = () => {
                   </motion.div>
                 ))}
 
-                {/* Empty cell to complete the 3-col grid (if mechanics count is not divisible by 3) */}
-                {mechanics.length % 3 !== 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
-                    viewport={{ once: true }}
-                    className="relative flex flex-col items-center justify-center p-8 lg:p-10 bg-[#111111] overflow-hidden group hover:bg-[#161616] transition-colors duration-300 min-h-[300px]"
-                  >
-                    <div className="absolute inset-0 bg-[#d63a2f]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    <div className="text-center relative z-10">
-                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#333] flex items-center justify-center mx-auto mb-5 group-hover:border-[#d63a2f]/50 transition-colors duration-300">
-                        <span className="text-[#444] text-2xl group-hover:text-[#d63a2f] transition-colors duration-300">
-                          +
-                        </span>
-                      </div>
-                      <p className="font-display text-[18px] text-[#444] uppercase tracking-wide mb-2 group-hover:text-[#666] transition-colors duration-300">
-                        Join the Team
-                      </p>
-                      <p className="text-[13px] text-[#444] leading-[1.6]">
-                        We're always looking for passionate mechanics.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+             
               </div>
             )}
           </div>
@@ -532,19 +486,11 @@ const AboutUs: React.FC = () => {
             viewport={{ once: true }}
             className="mb-16"
           >
-            <div className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-5">
-              <div className="w-8 h-[1px] bg-[#d63a2f]" />
-              WHY US
-            </div>
             <h3 className="font-display text-5xl sm:text-[8vw] lg:text-[100px] font-bold leading-[0.92] tracking-[0.01em] text-[#f0ede8] uppercase mb-6">
               WHY CHOOSE
               <br />
               <span className="text-[#d63a2f]">MOTOSHOP</span>
             </h3>
-            <p className="text-[16px] font-light text-[#6b6b6b] max-w-[480px] leading-[1.7]">
-              We don't just fix motorcycles — we build long-term relationships
-              with every rider who trusts us with their machine.
-            </p>
           </motion.div>
 
           {/* Features grid */}

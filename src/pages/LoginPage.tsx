@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, Loader, ArrowLeft, Home, User, Phone, MapPin } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader,
+  ArrowLeft,
+  Home,
+  User,
+  Phone,
+  MapPin,
+  Truck,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import usersIcon from "../pictures/icons/users.png";
 import ErrorModal from "../components/ErrorModal";
+import {
+  filterMakes,
+  filterModels,
+} from "../utils/vehicleData";
 
 interface CustomerLoginPageProps {
   onLoginSuccess: () => void;
@@ -30,11 +44,66 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
     name: "",
     phone: "",
     address: "",
+    vehicle_make: "",
+    vehicle_model: "",
   });
+  const [makeSuggestions, setMakeSuggestions] = useState<string[]>([]);
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([]);
+  const [showMakeSuggestions, setShowMakeSuggestions] = useState(false);
+  const [showModelSuggestions, setShowModelSuggestions] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Handle vehicle make suggestions
+    if (name === "vehicle_make") {
+      if (value.trim()) {
+        const suggestions = filterMakes(value);
+        setMakeSuggestions(suggestions);
+        setShowMakeSuggestions(true);
+      } else {
+        setMakeSuggestions([]);
+        setShowMakeSuggestions(false);
+      }
+      // Reset model when make changes
+      setFormData((prev) => ({ ...prev, vehicle_model: "" }));
+      setModelSuggestions([]);
+      setShowModelSuggestions(false);
+    }
+
+    // Handle vehicle model suggestions
+    if (name === "vehicle_model") {
+      if (value.trim() && formData.vehicle_make) {
+        const suggestions = filterModels(formData.vehicle_make, value);
+        setModelSuggestions(suggestions);
+        setShowModelSuggestions(true);
+      } else {
+        setModelSuggestions([]);
+        setShowModelSuggestions(false);
+      }
+    }
+  };
+
+  const handleSelectMake = (make: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      vehicle_make: make,
+      vehicle_model: "",
+    }));
+    setMakeSuggestions([]);
+    setShowMakeSuggestions(false);
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
+  };
+
+  const handleSelectModel = (model: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      vehicle_model: model,
+    }));
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +142,10 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
           formData.name,
           formData.phone,
           formData.address,
+          {
+            make: formData.vehicle_make,
+            model: formData.vehicle_model,
+          },
         );
       } else {
         await login(formData.email, formData.password);
@@ -92,13 +165,17 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
             ? "Email already registered or invalid credentials. Please use a different email or sign in instead."
             : "Invalid email or password. Please check and try again.";
         } else if (message.includes("user already registered")) {
-          errorMessage = "This email is already registered. Please sign in instead.";
+          errorMessage =
+            "This email is already registered. Please sign in instead.";
         } else if (message.includes("email not confirmed")) {
-          errorMessage = "Email not confirmed. Please check your email for the verification link.";
+          errorMessage =
+            "Email not confirmed. Please check your email for the verification link.";
         } else if (message.includes("too many requests")) {
-          errorMessage = "Too many login attempts. Please try again in a few minutes.";
+          errorMessage =
+            "Too many login attempts. Please try again in a few minutes.";
         } else if (message.includes("invalid email")) {
-          errorMessage = "Invalid email format. Please enter a valid email address.";
+          errorMessage =
+            "Invalid email format. Please enter a valid email address.";
         } else {
           errorMessage = err.message;
         }
@@ -210,7 +287,8 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
           }}
         >
           {/* Card inner glow */}
-          <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
+          <div
+            className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
             style={{
               background: isSignup
                 ? "radial-gradient(ellipse at top, rgba(245,158,11,0.08) 0%, transparent 60%)"
@@ -376,6 +454,127 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                       </div>
                     </motion.div>
                   )}
+
+                  {/* Vehicle Section Divider */}
+                  {isSignup && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="pt-2 mt-4 border-t border-slate-700/50"
+                    />
+                  )}
+
+                  {/* Vehicle Make (Signup only) */}
+                  {isSignup && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.32 }}
+                    >
+                      <label className="text-xs text-slate-400 ml-1 mb-1 block">
+                        Vehicle Information
+                      </label>
+                      <div className="relative">
+                        <Truck size={18} className={iconClass} />
+                        <input
+                          type="text"
+                          name="vehicle_make"
+                          value={formData.vehicle_make}
+                          onChange={handleChange}
+                          onFocus={() =>
+                            formData.vehicle_make &&
+                            setShowMakeSuggestions(true)
+                          }
+                          placeholder="Vehicle Make (e.g., Toyota)"
+                          required
+                          className={inputClass}
+                          autoComplete="off"
+                        />
+                        {/* Make Suggestions Dropdown */}
+                        <AnimatePresence>
+                          {showMakeSuggestions &&
+                            makeSuggestions.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                              >
+                                {makeSuggestions.map((make, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => handleSelectMake(make)}
+                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-700/50 text-slate-300 hover:text-white text-sm transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                  >
+                                    {make}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Vehicle Model (Signup only) */}
+                  {isSignup && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.34 }}
+                    >
+                      <div className="relative">
+                        <Truck size={18} className={iconClass} />
+                        <input
+                          type="text"
+                          name="vehicle_model"
+                          value={formData.vehicle_model}
+                          onChange={handleChange}
+                          onFocus={() =>
+                            formData.vehicle_model &&
+                            setShowModelSuggestions(true)
+                          }
+                          placeholder="Vehicle Model (e.g., Altis)"
+                          required
+                          disabled={!formData.vehicle_make}
+                          className={`${inputClass} ${!formData.vehicle_make ? "opacity-50 cursor-not-allowed" : ""}`}
+                          autoComplete="off"
+                        />
+                        {!formData.vehicle_make && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                            Select Make First
+                          </span>
+                        )}
+                        {/* Model Suggestions Dropdown */}
+                        <AnimatePresence>
+                          {showModelSuggestions &&
+                            modelSuggestions.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                              >
+                                {modelSuggestions.map((model, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => handleSelectModel(model)}
+                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-700/50 text-slate-300 hover:text-white text-sm transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                  >
+                                    {model}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
               </AnimatePresence>
 
@@ -422,6 +621,8 @@ const LoginPage: React.FC<CustomerLoginPageProps> = ({
                       name: "",
                       phone: "",
                       address: "",
+                      vehicle_make: "",
+                      vehicle_model: "",
                     });
                   }}
                   className={`ml-2 font-semibold transition-colors ${

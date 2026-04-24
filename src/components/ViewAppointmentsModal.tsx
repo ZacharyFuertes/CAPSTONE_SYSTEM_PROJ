@@ -229,7 +229,7 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[900px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
+          className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full sm:max-w-[1200px] h-[95vh] sm:h-auto sm:max-h-[94vh] overflow-hidden shadow-2xl flex flex-col"
         >
           {/* ── Header ── */}
           <div className="flex items-start justify-between px-6 sm:px-10 py-6 border-b border-[#222] flex-shrink-0 bg-[#111111]">
@@ -242,10 +242,10 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase">
+                <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.22em] uppercase">
                   <div className="w-6 h-[1px] bg-[#d63a2f]" /> MY SCHEDULE
                 </div>
-                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-wide">
+                <h2 className="font-display text-3xl sm:text-4xl text-white uppercase leading-none tracking-[0.12em]">
                   APPOINTMENTS
                 </h2>
                 <p className="text-[#6b6b6b] text-xs font-light tracking-wide hidden sm:block">
@@ -281,16 +281,16 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
               <button
                 key={tab.key}
                 onClick={() => setFilter(tab.key)}
-                className={`px-5 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
+                className={`px-5 py-2 text-[10px] font-bold tracking-[0.15em] uppercase transition-all border ${
                   filter === tab.key
                     ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
-                    : "text-[#6b6b6b] border-[#222] hover:text-[#888] hover:bg-[#111] hover:border-[#333]"
+                    : "text-[#888] border-[#222] hover:text-white hover:bg-[#111] hover:border-[#333]"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
-            <div className="ml-auto text-[10px] font-bold tracking-widest uppercase text-[#555]">
+            <div className="ml-auto text-[10px] font-bold tracking-[0.15em] uppercase text-[#888]">
               {filteredAppointments.length} APPOINTMENT
               {filteredAppointments.length !== 1 ? "S" : ""}
             </div>
@@ -350,12 +350,15 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-display text-xl text-white uppercase leading-none mb-3 group-hover:text-[#d63a2f] transition-colors">
+                            <h4 className="font-display text-xl text-white uppercase leading-none mb-4 group-hover:text-[#d63a2f] transition-colors tracking-[0.1em]">
                               {apt.service_type}
                             </h4>
-                            <div className="flex flex-col gap-2">
-                              <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
-                                <Calendar size={12} className="text-[#555]" />
+                            <div className="flex flex-col gap-3">
+                              <span className="flex items-center gap-3 text-[#888] text-[10px] tracking-[0.12em] font-bold uppercase">
+                                <Calendar
+                                  size={12}
+                                  className="text-[#666] flex-shrink-0"
+                                />
                                 {new Date(
                                   apt.scheduled_date + "T00:00:00",
                                 ).toLocaleDateString("en-US", {
@@ -364,15 +367,18 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                                   day: "numeric",
                                 })}
                               </span>
-                              <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
-                                <Clock size={12} className="text-[#555]" />
+                              <span className="flex items-center gap-3 text-[#888] text-[10px] tracking-[0.12em] font-bold uppercase">
+                                <Clock
+                                  size={12}
+                                  className="text-[#666] flex-shrink-0"
+                                />
                                 {formatTime(apt.scheduled_time)}
                               </span>
                               {apt.mechanic_name && (
-                                <span className="flex items-center gap-2 text-[#6b6b6b] text-[10px] tracking-widest font-bold uppercase">
+                                <span className="flex items-center gap-3 text-[#888] text-[10px] tracking-[0.12em] font-bold uppercase">
                                   <Wrench
                                     size={12}
-                                    className="text-[#d63a2f]"
+                                    className="text-[#d63a2f] flex-shrink-0"
                                   />
                                   {apt.mechanic_name}
                                 </span>
@@ -390,20 +396,20 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                       {/* Parts Section */}
                       {apt.parts && apt.parts.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-[#222]">
-                          <p className="text-[10px] font-bold tracking-[0.2em] text-[#d63a2f] uppercase mb-3">
+                          <p className="text-[10px] font-bold tracking-[0.2em] text-[#d63a2f] uppercase mb-4 leading-tight">
                             PARTS INCLUDED
                           </p>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {apt.parts.map((part, idx) => (
                               <div
                                 key={idx}
-                                className="bg-[#0a0a0a] p-2 rounded-none border border-[#333] flex items-center justify-between"
+                                className="bg-[#0a0a0a] p-3 rounded-none border border-[#333] flex items-center justify-between"
                               >
                                 <div className="min-w-0 flex-1">
                                   <p className="text-white font-bold text-xs truncate">
                                     {part.part_name}
                                   </p>
-                                  <p className="text-[9px] text-[#6b6b6b]">
+                                  <p className="text-[9px] text-[#888]">
                                     {part.quantity}x @ ₱
                                     {part.unit_price.toLocaleString()}
                                   </p>
@@ -420,10 +426,10 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                           {apt.total_amount && (
                             <div className="mt-3 pt-3 border-t border-[#333]">
                               <div className="flex items-center justify-between">
-                                <span className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-widest">
-                                  Total:
+                                <span className="text-[#888] text-[10px] font-bold uppercase tracking-[0.12em]">
+                                  TOTAL:
                                 </span>
-                                <span className="text-[#d63a2f] font-bold">
+                                <span className="text-[#d63a2f] font-bold text-sm">
                                   ₱{apt.total_amount.toLocaleString()}
                                 </span>
                               </div>
@@ -436,7 +442,7 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                       <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#222]">
                         {/* Status Badge */}
                         <span
-                          className={`flex items-center gap-1.5 text-[9px] px-3 py-1.5 border font-bold tracking-widest ${status.bg} ${status.color}`}
+                          className={`flex items-center gap-2 text-[9px] px-3 py-1.5 border font-bold tracking-[0.14em] ${status.bg} ${status.color}`}
                         >
                           {status.icon}
                           {status.label}
@@ -446,7 +452,7 @@ const ViewAppointmentsModal: React.FC<ViewAppointmentsModalProps> = ({
                         {showCancel && !isConfirmingCancel && (
                           <button
                             onClick={() => setConfirmCancelId(apt.id)}
-                            className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase text-[#555] hover:text-white transition px-3 py-1.5 bg-[#161616] hover:bg-[#d63a2f] border border-[#333] hover:border-[#d63a2f]"
+                            className="flex items-center gap-2 text-[9px] font-bold tracking-[0.14em] uppercase text-[#888] hover:text-white transition px-3 py-1.5 bg-[#161616] hover:bg-[#d63a2f] border border-[#333] hover:border-[#d63a2f]"
                           >
                             <Ban size={10} /> CANCEL
                           </button>

@@ -17,7 +17,9 @@ export const imageService = {
     try {
       // Generate unique filename
       const timestamp = Date.now();
-      const sanitizedName = partName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
+      const sanitizedName = partName
+        .replace(/\s+/g, "_")
+        .replace(/[^a-zA-Z0-9_-]/g, "");
       const filename = `${sanitizedName}_${timestamp}_${file.name}`;
       const filePath = `parts/${filename}`;
 
@@ -39,7 +41,10 @@ export const imageService = {
         .from(BUCKET_NAME)
         .getPublicUrl(filePath);
 
-      console.log("✅ Image uploaded to product-images bucket:", publicData.publicUrl);
+      console.log(
+        "✅ Image uploaded to product-images bucket:",
+        publicData.publicUrl,
+      );
       return publicData.publicUrl;
     } catch (err) {
       console.error("Error uploading image:", err);
@@ -67,7 +72,9 @@ export const imageService = {
         filePath = `parts/${urlParts}`;
       }
 
-      const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+      const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([filePath]);
 
       if (error) {
         throw error;

@@ -45,8 +45,8 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch ONLY users with role = 'customer'
-        const { data: usersData, error: fetchError } = await supabase
+        // 1. Fetch ONLY users with role = 'customer'
+        const { data: userData, error: fetchError } = await supabase
           .from("users")
           .select("*")
           .eq("role", "customer")
@@ -54,35 +54,60 @@ const CustomersListPage: React.FC<CustomersListPageProps> = () => {
 
         if (fetchError) throw fetchError;
 
-        // Fetch completed appointments for revenue calculation
-        const { data: appointmentsData, error: aptError } = await supabase
+        const baseCustomers = userData || [];
+
+        // 2. Fetch all completed appointments
+        const { data: appointments } = await supabase
           .from("appointments")
           .select("customer_id, total_amount, estimated_price")
           .eq("status", "completed");
 
-        if (aptError) throw aptError;
+        // 3. Fetch all completed job orders
+        const { data: jobOrders } = await supabase
+          .from("job_orders")
+          .select("customer_id, total_cost")
+          .eq("status", "completed");
 
-        // Aggregate revenue by customer
-        const revenueMap: Record<string, number> = {};
-        (appointmentsData || []).forEach(apt => {
-          const amount = Number(apt.total_amount || apt.estimated_price) || 0;
-          revenueMap[apt.customer_id] = (revenueMap[apt.customer_id] || 0) + amount;
+        // 4. Fetch all fulfilled/confirmed reservations (part sales)
+        const { data: reservations } = await supabase
+          .from("reservations")
+          .select("customer_id, quantity, parts(unit_price)")
+          .in("status", ["confirmed", "fulfilled"]);
+
+        // Create a map for fast lookup
+        const spendingMap: Record<string, number> = {};
+
+        // Add appointment revenue
+        appointments?.forEach(a => {
+          const amount = Number(a.total_amount || a.estimated_price) || 0;
+          spendingMap[a.customer_id] = (spendingMap[a.customer_id] || 0) + amount;
         });
 
-        // Enrich customer data
-        const enrichedCustomers = (usersData || []).map(user => ({
-          ...user,
-          total_spent: revenueMap[user.id] || 0
+        // Add job order revenue
+        jobOrders?.forEach(j => {
+          const amount = Number(j.total_cost) || 0;
+          spendingMap[j.customer_id] = (spendingMap[j.customer_id] || 0) + amount;
+        });
+
+        // Add reservation revenue
+        reservations?.forEach((r: any) => {
+          const unitPrice = r.parts?.unit_price || 0;
+          const amount = (unitPrice * r.quantity) || 0;
+          spendingMap[r.customer_id] = (spendingMap[r.customer_id] || 0) + amount;
+        });
+
+        // Map spending back to customers
+        const customersWithSpent = baseCustomers.map(c => ({
+          ...c,
+          total_spent: spendingMap[c.id] || 0
         }));
 
-        setCustomers(enrichedCustomers);
-        setFilteredCustomers(enrichedCustomers);
-        console.log(`✅ Loaded ${enrichedCustomers.length} customers with revenue data`);
+        setCustomers(customersWithSpent);
+        setFilteredCustomers(customersWithSpent);
+        console.log(`✅ Loaded ${customersWithSpent.length} customers with revenue data`);
       } catch (err) {
         console.error("Error fetching customers:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load customers",
-        );
+        setError(err instanceof Error ? err.message : "Failed to load customers");
       } finally {
         setLoading(false);
       }

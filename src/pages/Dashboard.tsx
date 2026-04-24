@@ -21,6 +21,8 @@ import {
   CheckCircle,
   DollarSign,
   Lock,
+  ShoppingCart,
+  Calendar,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -255,11 +257,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .select("id")
           .eq("role", "customer");
 
+        // ══════════════════════════════════════════════
+        // REVENUE BREAKDOWN
+        // ══════════════════════════════════════════════
+        // Item Revenue = POS Sales + Reservations (part sales)
+        const itemRevenue = revenuePOS + (allReservations || [])
+          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+          .reduce((sum: number, r: any) => {
+            const unitPrice = r.parts?.unit_price || 0;
+            const totalPrice = (unitPrice * r.quantity) || 0;
+            return sum + totalPrice;
+          }, 0);
+
+        // Customer Booking Revenue = Appointments + Job Orders
+        const bookingRevenue = revenueAppointments + revenueJobOrders;
+
         // Revenue breakdown for subtitle
         const revenuePartsArr: string[] = [];
-        if (revenueAppointments > 0) revenuePartsArr.push(`Services: ₱${revenueAppointments.toLocaleString()}`);
-        if (revenuePOS > 0) revenuePartsArr.push(`POS Sales: ₱${revenuePOS.toLocaleString()}`);
-        if (revenueJobOrders > 0) revenuePartsArr.push(`Jobs: ₱${revenueJobOrders.toLocaleString()}`);
+        if (bookingRevenue > 0) revenuePartsArr.push(`Bookings: ₱${bookingRevenue.toLocaleString()}`);
+        if (itemRevenue > 0) revenuePartsArr.push(`Items: ₱${itemRevenue.toLocaleString()}`);
         const revenueSubtitle = revenuePartsArr.length > 0 ? revenuePartsArr.join(" • ") : "No revenue data yet";
 
         setStats([
@@ -271,27 +287,40 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             color: "from-green-500 to-emerald-600",
           },
           {
+            label: "Booking Revenue",
+            value: `₱${bookingRevenue.toLocaleString()}`,
+            change: `${totalCompleted} bookings completed`,
+            icon: <Calendar className="w-8 h-8" />,
+            color: "from-blue-500 to-cyan-600",
+          },
+          {
+            label: "Item Revenue",
+            value: `₱${itemRevenue.toLocaleString()}`,
+            change: `From parts & sales`,
+            icon: <ShoppingCart className="w-8 h-8" />,
+            color: "from-purple-500 to-pink-600",
+          },
+          {
             label: t("dashboard.today_jobs"),
             value: totalCompleted,
             change: `${totalCompleted} total completed`,
             icon: <CheckCircle className="w-8 h-8" />,
-            color: "from-blue-500 to-cyan-600",
+            color: "from-orange-500 to-yellow-600",
           },
           {
             label: t("dashboard.pending"),
             value: totalPending,
             change: `${totalPending} need attention`,
             icon: <Clock className="w-8 h-8" />,
-            color: "from-orange-500 to-red-600",
+            color: "from-red-500 to-orange-600",
           },
           {
             label: "Active Customers",
             value: totalCustomers.data?.length || 0,
             change: `${totalCustomers.data?.length || 0} registered`,
             icon: <Users className="w-8 h-8" />,
-            color: "from-purple-500 to-pink-600",
+            color: "from-indigo-500 to-blue-600",
           },
-
         ]);
 
         // ══════════════════════════════════════════════
@@ -439,7 +468,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, index) => (
           <motion.div
             key={index}
@@ -450,7 +479,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="bg-white/20 p-3 rounded-lg">{stat.icon}</div>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded text-xs">
+              <span className="text-xs bg-white/20 px-2 py-1 rounded">
                 {stat.change}
               </span>
             </div>

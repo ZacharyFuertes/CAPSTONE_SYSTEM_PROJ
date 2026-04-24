@@ -45,7 +45,6 @@ import ReceiptModal from "./components/ReceiptModal";
 import CustomerPortalModal from "./components/CustomerPortalModal";
 import CustomerSettingsModal from "./components/CustomerSettingsModal";
 import ServiceHistoryModal from "./components/ServiceHistoryModal";
-import MechanicsModal from "./components/MechanicsModal";
 
 type PageType = AppPage;
 
@@ -75,7 +74,6 @@ const AppContent: React.FC = () => {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showMechanicsModal, setShowMechanicsModal] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
 
   /**
@@ -221,7 +219,6 @@ const AppContent: React.FC = () => {
               onBrowseParts={() => setShowPartsModal(true)}
               onJoinSignIn={handleOpenLogin}
               onSignUp={handleOpenSignup}
-              onMechanics={() => setShowMechanicsModal(true)}
               onViewAccount={handleOpenLogin}
               onAIChat={() => setShowAIChat(true)}
             />
@@ -236,10 +233,6 @@ const AppContent: React.FC = () => {
               isOpen={showPartsModal}
               onClose={() => setShowPartsModal(false)}
               onLoginRedirect={handleOpenLogin}
-            />
-            <MechanicsModal
-              isOpen={showMechanicsModal}
-              onClose={() => setShowMechanicsModal(false)}
             />
             <AIChatModal
               isOpen={showAIChat}
@@ -309,7 +302,6 @@ const AppContent: React.FC = () => {
           onBrowseParts={() => setShowPartsModal(true)}
           onJoinSignIn={() => handleBackToLanding()}
           onSignUp={() => handleBackToLanding()}
-          onMechanics={() => setShowMechanicsModal(true)}
           onViewAccount={() => setShowAccountModal(true)}
           onSettings={() => setShowSettingsModal(true)}
           onServiceHistory={() => setShowHistoryModal(true)}
@@ -356,10 +348,6 @@ const AppContent: React.FC = () => {
         <ServiceHistoryModal
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
-        />
-        <MechanicsModal
-          isOpen={showMechanicsModal}
-          onClose={() => setShowMechanicsModal(false)}
         />
         <AIChatModal
           isOpen={showAIChat}

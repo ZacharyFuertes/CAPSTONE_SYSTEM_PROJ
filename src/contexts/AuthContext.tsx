@@ -6,7 +6,7 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { User, UserRole } from "../types";
+import { User, UserRole, Vehicle } from "../types";
 import { supabase } from "../services/supabaseClient";
 import { formatDatabaseError } from "../services/dbHelper";
 
@@ -25,6 +25,7 @@ interface AuthContextType {
     name: string,
     phone?: string,
     address?: string,
+    vehicle?: Omit<Vehicle, "id" | "customer_id" | "created_at">,
   ) => Promise<void>;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
   canManageInventory: () => boolean;
@@ -171,22 +172,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   // Client-side rate limiting for login attempts
-  const loginAttemptsRef = useRef<{ count: number; firstAttemptTime: number }>({ count: 0, firstAttemptTime: Date.now() });
+  const loginAttemptsRef = useRef<{ count: number; firstAttemptTime: number }>({
+    count: 0,
+    firstAttemptTime: Date.now(),
+  });
 
   const checkRateLimit = () => {
     const now = Date.now();
     const attempts = loginAttemptsRef.current;
-    
+
     // Reset window after 2 minutes (120000ms)
     if (now - attempts.firstAttemptTime > 120000) {
       loginAttemptsRef.current = { count: 1, firstAttemptTime: now };
       return true;
     }
-    
+
     if (attempts.count >= 5) {
       return false;
     }
-    
+
     attempts.count += 1;
     return true;
   };
@@ -194,7 +198,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (email: string, password: string) => {
     if (!checkRateLimit()) {
       setIsLoading(false);
-      throw new Error("Too many login attempts. Please try again in 2 minutes.");
+      throw new Error(
+        "Too many login attempts. Please try again in 2 minutes.",
+      );
     }
     console.log("🔐 [Auth] Login attempt:", email);
     setIsLoading(true);
@@ -236,6 +242,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     name: string,
     phone?: string,
     address?: string,
+    vehicle?: Omit<Vehicle, "id" | "customer_id" | "created_at">,
   ) => {
     const role: UserRole = "customer"; // Hardcoded for security
     console.log("📝 [Auth] Signup attempt:", email, "role:", role);
@@ -264,6 +271,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       });
 
       if (profileError) throw profileError;
+
+      // Create vehicle record if vehicle data is provided
+      if (vehicle) {
+        const { error: vehicleError } = await supabase.from("vehicles").insert({
+          customer_id: data.user.id,
+          make: vehicle.make,
+          model: vehicle.model,
+        });
+
+        if (vehicleError) throw vehicleError;
+        console.log("✅ [Auth] Vehicle created for customer");
+      }
 
       console.log("✅ [Auth] Signup successful");
     } catch (err) {

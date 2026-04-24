@@ -103,7 +103,6 @@ const ServicesGrid: React.FC = () => {
             viewport={{ once: true }}
             className="flex items-center gap-[10px] text-[#d63a2f] text-[11px] font-medium tracking-[0.2em] uppercase mb-[20px]"
           >
-            <div /> WHAT WE OFFER
           </motion.div>
 
           <motion.h2

@@ -19,10 +19,6 @@ export interface Vehicle {
   customer_id: string;
   make: string;
   model: string;
-  year: number;
-  plate_number: string;
-  engine_number: string;
-  vin?: string;
   created_at: string;
 }
 
