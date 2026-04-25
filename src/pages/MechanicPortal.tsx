@@ -25,7 +25,6 @@ interface AppointmentData {
   vehicles: Array<{
     make: string;
     model: string;
-    plate_number: string;
   }>;
 }
 
@@ -84,7 +83,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
               }
             ],
             vehicles: [
-              { make: "Customer", model: "Vehicle", plate_number: "N/A" },
+              { make: "Customer", model: "Vehicle" },
             ],
           })) || [];
 
@@ -304,9 +303,7 @@ const MechanicPortal: React.FC<MechanicPortalProps> = ({ onNavigate }) => {
                         <p className="text-white font-semibold">
                           {apt.vehicles[0]?.make} {apt.vehicles[0]?.model}
                         </p>
-                        <p className="text-slate-400 text-sm">
-                          Plate: {apt.vehicles[0]?.plate_number}
-                        </p>
+
                       </div>
                     </div>
                   </div>

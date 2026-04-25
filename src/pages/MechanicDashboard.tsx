@@ -37,8 +37,6 @@ interface PerformanceMetric {
   color: string;
 }
 
-
-
 interface Appointment {
   id: string;
   customer_id: string;
@@ -102,7 +100,7 @@ const MechanicDashboard: React.FC = () => {
             status,
             total_amount,
             customer:users!customer_id (name, phone),
-            vehicle:vehicles!vehicle_id (make, model, plate_number)
+            vehicle:vehicles!vehicle_id (make, model, year)
           `,
           )
           .eq("mechanic_id", user.id)
@@ -113,11 +111,11 @@ const MechanicDashboard: React.FC = () => {
           .from("parts")
           .select("*")
           .order("name", { ascending: true });
-        
+
         if (user?.shop_id) {
           partsQuery.eq("shop_id", user.shop_id);
         }
-        
+
         const { data: inv } = await partsQuery;
 
         // Format appointments as unified Jobs/Tasks
@@ -130,31 +128,40 @@ const MechanicDashboard: React.FC = () => {
             customer_contact: appt.customer?.phone,
             vehicle_make: appt.vehicle?.make,
             vehicle_model: appt.vehicle?.model,
-            vehicle_plate: appt.vehicle?.plate_number,
+            vehicle_year: appt.vehicle?.year,
             date: appt.scheduled_date,
             time: appt.scheduled_time,
             status: appt.status,
             total_amount: appt.total_amount,
-            updated_at: appt.updated_at
+            updated_at: appt.updated_at,
           })) || [];
 
         // Format inventory items for grid
         const formattedInv: any[] =
           inv?.map((item: any) => ({
             ...item,
-            is_low_stock: item.quantity_in_stock <= (item.reorder_level || 5)
+            is_low_stock: item.quantity_in_stock <= (item.reorder_level || 5),
           })) || [];
 
         setAppointments(formattedAppts);
         setInventory(formattedInv);
 
         // Calculate metrics from appointments
-        const confirmedAppts = formattedAppts.filter((a) => a.status === "confirmed");
-        const pendingAppts = formattedAppts.filter((a) => a.status === "pending");
-        const readyAppts = formattedAppts.filter((a) => a.status === "ready_for_finalization");
-        const completedAppts = formattedAppts.filter((a) => a.status === "completed");
+        const confirmedAppts = formattedAppts.filter(
+          (a) => a.status === "confirmed",
+        );
+        const pendingAppts = formattedAppts.filter(
+          (a) => a.status === "pending",
+        );
+        const readyAppts = formattedAppts.filter(
+          (a) => a.status === "ready_for_finalization",
+        );
+        const completedAppts = formattedAppts.filter(
+          (a) => a.status === "completed",
+        );
 
-        const totalCustomers = new Set(formattedAppts.map((a) => a.customer_id)).size;
+        const totalCustomers = new Set(formattedAppts.map((a) => a.customer_id))
+          .size;
 
         // Build performance metrics
         const newMetrics: PerformanceMetric[] = [
@@ -209,7 +216,11 @@ const MechanicDashboard: React.FC = () => {
           });
 
           const completedOnDate = formattedAppts.filter((appt) => {
-            if (appt.status !== "completed" && appt.status !== "ready_for_finalization") return false;
+            if (
+              appt.status !== "completed" &&
+              appt.status !== "ready_for_finalization"
+            )
+              return false;
             const updatedDate = new Date(appt.updated_at || appt.date);
             return (
               updatedDate.toLocaleDateString("en-US", {
@@ -229,15 +240,18 @@ const MechanicDashboard: React.FC = () => {
 
         // Map existing phone user data if available
         if (user && user.phone) {
-          setPhoneInput(user.phone.includes('@') ? '' : user.phone);
+          setPhoneInput(user.phone.includes("@") ? "" : user.phone);
         } else {
           // If the auth context doesn't have it, try fetching it
-          const { data: userData } = await supabase.from("users").select("phone").eq("id", user.id).single();
-          if (userData?.phone && !userData.phone.includes('@')) {
+          const { data: userData } = await supabase
+            .from("users")
+            .select("phone")
+            .eq("id", user.id)
+            .single();
+          if (userData?.phone && !userData.phone.includes("@")) {
             setPhoneInput(userData.phone);
           }
         }
-
       } catch (error) {
         console.error("Error fetching mechanic data:", error);
       } finally {
@@ -246,7 +260,9 @@ const MechanicDashboard: React.FC = () => {
     };
 
     fetchAllData();
-  }, [user?.id]);
+    // ✅ FIX: Include full user object in dependency array to catch all changes
+    // Previously only had user?.id, but user object contains shop_id and other props
+  }, [user]);
 
   // Update appointment status (The "Job" logic)
   const updateAppointmentStatus = async (apptId: string, newStatus: string) => {
@@ -262,10 +278,10 @@ const MechanicDashboard: React.FC = () => {
       // Refresh local state
       setAppointments(
         appointments.map((appt) =>
-          appt.id === apptId ? { ...appt, status: newStatus } : appt
-        )
+          appt.id === apptId ? { ...appt, status: newStatus } : appt,
+        ),
       );
-      
+
       // Update metrics
       // (This will normally be handled by a re-fetch or manual stat update if needed)
     } catch (error) {
@@ -290,7 +306,7 @@ const MechanicDashboard: React.FC = () => {
           .from("users")
           .update({ phone: phoneInput })
           .eq("id", user.id);
-        
+
         if (phoneError) throw new Error("Failed to update phone number.");
       }
 
@@ -307,14 +323,18 @@ const MechanicDashboard: React.FC = () => {
           password: newPassword,
         });
 
-        if (passError) throw new Error("Failed to update password: " + passError.message);
+        if (passError)
+          throw new Error("Failed to update password: " + passError.message);
       }
 
       setProfileMsg({ text: "Profile updated successfully!", type: "success" });
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      setProfileMsg({ text: err.message || "Failed to update profile", type: "error" });
+      setProfileMsg({
+        text: err.message || "Failed to update profile",
+        type: "error",
+      });
     } finally {
       setProfileSaving(false);
     }
@@ -567,131 +587,180 @@ const MechanicDashboard: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-            {/* Jobs Tab Content */}
-            {activeTab === "jobs" && (
-              <motion.div
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-white font-black text-3xl">ASSIGNED TASKS</h2>
-                  <div className="bg-blue-600/20 text-blue-400 px-4 py-1 rounded-full text-xs font-bold border border-blue-600/30">
-                    {appointments.length} Total
-                  </div>
-                </div>
-
-                {appointments.length === 0 ? (
-                  <div className="text-slate-400 text-center py-12">
-                    No tasks assigned yet.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4">
-                    {appointments.map((appt) => (
-                      <div
-                        key={appt.id}
-                        className={`bg-slate-700/50 rounded-lg p-6 border transition-all ${
-                          appt.status === "pending" 
-                            ? "border-yellow-600/30 shadow-[4px_0_0_#d97706]" 
-                            : appt.status === "confirmed"
-                              ? "border-blue-600/30 shadow-[4px_0_0_#2563eb]"
-                              : appt.status === "ready_for_finalization"
-                                ? "border-purple-600/30 shadow-[4px_0_0_#9333ea]"
-                                : "border-slate-600"
-                        }`}
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          {/* Task details */}
-                          <div className="md:col-span-2">
-                            <h3 className="text-white font-bold text-lg uppercase tracking-tight">
-                              {(appt as any).title}
-                            </h3>
-                            <p className="text-slate-500 text-xs mb-4">
-                              #{(appt.id || "").substring(0, 8).toUpperCase()} • {appt.date} At {appt.time}
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Customer</p>
-                                <p className="text-white text-sm font-semibold">{(appt as any).customer_name}</p>
-                                <p className="text-slate-500 text-xs">{(appt as any).customer_contact}</p>
-                              </div>
-                              <div>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Vehicle</p>
-                                <p className="text-white text-sm font-semibold">{(appt as any).vehicle_make} {(appt as any).vehicle_model}</p>
-                                <p className="text-slate-500 text-xs">{(appt as any).vehicle_plate}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="md:col-span-2 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Current Status</p>
-                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                                  appt.status === "completed" 
-                                    ? "bg-green-600/20 text-green-400 border border-green-600/30" 
-                                    : appt.status === "confirmed"
-                                      ? "bg-blue-600/20 text-blue-400 border border-blue-600/30"
-                                      : appt.status === "ready_for_finalization"
-                                        ? "bg-purple-600/20 text-purple-400 border border-purple-600/30"
-                                        : "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
-                                }`}>
-                                  {appt.status.replace(/_/g, " ")}
-                                </span>
-                              </div>
-                              {((appt as any).total_amount) && (
-                                <div className="text-right">
-                                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Amt</p>
-                                  <p className="text-emerald-400 font-black">₱{(appt as any).total_amount.toLocaleString()}</p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Workflow Actions */}
-                            <div className="mt-6">
-                              {appt.status === "pending" && (
-                                <button
-                                  onClick={() => updateAppointmentStatus(appt.id, "confirmed")}
-                                  disabled={statusUpdating === appt.id}
-                                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
-                                >
-                                  {statusUpdating === appt.id ? "SYCHRONIZING..." : "ACCEPT & CONFIRM TASK"}
-                                </button>
-                              )}
-                              
-                              {appt.status === "confirmed" && (
-                                <button
-                                  onClick={() => updateAppointmentStatus(appt.id, "ready_for_finalization")}
-                                  disabled={statusUpdating === appt.id}
-                                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
-                                >
-                                  {statusUpdating === appt.id ? "SYCHRONIZING..." : "MARK AS COMPLETED"}
-                                </button>
-                              )}
-
-                              {appt.status === "ready_for_finalization" && (
-                                <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg text-center flex items-center justify-center gap-3">
-                                  <Clock className="w-4 h-4 text-purple-400 animate-spin" />
-                                  <p className="text-purple-400 text-[10px] font-bold uppercase tracking-wider">WAITING FOR OWNER FINALIZATION</p>
-                                </div>
-                              )}
-                              
-                              {appt.status === "completed" && (
-                                <div className="flex items-center justify-center gap-2 text-emerald-400 py-2 border border-emerald-500/20 rounded-lg bg-emerald-500/5">
-                                  <CheckCircle size={14} />
-                                  <span className="text-[10px] font-bold uppercase tracking-widest">TASK FINALIZED & ARCHIVED</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                {/* Jobs Tab Content */}
+                {activeTab === "jobs" && (
+                  <motion.div
+                    className="bg-slate-800/50 border border-slate-700 rounded-lg p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <div className="flex items-center justify-between mb-8">
+                      <h2 className="text-white font-black text-3xl">
+                        ASSIGNED TASKS
+                      </h2>
+                      <div className="bg-blue-600/20 text-blue-400 px-4 py-1 rounded-full text-xs font-bold border border-blue-600/30">
+                        {appointments.length} Total
                       </div>
-                    ))}
-                  </div>
+                    </div>
+
+                    {appointments.length === 0 ? (
+                      <div className="text-slate-400 text-center py-12">
+                        No tasks assigned yet.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {appointments.map((appt) => (
+                          <div
+                            key={appt.id}
+                            className={`bg-slate-700/50 rounded-lg p-6 border transition-all ${
+                              appt.status === "pending"
+                                ? "border-yellow-600/30 shadow-[4px_0_0_#d97706]"
+                                : appt.status === "confirmed"
+                                  ? "border-blue-600/30 shadow-[4px_0_0_#2563eb]"
+                                  : appt.status === "ready_for_finalization"
+                                    ? "border-purple-600/30 shadow-[4px_0_0_#9333ea]"
+                                    : "border-slate-600"
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              {/* Task details */}
+                              <div className="md:col-span-2">
+                                <h3 className="text-white font-bold text-lg uppercase tracking-tight">
+                                  {(appt as any).title}
+                                </h3>
+                                <p className="text-slate-500 text-xs mb-4">
+                                  #
+                                  {(appt.id || "")
+                                    .substring(0, 8)
+                                    .toUpperCase()}{" "}
+                                  • {appt.date} At {appt.time}
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+                                      Customer
+                                    </p>
+                                    <p className="text-white text-sm font-semibold">
+                                      {(appt as any).customer_name}
+                                    </p>
+                                    <p className="text-slate-500 text-xs">
+                                      {(appt as any).customer_contact}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+                                      Vehicle
+                                    </p>
+                                    <p className="text-white text-sm font-semibold">
+                                      {(appt as any).vehicle_make}{" "}
+                                      {(appt as any).vehicle_model}
+                                    </p>
+                                    <p className="text-slate-500 text-xs">
+                                      {(appt as any).vehicle_year}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="md:col-span-2 flex flex-col justify-between">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">
+                                      Current Status
+                                    </p>
+                                    <span
+                                      className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                                        appt.status === "completed"
+                                          ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                                          : appt.status === "confirmed"
+                                            ? "bg-blue-600/20 text-blue-400 border border-blue-600/30"
+                                            : appt.status ===
+                                                "ready_for_finalization"
+                                              ? "bg-purple-600/20 text-purple-400 border border-purple-600/30"
+                                              : "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
+                                      }`}
+                                    >
+                                      {appt.status.replace(/_/g, " ")}
+                                    </span>
+                                  </div>
+                                  {(appt as any).total_amount && (
+                                    <div className="text-right">
+                                      <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+                                        Estimated Amt
+                                      </p>
+                                      <p className="text-emerald-400 font-black">
+                                        ₱
+                                        {(
+                                          appt as any
+                                        ).total_amount.toLocaleString()}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Workflow Actions */}
+                                <div className="mt-6">
+                                  {appt.status === "pending" && (
+                                    <button
+                                      onClick={() =>
+                                        updateAppointmentStatus(
+                                          appt.id,
+                                          "confirmed",
+                                        )
+                                      }
+                                      disabled={statusUpdating === appt.id}
+                                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
+                                    >
+                                      {statusUpdating === appt.id
+                                        ? "SYCHRONIZING..."
+                                        : "ACCEPT & CONFIRM TASK"}
+                                    </button>
+                                  )}
+
+                                  {appt.status === "confirmed" && (
+                                    <button
+                                      onClick={() =>
+                                        updateAppointmentStatus(
+                                          appt.id,
+                                          "ready_for_finalization",
+                                        )
+                                      }
+                                      disabled={statusUpdating === appt.id}
+                                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
+                                    >
+                                      {statusUpdating === appt.id
+                                        ? "SYCHRONIZING..."
+                                        : "MARK AS COMPLETED"}
+                                    </button>
+                                  )}
+
+                                  {appt.status === "ready_for_finalization" && (
+                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg text-center flex items-center justify-center gap-3">
+                                      <Clock className="w-4 h-4 text-purple-400 animate-spin" />
+                                      <p className="text-purple-400 text-[10px] font-bold uppercase tracking-wider">
+                                        WAITING FOR OWNER FINALIZATION
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {appt.status === "completed" && (
+                                    <div className="flex items-center justify-center gap-2 text-emerald-400 py-2 border border-emerald-500/20 rounded-lg bg-emerald-500/5">
+                                      <CheckCircle size={14} />
+                                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                                        TASK FINALIZED & ARCHIVED
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </motion.div>
-            )}
               </motion.div>
             )}
 
@@ -759,12 +828,18 @@ const MechanicDashboard: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-white font-black text-4xl uppercase tracking-tight">SHOP INVENTORY</h2>
-                    <p className="text-slate-400 mt-1">Real-time view of available parts and supplies</p>
+                    <h2 className="text-white font-black text-4xl uppercase tracking-tight">
+                      SHOP INVENTORY
+                    </h2>
+                    <p className="text-slate-400 mt-1">
+                      Real-time view of available parts and supplies
+                    </p>
                   </div>
                   <div className="bg-slate-800/50 border border-slate-700 px-4 py-2 rounded-lg flex items-center gap-3">
                     <Package className="text-blue-500 w-5 h-5" />
-                    <span className="text-white font-bold tracking-widest uppercase text-xs">{inventory.length} Categories Loaded</span>
+                    <span className="text-white font-bold tracking-widest uppercase text-xs">
+                      {inventory.length} Categories Loaded
+                    </span>
                   </div>
                 </div>
 
@@ -779,10 +854,10 @@ const MechanicDashboard: React.FC = () => {
                     >
                       <div className="h-44 bg-slate-900 relative overflow-hidden shrink-0">
                         {item.image_url ? (
-                          <img 
-                            src={item.image_url} 
-                            alt={item.name} 
-                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105 transition-transform" 
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105 transition-transform"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center opacity-20">
@@ -798,28 +873,40 @@ const MechanicDashboard: React.FC = () => {
                           {item.category || "General"}
                         </div>
                       </div>
-                      
+
                       <div className="p-5 flex-1 flex flex-col">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1 min-w-0 pr-2">
-                            <h3 className="text-white font-bold text-lg uppercase leading-tight group-hover:text-blue-400 transition-colors truncate">{item.name}</h3>
-                            <p className="text-slate-500 text-[10px] font-bold tracking-widest mt-1">SKU: {item.sku}</p>
+                            <h3 className="text-white font-bold text-lg uppercase leading-tight group-hover:text-blue-400 transition-colors truncate">
+                              {item.name}
+                            </h3>
+                            <p className="text-slate-500 text-[10px] font-bold tracking-widest mt-1">
+                              SKU: {item.sku}
+                            </p>
                           </div>
-                          <span className="text-blue-400 font-bold shrink-0">₱{item.unit_price?.toLocaleString()}</span>
+                          <span className="text-blue-400 font-bold shrink-0">
+                            ₱{item.unit_price?.toLocaleString()}
+                          </span>
                         </div>
 
                         <div className="mt-auto space-y-3">
                           <div className="flex justify-between items-end">
-                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Available Stock</span>
-                            <span className={`text-sm font-black ${item.is_low_stock ? 'text-red-400' : 'text-emerald-400'}`}>
+                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                              Available Stock
+                            </span>
+                            <span
+                              className={`text-sm font-black ${item.is_low_stock ? "text-red-400" : "text-emerald-400"}`}
+                            >
                               {item.quantity_in_stock}
                             </span>
                           </div>
                           <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                            <motion.div 
+                            <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${Math.min((item.quantity_in_stock / ((item.reorder_level || 5) * 4)) * 100, 100)}%` }}
-                              className={`h-full rounded-full transition-all duration-1000 ${item.is_low_stock ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`}
+                              animate={{
+                                width: `${Math.min((item.quantity_in_stock / ((item.reorder_level || 5) * 4)) * 100, 100)}%`,
+                              }}
+                              className={`h-full rounded-full transition-all duration-1000 ${item.is_low_stock ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"}`}
                             />
                           </div>
                         </div>
@@ -830,9 +917,17 @@ const MechanicDashboard: React.FC = () => {
 
                 {inventory.length === 0 && (
                   <div className="text-center py-20 bg-slate-800/20 border border-slate-700/50 rounded-2xl">
-                    <Package className="w-16 h-16 text-slate-700 mx-auto mb-4" strokeWidth={1} />
-                    <h3 className="text-slate-400 font-black text-xl uppercase tracking-tight">No inventory data</h3>
-                    <p className="text-slate-600 mt-1 max-w-sm mx-auto">Check back later or contact the owner if you believe items should be visible here.</p>
+                    <Package
+                      className="w-16 h-16 text-slate-700 mx-auto mb-4"
+                      strokeWidth={1}
+                    />
+                    <h3 className="text-slate-400 font-black text-xl uppercase tracking-tight">
+                      No inventory data
+                    </h3>
+                    <p className="text-slate-600 mt-1 max-w-sm mx-auto">
+                      Check back later or contact the owner if you believe items
+                      should be visible here.
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -862,22 +957,37 @@ const MechanicDashboard: React.FC = () => {
                         : "bg-green-500/10 border border-green-500/30 text-green-400"
                     }`}
                   >
-                    {profileMsg.type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
-                    <span className="text-sm font-medium">{profileMsg.text}</span>
+                    {profileMsg.type === "error" ? (
+                      <AlertCircle size={18} />
+                    ) : (
+                      <CheckCircle size={18} />
+                    )}
+                    <span className="text-sm font-medium">
+                      {profileMsg.text}
+                    </span>
                   </div>
                 )}
 
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
                   {/* Hidden email field to trick password managers from filling the phone field */}
-                  <input type="text" autoComplete="username" value={user?.email || ""} className="hidden" readOnly />
+                  <input
+                    type="text"
+                    autoComplete="username"
+                    value={user?.email || ""}
+                    className="hidden"
+                    readOnly
+                  />
 
                   <div className="space-y-4 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
                     <h3 className="text-white font-semibold flex items-center gap-2 mb-2">
-                      <User size={18} className="text-slate-400" /> Personal Information
+                      <User size={18} className="text-slate-400" /> Personal
+                      Information
                     </h3>
-                    
+
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-2">Phone Number (For SMS Notifications)</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
+                        Phone Number (For SMS Notifications)
+                      </label>
                       <input
                         type="tel"
                         name="phone"
@@ -894,10 +1004,15 @@ const MechanicDashboard: React.FC = () => {
                     <h3 className="text-white font-semibold flex items-center gap-2 mb-2">
                       <KeyRound size={18} className="text-slate-400" /> Security
                     </h3>
-                    <p className="text-xs text-slate-500 mb-4">Leave fields blank if you don't want to change your password.</p>
+                    <p className="text-xs text-slate-500 mb-4">
+                      Leave fields blank if you don't want to change your
+                      password.
+                    </p>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-2">New Password</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
+                        New Password
+                      </label>
                       <input
                         type="password"
                         name="new-password"
@@ -910,7 +1025,9 @@ const MechanicDashboard: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-2">Confirm New Password</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">
+                        Confirm New Password
+                      </label>
                       <input
                         type="password"
                         name="confirm-password"

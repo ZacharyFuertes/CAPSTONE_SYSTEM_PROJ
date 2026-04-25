@@ -30,7 +30,6 @@ interface VehicleData {
   make: string;
   model: string;
   year: number | string;
-  plate_number: string;
 }
 
 interface Part {
@@ -215,7 +214,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({
       setLoadingVehicles(true);
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, make, model, year, plate_number")
+        .select("id, make, model, year")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -351,7 +350,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({
       if (selectedVehicleId && selectedVehicleId !== "manual") {
         const v = vehicles.find((veh) => veh.id === selectedVehicleId);
         if (v)
-          vehicleDesc = `${v.make} ${v.model} (${v.year}) - ${v.plate_number}`;
+          vehicleDesc = `${v.make} ${v.model} (${v.year})`;
       }
 
       // Determine shop_id
@@ -899,7 +898,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({
                                             : "text-[#4ade80]"
                                         }`}
                                       >
-                                        {part.quantity_in_stock} in stock
+                                        In Stock
                                       </p>
                                     </div>
                                     <p
@@ -1157,7 +1156,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({
                                           {v.make} {v.model}
                                         </p>
                                         <p className="text-[#6b6b6b] text-xs font-light">
-                                          {v.year} • {v.plate_number}
+                                          {v.year}
                                         </p>
                                       </div>
                                     </div>

@@ -122,17 +122,6 @@ export interface FeaturedProduct {
   updated_at: string;
 }
 
-export interface FeaturedProduct {
-  id: string;
-  shop_id: string;
-  product_id: string;
-  display_order: number;
-  is_active: boolean;
-  product?: Product;
-  created_at: string;
-  updated_at: string;
-}
-
 // Staff Invitation Types
 export interface StaffInvitation {
   id: string;

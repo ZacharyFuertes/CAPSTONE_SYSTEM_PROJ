@@ -213,6 +213,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (error) throw error;
       if (!data?.user?.id) throw new Error("Login failed");
 
+      // ✅ FIX: Reset login attempts counter on successful login
+      loginAttemptsRef.current = { count: 0, firstAttemptTime: Date.now() };
+
       console.log("✅ [Auth] Login successful");
     } catch (err) {
       console.error("❌ [Auth] Login error:", err);
@@ -228,6 +231,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (error) throw error;
       setUser(null);
       setIsLoading(false);
+
+      // ✅ FIX: Clear all app-owned localStorage keys to prevent data leak
+      localStorage.removeItem("moto_last_page");
+      localStorage.removeItem("motoshop_appointments");
+      localStorage.removeItem("parts_list_filters");
+      localStorage.removeItem("parts_list_sort");
+      localStorage.removeItem("parts_list_selected");
+      // Clear any keys starting with 'parts_list_' or 'moto_' (for caching)
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("parts_list_") || key.startsWith("moto_")) {
+          localStorage.removeItem(key);
+        }
+      });
+
       console.log("✅ [Auth] Logged out successfully");
     } catch (err) {
       console.error("❌ [Auth] Logout error:", err);

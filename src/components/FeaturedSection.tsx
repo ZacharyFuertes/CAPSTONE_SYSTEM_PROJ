@@ -1,61 +1,73 @@
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Star, ShoppingCart, Calendar, User, Mail, Phone, Clock, MapPin } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
-import { featuredProductService } from '../services/productService'
-import { FeaturedProduct } from '../types/index'
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Star,
+  ShoppingCart,
+  Calendar,
+  User,
+  Mail,
+  Phone,
+  Clock,
+  MapPin,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { featuredProductService } from "../services/productService";
+import { FeaturedProduct } from "../types/index";
 
 const FeaturedSection: React.FC = () => {
-  const { user } = useAuth()
-  const shopId = user?.shop_id || ''
+  const { user } = useAuth();
+  const shopId = user?.shop_id || "";
 
   const [appointmentData, setAppointmentData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    date: '',
-    service: 'General Maintenance',
-  })
+    name: "",
+    email: "",
+    phone: "",
+    date: "",
+    service: "General Maintenance",
+  });
 
-  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
-  const [loading, setLoading] = useState(false)
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(false);
 
   // Fetch featured products from database
   useEffect(() => {
     if (shopId) {
-      fetchFeaturedProducts()
+      fetchFeaturedProducts();
     }
-  }, [shopId])
+  }, [shopId]);
 
   const fetchFeaturedProducts = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await featuredProductService.getFeaturedProducts(shopId)
-      setFeaturedProducts(data)
+      const data = await featuredProductService.getFeaturedProducts(shopId);
+      setFeaturedProducts(data);
     } catch (err) {
-      console.error('Error fetching featured products:', err)
+      console.error("Error fetching featured products:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Default products for when not logged in or no featured products
   const defaultProducts: FeaturedProduct[] = [
     {
-      id: '1',
-      shop_id: '',
-      product_id: '1',
+      id: "1",
+      shop_id: "",
+      product_id: "1",
       display_order: 1,
       is_active: true,
       product: {
-        id: '1',
-        shop_id: '',
-        name: 'Premium Exhaust System',
+        id: "1",
+        shop_id: "",
+        name: "Premium Exhaust System",
         unit_price: 19500,
         rating: 4.8,
-        image_url: 'https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop&q=80',
-        category: 'Exhaust',
-        sku: 'EXH-001',
+        image_url:
+          "https://images.unsplash.com/photo-1599950945-b8a2c6c3b5b0?w=500&h=500&fit=crop&q=80",
+        category: "Exhaust",
+        sku: "EXH-001",
         quantity_in_stock: 0,
         created_at: new Date().toISOString(),
       },
@@ -63,20 +75,21 @@ const FeaturedSection: React.FC = () => {
       updated_at: new Date().toISOString(),
     },
     {
-      id: '2',
-      shop_id: '',
-      product_id: '2',
+      id: "2",
+      shop_id: "",
+      product_id: "2",
       display_order: 2,
       is_active: true,
       product: {
-        id: '2',
-        shop_id: '',
-        name: 'High-Performance Air Filter',
+        id: "2",
+        shop_id: "",
+        name: "High-Performance Air Filter",
         unit_price: 7200,
         rating: 4.9,
-        image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&q=80',
-        category: 'Filters',
-        sku: 'FLT-001',
+        image_url:
+          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&q=80",
+        category: "Filters",
+        sku: "FLT-001",
         quantity_in_stock: 0,
         created_at: new Date().toISOString(),
       },
@@ -84,38 +97,42 @@ const FeaturedSection: React.FC = () => {
       updated_at: new Date().toISOString(),
     },
     {
-      id: '3',
-      shop_id: '',
-      product_id: '3',
+      id: "3",
+      shop_id: "",
+      product_id: "3",
       display_order: 3,
       is_active: true,
       product: {
-        id: '3',
-        shop_id: '',
-        name: 'Racing Brake Pads',
+        id: "3",
+        shop_id: "",
+        name: "Racing Brake Pads",
         unit_price: 11200,
         rating: 4.7,
-        image_url: 'https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop&q=80',
-        category: 'Brakes',
-        sku: 'BRK-001',
+        image_url:
+          "https://images.unsplash.com/photo-1587919904554-e3aa350908e8?w=500&h=500&fit=crop&q=80",
+        category: "Brakes",
+        sku: "BRK-001",
         quantity_in_stock: 0,
         created_at: new Date().toISOString(),
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
-  ]
+  ];
 
-  const products = featuredProducts.length > 0 ? featuredProducts : defaultProducts
+  const products =
+    featuredProducts.length > 0 ? featuredProducts : defaultProducts;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setAppointmentData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setAppointmentData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Create appointment object
     const newAppointment = {
       id: Date.now().toString(),
@@ -124,24 +141,46 @@ const FeaturedSection: React.FC = () => {
       phone: appointmentData.phone,
       date: appointmentData.date,
       service: appointmentData.service,
-      status: 'pending' as const,
+      status: "pending" as const,
       createdAt: new Date().toLocaleString(),
-    }
+    };
 
-    // Get existing appointments from localStorage
-    const existing = localStorage.getItem('motoshop_appointments')
-    const appointments = existing ? JSON.parse(existing) : []
-    
-    // Add new appointment
-    appointments.push(newAppointment)
-    
-    // Save to localStorage
-    localStorage.setItem('motoshop_appointments', JSON.stringify(appointments))
-    
-    console.log('Appointment booked:', newAppointment)
-    alert('✅ Appointment confirmed! Check your email for details.')
-    setAppointmentData({ name: '', email: '', phone: '', date: '', service: 'General Maintenance' })
-  }
+    // ✅ FIX: Wrap localStorage parsing in try-catch to handle corrupted data
+    try {
+      const existing = localStorage.getItem("motoshop_appointments");
+      const appointments = existing ? JSON.parse(existing) : [];
+
+      // Add new appointment
+      appointments.push(newAppointment);
+
+      // Save to localStorage
+      localStorage.setItem(
+        "motoshop_appointments",
+        JSON.stringify(appointments),
+      );
+
+      console.log("Appointment booked:", newAppointment);
+      alert("✅ Appointment confirmed! Check your email for details.");
+      setAppointmentData({
+        name: "",
+        email: "",
+        phone: "",
+        date: "",
+        service: "General Maintenance",
+      });
+    } catch (err) {
+      console.error("Error saving appointment:", err);
+      // If localStorage data is corrupted, clear it and start fresh
+      localStorage.removeItem("motoshop_appointments");
+      localStorage.setItem(
+        "motoshop_appointments",
+        JSON.stringify([newAppointment]),
+      );
+      alert(
+        "⚠️ There was an issue with saved data, but your appointment has been saved.",
+      );
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -152,12 +191,12 @@ const FeaturedSection: React.FC = () => {
         delayChildren: 0.2,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-  }
+  };
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-moto-dark relative overflow-hidden">
@@ -176,10 +215,14 @@ const FeaturedSection: React.FC = () => {
           className="text-center mb-16"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-4 text-white">
-            Featured <span className="bg-gradient-accent bg-clip-text text-transparent">Parts & Services</span>
+            Featured{" "}
+            <span className="bg-gradient-accent bg-clip-text text-transparent">
+              Parts & Services
+            </span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Premium motorcycle parts at affordable Filipino prices para sa lahat ng uri ng riders
+            Premium motorcycle parts at affordable Filipino prices para sa lahat
+            ng uri ng riders
           </p>
         </motion.div>
 
@@ -193,21 +236,29 @@ const FeaturedSection: React.FC = () => {
             className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {loading ? (
-              <div className="col-span-3 text-center text-gray-400 py-8">Loading featured products...</div>
+              <div className="col-span-3 text-center text-gray-400 py-8">
+                Loading featured products...
+              </div>
             ) : products.length > 0 ? (
               products.map((fp) => {
-                const product = fp.product
+                const product = fp.product;
                 return (
                   <motion.div
                     key={fp.id}
                     variants={itemVariants}
                     className="group relative bg-moto-darker border border-moto-gray-light/20 rounded-xl overflow-hidden hover:border-moto-accent-orange/50 transition-all duration-300"
-                    whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(230, 57, 70, 0.2)' }}
+                    whileHover={{
+                      y: -8,
+                      boxShadow: "0 20px 40px rgba(230, 57, 70, 0.2)",
+                    }}
                   >
                     {/* Product Image */}
                     <div className="relative h-64 overflow-hidden bg-moto-gray">
                       <motion.img
-                        src={product?.image_url || 'https://via.placeholder.com/500'}
+                        src={
+                          product?.image_url ||
+                          "https://via.placeholder.com/500"
+                        }
                         alt={product?.name}
                         className="w-full h-full object-cover"
                         whileHover={{ scale: 1.1 }}
@@ -233,15 +284,21 @@ const FeaturedSection: React.FC = () => {
                           <Star
                             key={i}
                             size={16}
-                            className={i < Math.floor(product?.rating || 0) ? 'text-moto-accent-orange fill-current' : 'text-gray-600'}
+                            className={
+                              i < Math.floor(product?.rating || 0)
+                                ? "text-moto-accent-orange fill-current"
+                                : "text-gray-600"
+                            }
                           />
                         ))}
-                        <span className="text-xs text-gray-400 ml-2">({product?.rating})</span>
+                        <span className="text-xs text-gray-400 ml-2">
+                          ({product?.rating})
+                        </span>
                       </div>
 
                       <div className="flex justify-between items-center">
                         <span className="text-2xl font-bold text-moto-accent-orange">
-                          ₱{product?.unit_price.toLocaleString('en-PH')}
+                          ₱{product?.unit_price.toLocaleString("en-PH")}
                         </span>
                         <motion.button
                           className="p-2 rounded-lg bg-moto-accent-orange text-white hover:bg-moto-accent transition-colors"
@@ -253,10 +310,12 @@ const FeaturedSection: React.FC = () => {
                       </div>
                     </div>
                   </motion.div>
-                )
+                );
               })
             ) : (
-              <div className="col-span-3 text-center text-gray-400 py-8">No featured products available</div>
+              <div className="col-span-3 text-center text-gray-400 py-8">
+                No featured products available
+              </div>
             )}
           </motion.div>
 
@@ -271,15 +330,22 @@ const FeaturedSection: React.FC = () => {
             <div className="sticky top-32 bg-gradient-to-br from-moto-darker via-moto-darker to-moto-gray border border-moto-gray-light/30 rounded-2xl p-6 backdrop-blur-md sm:backdrop-blur-xl shadow-xl sm:shadow-2xl">
               <div className="flex items-center gap-2 mb-6">
                 <Calendar className="text-moto-accent-orange" size={24} />
-                <h3 className="font-display text-2xl font-bold text-white">Book Now</h3>
+                <h3 className="font-display text-2xl font-bold text-white">
+                  Book Now
+                </h3>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Full Name</label>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Full Name
+                  </label>
                   <div className="relative">
-                    <User size={18} className="absolute left-3 top-3.5 text-gray-500" />
+                    <User
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-500"
+                    />
                     <input
                       type="text"
                       name="name"
@@ -294,9 +360,14 @@ const FeaturedSection: React.FC = () => {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Email</label>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Email
+                  </label>
                   <div className="relative">
-                    <Mail size={18} className="absolute left-3 top-3.5 text-gray-500" />
+                    <Mail
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-500"
+                    />
                     <input
                       type="email"
                       name="email"
@@ -311,9 +382,14 @@ const FeaturedSection: React.FC = () => {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Phone</label>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Phone
+                  </label>
                   <div className="relative">
-                    <Phone size={18} className="absolute left-3 top-3.5 text-gray-500" />
+                    <Phone
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-500"
+                    />
                     <input
                       type="tel"
                       name="phone"
@@ -328,9 +404,14 @@ const FeaturedSection: React.FC = () => {
 
                 {/* Date */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Preferred Date</label>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Preferred Date
+                  </label>
                   <div className="relative">
-                    <Clock size={18} className="absolute left-3 top-3.5 text-gray-500" />
+                    <Clock
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-500"
+                    />
                     <input
                       type="date"
                       name="date"
@@ -344,7 +425,9 @@ const FeaturedSection: React.FC = () => {
 
                 {/* Service Type */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Service</label>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Service
+                  </label>
                   <select
                     name="service"
                     value={appointmentData.service}
@@ -380,7 +463,7 @@ const FeaturedSection: React.FC = () => {
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default FeaturedSection
+export default FeaturedSection;

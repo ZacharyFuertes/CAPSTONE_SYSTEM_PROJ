@@ -21,7 +21,6 @@ interface VehicleData {
   make: string;
   model: string;
   year: number;
-  plate_number: string;
   engine_number?: string;
 }
 
@@ -74,7 +73,7 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
       // Fetch vehicles
       const { data: vehicleData, error: vehError } = await supabase
         .from("vehicles")
-        .select("id, make, model, year, plate_number, engine_number")
+        .select("id, make, model, year, engine_number")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
       if (!vehError) setVehicles(vehicleData || []);
@@ -263,9 +262,7 @@ const CustomerPortalModal: React.FC<CustomerPortalModalProps> = ({ isOpen, onClo
                               </p>
                             </div>
                           </div>
-                          <span className="text-[10px] tracking-widest bg-[#111] text-[#d63a2f] px-3 py-1.5 border border-[#333] font-bold uppercase self-end sm:self-auto">
-                            {vehicle.plate_number}
-                          </span>
+
                         </motion.div>
                       ))}
                     </div>

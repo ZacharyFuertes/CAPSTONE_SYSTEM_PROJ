@@ -17,7 +17,6 @@ interface VehicleData {
   make: string;
   model: string;
   year: number;
-  plate_number: string;
   engine_number?: string;
 }
 
@@ -69,7 +68,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
         // Fetch vehicles
         const { data: vehicleData, error: vehError } = await supabase
           .from("vehicles")
-          .select("id, make, model, year, plate_number, engine_number")
+          .select("id, make, model, year, engine_number")
           .eq("customer_id", user.id)
           .order("created_at", { ascending: false });
 
@@ -252,9 +251,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ onNavigate }) => {
                         Year: {vehicle.year || "N/A"}
                       </p>
                     </div>
-                    <span className="text-sm bg-slate-600/50 text-slate-300 px-3 py-1 rounded-lg border border-slate-600">
-                      {vehicle.plate_number}
-                    </span>
+
                   </div>
                   {vehicle.engine_number && (
                     <p className="text-slate-400 text-xs mt-2">

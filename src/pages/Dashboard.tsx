@@ -67,17 +67,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // ✅ FIX: Check that shop_id exists before querying
+        if (!user?.shop_id) {
+          console.warn("Dashboard: User shop_id is missing");
+          setStats([]);
+          setRevenueData([]);
+          return;
+        }
+
         // ── 1. Fetch ALL appointments (with estimated_price for revenue) ──
         const { data: allAppointments } = await supabase
           .from("appointments")
-          .select("id, status, total_amount, estimated_price, scheduled_date, updated_at, created_at");
+          .select(
+            "id, status, total_amount, estimated_price, scheduled_date, updated_at, created_at",
+          )
+          .eq("shop_id", user.shop_id);
 
         // ── 2. Fetch ALL reservations (with part price for revenue) ──
         let allReservations: any[] = [];
         try {
           const { data: resData } = await supabase
             .from("reservations")
-            .select("id, status, quantity, created_at, updated_at, part_id, parts:parts!part_id(unit_price, name)");
+            .select(
+              "id, status, quantity, created_at, updated_at, part_id, parts:parts!part_id(unit_price, name)",
+            );
           allReservations = resData || [];
         } catch {
           // reservations table may not exist yet
@@ -88,7 +101,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         try {
           const { data: posData } = await supabase
             .from("part_sales")
-            .select("id, part_id, quantity_sold, sale_price, created_at, parts:parts!part_id(name)");
+            .select(
+              "id, part_id, quantity_sold, sale_price, created_at, parts:parts!part_id(name)",
+            );
           allPartSales = posData || [];
         } catch {
           // part_sales table may not exist yet
@@ -118,22 +133,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // Appointment revenue (ONLY completed count as finalized revenue)
         const revenueAppointments = (allAppointments || [])
           .filter((a: any) => a.status === "completed")
-          .reduce((sum: number, a: any) => sum + (Number(a.total_amount || a.estimated_price) || 0), 0);
-
-
+          .reduce(
+            (sum: number, a: any) =>
+              sum + (Number(a.total_amount || a.estimated_price) || 0),
+            0,
+          );
 
         // Job order revenue (completed)
         const revenueJobOrders = (jobOrders || [])
           .filter((j: any) => j.status === "completed")
-          .reduce((sum: number, j: any) => sum + (Number(j.total_cost) || 0), 0);
+          .reduce(
+            (sum: number, j: any) => sum + (Number(j.total_cost) || 0),
+            0,
+          );
 
         // POS Sales revenue (already completed transactions)
         const revenuePOS = (allPartSales || []).reduce(
           (sum: number, s: any) => sum + (Number(s.sale_price) || 0),
-          0
+          0,
         );
 
-        const totalRevenue = revenueAppointments + revenueJobOrders + revenuePOS;
+        const totalRevenue =
+          revenueAppointments + revenueJobOrders + revenuePOS;
 
         // ══════════════════════════════════════════════
         // REVENUE TREND CHART (grouped by date)
@@ -144,32 +165,41 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         (allAppointments || [])
           .filter((a: any) => a.status === "completed")
           .forEach((a: any) => {
+            // ✅ FIX: Use ISO format (YYYY-MM-DD) instead of locale-dependent toLocaleDateString
             const dateKey = a.updated_at
-              ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : new Date(a.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(a.total_amount || a.estimated_price) || 0);
+              ? new Date(a.updated_at).toISOString().split("T")[0]
+              : new Date(a.scheduled_date).toISOString().split("T")[0];
+            revenueDateMap[dateKey] =
+              (revenueDateMap[dateKey] || 0) +
+              (Number(a.total_amount || a.estimated_price) || 0);
           });
-
-
 
         // Add job order revenue by date
         (jobOrders || [])
           .filter((j: any) => j.status === "completed")
           .forEach((j: any) => {
-            const dateKey = new Date(j.completed_at || j.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(j.total_cost) || 0);
+            // ✅ FIX: Use ISO format (YYYY-MM-DD) instead of locale-dependent toLocaleDateString
+            const dateKey = new Date(j.completed_at || j.created_at)
+              .toISOString()
+              .split("T")[0];
+            revenueDateMap[dateKey] =
+              (revenueDateMap[dateKey] || 0) + (Number(j.total_cost) || 0);
           });
 
         // Add POS sales revenue by date
         (allPartSales || []).forEach((s: any) => {
-          const dateKey = new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-          revenueDateMap[dateKey] = (revenueDateMap[dateKey] || 0) + (Number(s.sale_price) || 0);
+          // ✅ FIX: Use ISO format (YYYY-MM-DD) instead of locale-dependent toLocaleDateString
+          const dateKey = new Date(s.created_at).toISOString().split("T")[0];
+          revenueDateMap[dateKey] =
+            (revenueDateMap[dateKey] || 0) + (Number(s.sale_price) || 0);
         });
 
         // Convert to array sorted by date, or show week defaults
         const revenueEntries = Object.entries(revenueDateMap)
           .map(([date, revenue]) => ({ date, revenue }))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          .sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          );
 
         if (revenueEntries.length > 0) {
           setRevenueData(revenueEntries.slice(-14)); // Last 14 data points
@@ -187,10 +217,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // ══════════════════════════════════════════════
         // STATUS DISTRIBUTION (pie chart)
         // ══════════════════════════════════════════════
-        const combinedItems = [...(jobOrders || []), ...(allAppointments || [])];
+        const combinedItems = [
+          ...(jobOrders || []),
+          ...(allAppointments || []),
+        ];
         const statusCounts =
           combinedItems.reduce((acc: any, item: any) => {
-            const statusKey = item.status === "confirmed" ? "pending" : item.status;
+            const statusKey =
+              item.status === "confirmed" ? "pending" : item.status;
             const existing = acc.find((s: any) => s.name === statusKey);
             if (existing) {
               existing.value += 1;
@@ -244,10 +278,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const jobPending =
           jobOrders?.filter((j: any) => j.status === "pending").length || 0;
 
-        const apptCompleted = 
-          allAppointments?.filter((a: any) => a.status === "completed").length || 0;
-        const apptPending = 
-          allAppointments?.filter((a: any) => a.status === "pending" || a.status === "confirmed").length || 0;
+        const apptCompleted =
+          allAppointments?.filter((a: any) => a.status === "completed")
+            .length || 0;
+        const apptPending =
+          allAppointments?.filter(
+            (a: any) => a.status === "pending" || a.status === "confirmed",
+          ).length || 0;
 
         const totalCompleted = jobCompleted + apptCompleted;
         const totalPending = jobPending + apptPending;
@@ -261,22 +298,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // REVENUE BREAKDOWN
         // ══════════════════════════════════════════════
         // Item Revenue = POS Sales + Reservations (part sales)
-        const itemRevenue = revenuePOS + (allReservations || [])
-          .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
-          .reduce((sum: number, r: any) => {
-            const unitPrice = r.parts?.unit_price || 0;
-            const totalPrice = (unitPrice * r.quantity) || 0;
-            return sum + totalPrice;
-          }, 0);
+        const itemRevenue =
+          revenuePOS +
+          (allReservations || [])
+            .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
+            .reduce((sum: number, r: any) => {
+              const unitPrice = r.parts?.unit_price || 0;
+              const totalPrice = unitPrice * r.quantity || 0;
+              return sum + totalPrice;
+            }, 0);
 
         // Customer Booking Revenue = Appointments + Job Orders
         const bookingRevenue = revenueAppointments + revenueJobOrders;
 
         // Revenue breakdown for subtitle
         const revenuePartsArr: string[] = [];
-        if (bookingRevenue > 0) revenuePartsArr.push(`Bookings: ₱${bookingRevenue.toLocaleString()}`);
-        if (itemRevenue > 0) revenuePartsArr.push(`Items: ₱${itemRevenue.toLocaleString()}`);
-        const revenueSubtitle = revenuePartsArr.length > 0 ? revenuePartsArr.join(" • ") : "No revenue data yet";
+        if (bookingRevenue > 0)
+          revenuePartsArr.push(`Bookings: ₱${bookingRevenue.toLocaleString()}`);
+        if (itemRevenue > 0)
+          revenuePartsArr.push(`Items: ₱${itemRevenue.toLocaleString()}`);
+        const revenueSubtitle =
+          revenuePartsArr.length > 0
+            ? revenuePartsArr.join(" • ")
+            : "No revenue data yet";
 
         setStats([
           {
@@ -332,13 +376,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .filter((r: any) => ["confirmed", "fulfilled"].includes(r.status))
           .forEach((r: any) => {
             const partName = (r.parts as any)?.name || "Unknown";
-            partUsageMap[partName] = (partUsageMap[partName] || 0) + (r.quantity || 1);
+            partUsageMap[partName] =
+              (partUsageMap[partName] || 0) + (r.quantity || 1);
           });
 
         // Add POS Sales (part_sales)
         (allPartSales || []).forEach((s: any) => {
-            const partName = (s.parts as any)?.name || "Unknown";
-            partUsageMap[partName] = (partUsageMap[partName] || 0) + (s.quantity_sold || 1);
+          const partName = (s.parts as any)?.name || "Unknown";
+          partUsageMap[partName] =
+            (partUsageMap[partName] || 0) + (s.quantity_sold || 1);
         });
 
         const partUsageFromReservations = Object.entries(partUsageMap)
@@ -353,25 +399,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           .limit(5);
 
         if (partUsage && partUsage.length > 0) {
-          const usageByPart = partUsage.reduce((acc: any, use: any) => {
-            const existing = acc.find((p: any) => p.name === use.parts?.name);
-            if (existing) {
-              existing.usage += use.quantity || 0;
-            } else {
-              acc.push({
-                name: use.parts?.name || "Unknown",
-                usage: use.quantity || 0,
-              });
-            }
-            return acc;
-          }, [...partUsageFromReservations]);
+          const usageByPart = partUsage.reduce(
+            (acc: any, use: any) => {
+              const existing = acc.find((p: any) => p.name === use.parts?.name);
+              if (existing) {
+                existing.usage += use.quantity || 0;
+              } else {
+                acc.push({
+                  name: use.parts?.name || "Unknown",
+                  usage: use.quantity || 0,
+                });
+              }
+              return acc;
+            },
+            [...partUsageFromReservations],
+          );
           setPartUsageData(usageByPart.slice(0, 5));
         } else if (partUsageFromReservations.length > 0) {
           setPartUsageData(partUsageFromReservations);
         } else {
-          setPartUsageData([
-            { name: "No data yet", usage: 0 },
-          ]);
+          setPartUsageData([{ name: "No data yet", usage: 0 }]);
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);

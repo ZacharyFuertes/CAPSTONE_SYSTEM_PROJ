@@ -9,6 +9,7 @@ import {
   getPagesByRole,
   isPageAllowedForRole,
 } from "./utils/roleAccess";
+import ErrorBoundary from "./components/ErrorBoundary";
 import SystemNavbar from "./components/SystemNavbar";
 import AIChatModal from "./components/AIChatModal";
 import AdminChatbot from "./components/AdminChatbot";
@@ -484,7 +485,10 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <PartsListProvider>
-          <AppContent />
+          {/* ✅ FIX: Wrap AppContent with ErrorBoundary to catch unhandled errors */}
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </PartsListProvider>
       </AuthProvider>
     </LanguageProvider>

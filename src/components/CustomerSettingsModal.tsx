@@ -20,13 +20,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
+import {
+  filterMakes,
+  filterModels,
+} from "../utils/vehicleData";
 
 interface VehicleData {
   id: string;
   make: string;
   model: string;
   year: number | string;
-  plate_number: string;
   engine_number?: string;
 }
 
@@ -35,7 +38,10 @@ interface CustomerSettingsModalProps {
   onClose: () => void;
 }
 
-const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, onClose }) => {
+const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const { user, refreshUser } = useAuth();
 
   // Profile fields
@@ -53,7 +59,14 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
   // Vehicles
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
-  const [newVehicle, setNewVehicle] = useState({ make: "", model: "", year: "", plate_number: "", engine_number: "" });
+  const [newVehicle, setNewVehicle] = useState({
+    make: "",
+    model: "",
+  });
+  const [makeSuggestions, setMakeSuggestions] = useState<string[]>([]);
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([]);
+  const [showMakeSuggestions, setShowMakeSuggestions] = useState(false);
+  const [showModelSuggestions, setShowModelSuggestions] = useState(false);
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -61,7 +74,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "vehicles" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "vehicles" | "security"
+  >("profile");
 
   useEffect(() => {
     if (isOpen && user) {
@@ -81,7 +96,7 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
       setLoading(true);
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, make, model, year, plate_number, engine_number")
+        .select("id, make, model, year, engine_number")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
       if (!error) setVehicles(data || []);
@@ -139,7 +154,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
     try {
       setChangingPassword(true);
       setError("");
-      const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+      const { error: pwError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
       if (pwError) throw pwError;
 
       setNewPassword("");
@@ -155,29 +172,68 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
     }
   };
 
+  const handleMakeChange = (value: string) => {
+    setNewVehicle({ ...newVehicle, make: value, model: "" });
+    if (value.trim()) {
+      const suggestions = filterMakes(value);
+      setMakeSuggestions(suggestions);
+      setShowMakeSuggestions(true);
+    } else {
+      setMakeSuggestions([]);
+      setShowMakeSuggestions(false);
+    }
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
+  };
+
+  const handleSelectMake = (make: string) => {
+    setNewVehicle({ ...newVehicle, make, model: "" });
+    setMakeSuggestions([]);
+    setShowMakeSuggestions(false);
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
+  };
+
+  const handleModelChange = (value: string) => {
+    setNewVehicle({ ...newVehicle, model: value });
+    if (value.trim() && newVehicle.make) {
+      const suggestions = filterModels(newVehicle.make, value);
+      setModelSuggestions(suggestions);
+      setShowModelSuggestions(true);
+    } else {
+      setModelSuggestions([]);
+      setShowModelSuggestions(false);
+    }
+  };
+
+  const handleSelectModel = (model: string) => {
+    setNewVehicle({ ...newVehicle, model });
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
+  };
+
   const handleAddVehicle = async () => {
     if (!user?.id) return;
-    if (!newVehicle.make.trim() || !newVehicle.model.trim() || !newVehicle.plate_number.trim()) {
-      setError("Make, Model, and Plate Number are required.");
+    if (
+      !newVehicle.make.trim() ||
+      !newVehicle.model.trim()
+    ) {
+      setError("Brand and Model are required.");
       return;
     }
     try {
       setSavingVehicle(true);
       setError("");
-      const { error: insertError } = await supabase
-        .from("vehicles")
-        .insert({
-          customer_id: user.id,
-          make: newVehicle.make.trim(),
-          model: newVehicle.model.trim(),
-          year: parseInt(newVehicle.year) || new Date().getFullYear(),
-          plate_number: newVehicle.plate_number.trim().toUpperCase(),
-          engine_number: newVehicle.engine_number.trim() || null,
-        });
+      const { error: insertError } = await supabase.from("vehicles").insert({
+        customer_id: user.id,
+        make: newVehicle.make.trim(),
+        model: newVehicle.model.trim(),
+        year: new Date().getFullYear(),
+      });
 
       if (insertError) throw insertError;
 
-      setNewVehicle({ make: "", model: "", year: "", plate_number: "", engine_number: "" });
+      setNewVehicle({ make: "", model: "" });
       setShowAddVehicle(false);
       setSuccess("Vehicle added successfully!");
       setTimeout(() => setSuccess(""), 3000);
@@ -193,7 +249,10 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
   const handleDeleteVehicle = async (vehicleId: string) => {
     if (!confirm("Are you sure you want to remove this vehicle?")) return;
     try {
-      const { error: deleteError } = await supabase.from("vehicles").delete().eq("id", vehicleId);
+      const { error: deleteError } = await supabase
+        .from("vehicles")
+        .delete()
+        .eq("id", vehicleId);
       if (deleteError) throw deleteError;
       setVehicles(vehicles.filter((v) => v.id !== vehicleId));
       setSuccess("Vehicle removed.");
@@ -218,7 +277,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-3 z-50"
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 30 }}
@@ -245,7 +306,10 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0">
+            <button
+              onClick={onClose}
+              className="p-2 border border-[#333] hover:bg-[#222] transition text-[#6b6b6b] hover:text-white shrink-0"
+            >
               <X size={20} strokeWidth={1} />
             </button>
           </div>
@@ -257,7 +321,11 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
               return (
                 <button
                   key={tab.key}
-                  onClick={() => { setActiveTab(tab.key); setError(""); setSuccess(""); }}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    setError("");
+                    setSuccess("");
+                  }}
                   className={`flex items-center gap-2 px-5 py-3 text-[10px] font-bold tracking-widest uppercase transition-all border ${
                     activeTab === tab.key
                       ? "bg-[#221515] text-[#d63a2f] border-[#d63a2f]"
@@ -275,7 +343,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
           <AnimatePresence>
             {success && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="mx-6 sm:mx-10 mt-6 px-4 py-3 bg-[#221515] border border-[#d63a2f] flex items-center gap-3 text-[#d63a2f] text-[10px] tracking-widest uppercase font-bold"
               >
                 <CheckCircle size={14} /> {success}
@@ -283,7 +353,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
             )}
             {error && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="mx-6 sm:mx-10 mt-6 px-4 py-3 bg-red-900/20 border border-red-500 flex items-center gap-3 text-red-500 text-[10px] tracking-widest uppercase font-bold"
               >
                 <AlertCircle size={14} className="text-red-500" /> {error}
@@ -296,10 +368,16 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
             <AnimatePresence mode="wait">
               {/* ── Profile Tab ── */}
               {activeTab === "profile" && (
-                <motion.div key="profile" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
                   <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
                     <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <User size={14} className="text-[#d63a2f]" /> PROFILE INFORMATION
+                      <User size={14} className="text-[#d63a2f]" /> PROFILE
+                      INFORMATION
                     </h3>
 
                     <div className="space-y-6">
@@ -328,7 +406,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                           disabled
                           className="w-full bg-[#050505] text-[#555] px-4 py-3 border border-[#222] transition text-xs font-bold tracking-widest uppercase cursor-not-allowed"
                         />
-                        <p className="text-[9px] text-[#444] tracking-widest uppercase font-bold mt-2">EMAIL CANNOT BE CHANGED</p>
+                        <p className="text-[9px] text-[#444] tracking-widest uppercase font-bold mt-2">
+                          EMAIL CANNOT BE CHANGED
+                        </p>
                       </div>
 
                       {/* Phone */}
@@ -370,7 +450,11 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                               : "bg-[#d63a2f] hover:bg-[#c0322a] text-white border-[#d63a2f]"
                           }`}
                         >
-                          {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                          {saving ? (
+                            <Loader size={14} className="animate-spin" />
+                          ) : (
+                            <Save size={14} />
+                          )}
                           {saving ? "SAVING..." : "SAVE CHANGES"}
                         </button>
                       </div>
@@ -381,7 +465,12 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
 
               {/* ── Vehicles Tab ── */}
               {activeTab === "vehicles" && (
-                <motion.div key="vehicles" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                <motion.div
+                  key="vehicles"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
                   <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                       <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] flex items-center gap-2">
@@ -399,42 +488,118 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                     <AnimatePresence>
                       {showAddVehicle && (
                         <motion.div
-                          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
                           className="bg-[#0a0a0a] p-5 border border-[#333] mb-6 space-y-4 overflow-hidden"
                         >
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Brand/Make with Autocomplete */}
+                          <div className="relative">
+                            <label className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-2 block">
+                              BRAND
+                            </label>
                             <input
-                              type="text" placeholder="MAKE (E.G. HONDA)" value={newVehicle.make} onChange={(e) => setNewVehicle({ ...newVehicle, make: e.target.value })}
+                              type="text"
+                              placeholder="Type brand name..."
+                              value={newVehicle.make}
+                              onChange={(e) => handleMakeChange(e.target.value)}
+                              onFocus={() =>
+                                newVehicle.make && setShowMakeSuggestions(true)
+                              }
                               className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
                             />
-                            <input
-                              type="text" placeholder="MODEL (E.G. CLICK 150I)" value={newVehicle.model} onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
-                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
-                            />
-                            <input
-                              type="number" placeholder="YEAR" value={newVehicle.year} onChange={(e) => setNewVehicle({ ...newVehicle, year: e.target.value })}
-                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
-                            />
-                            <input
-                              type="text" placeholder="PLATE NUMBER" value={newVehicle.plate_number} onChange={(e) => setNewVehicle({ ...newVehicle, plate_number: e.target.value })}
-                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
-                            />
+                            <AnimatePresence>
+                              {showMakeSuggestions &&
+                                makeSuggestions.length > 0 && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-[#d63a2f] max-h-48 overflow-y-auto z-10"
+                                  >
+                                    {makeSuggestions.map((make) => (
+                                      <button
+                                        key={make}
+                                        onClick={() => handleSelectMake(make)}
+                                        className="w-full text-left px-4 py-2 hover:bg-[#1a1a1a] text-white text-xs font-medium tracking-widest uppercase transition border-b border-[#222] last:border-b-0"
+                                      >
+                                        {make}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                            </AnimatePresence>
                           </div>
-                          <input
-                            type="text" placeholder="ENGINE NUMBER (OPTIONAL)" value={newVehicle.engine_number} onChange={(e) => setNewVehicle({ ...newVehicle, engine_number: e.target.value })}
-                            className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555]"
-                          />
+
+                          {/* Model with Autocomplete */}
+                          <div className="relative">
+                            <label className="text-[#888] text-[10px] font-bold tracking-widest uppercase mb-2 block">
+                              MODEL
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={
+                                newVehicle.make
+                                  ? "Type model name..."
+                                  : "Select brand first"
+                              }
+                              value={newVehicle.model}
+                              onChange={(e) =>
+                                handleModelChange(e.target.value)
+                              }
+                              onFocus={() =>
+                                newVehicle.model &&
+                                newVehicle.make &&
+                                setShowModelSuggestions(true)
+                              }
+                              disabled={!newVehicle.make}
+                              className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none text-xs tracking-widest font-bold uppercase placeholder-[#555] disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <AnimatePresence>
+                              {showModelSuggestions &&
+                                modelSuggestions.length > 0 && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-[#d63a2f] max-h-48 overflow-y-auto z-10"
+                                  >
+                                    {modelSuggestions.map((model) => (
+                                      <button
+                                        key={model}
+                                        onClick={() => handleSelectModel(model)}
+                                        className="w-full text-left px-4 py-2 hover:bg-[#1a1a1a] text-white text-xs font-medium tracking-widest uppercase transition border-b border-[#222] last:border-b-0"
+                                      >
+                                        {model}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                            </AnimatePresence>
+                          </div>
+
+
                           <div className="flex gap-3 pt-2">
                             <button
                               onClick={handleAddVehicle}
                               disabled={savingVehicle}
                               className="flex items-center gap-2 px-5 py-2.5 bg-[#d63a2f] hover:bg-[#c0322a] text-white border border-[#d63a2f] text-[10px] font-bold tracking-widest uppercase transition"
                             >
-                              {savingVehicle ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
+                              {savingVehicle ? (
+                                <Loader size={12} className="animate-spin" />
+                              ) : (
+                                <Plus size={12} />
+                              )}
                               {savingVehicle ? "ADDING..." : "ADD VEHICLE"}
                             </button>
                             <button
-                              onClick={() => { setShowAddVehicle(false); setNewVehicle({ make: "", model: "", year: "", plate_number: "", engine_number: "" }); }}
+                              onClick={() => {
+                                setShowAddVehicle(false);
+                                setNewVehicle({
+                                  make: "",
+                                  model: "",
+                                });
+                              }}
                               className="px-5 py-2.5 bg-[#111] hover:bg-[#222] text-[#888] hover:text-white border border-[#333] text-[10px] font-bold tracking-widest uppercase transition"
                             >
                               CANCEL
@@ -452,7 +617,9 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                     ) : vehicles.length === 0 ? (
                       <div className="text-center py-12 border border-[#222] bg-[#0a0a0a]">
                         <Car className="w-12 h-12 text-[#333] mx-auto mb-4" />
-                        <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">NO VEHICLES REGISTERED YET</p>
+                        <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">
+                          NO VEHICLES REGISTERED YET
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -470,14 +637,14 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                                   {vehicle.make} {vehicle.model}
                                 </p>
                                 <p className="text-[#6b6b6b] text-[10px] font-bold tracking-widest uppercase">
-                                  {vehicle.year}{vehicle.engine_number && ` • ENGINE: ${vehicle.engine_number}`}
+                                  {vehicle.year}
+                                  {vehicle.engine_number &&
+                                    ` • ENGINE: ${vehicle.engine_number}`}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-4 self-end sm:self-auto">
-                              <span className="text-[10px] tracking-widest bg-[#111] text-[#d63a2f] px-3 py-1.5 border border-[#333] font-bold uppercase">
-                                {vehicle.plate_number}
-                              </span>
+
                               <button
                                 onClick={() => handleDeleteVehicle(vehicle.id)}
                                 className="w-8 h-8 flex items-center justify-center text-[#555] hover:text-white hover:bg-red-600 border border-transparent hover:border-red-600 transition-all opacity-100 sm:opacity-0 group-hover:opacity-100"
@@ -496,10 +663,16 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
 
               {/* ── Security Tab ── */}
               {activeTab === "security" && (
-                <motion.div key="security" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                <motion.div
+                  key="security"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
                   <div className="bg-[#111111] p-6 sm:p-8 border border-[#222]">
                     <h3 className="text-[10px] font-bold text-[#6b6b6b] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <Lock size={14} className="text-[#d63a2f]" /> PASSWORD & SECURITY
+                      <Lock size={14} className="text-[#d63a2f]" /> PASSWORD &
+                      SECURITY
                     </h3>
 
                     {!showPasswordChange ? (
@@ -528,7 +701,11 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                               onClick={() => setShowPassword(!showPassword)}
                               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#d63a2f] transition"
                             >
-                              {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                              {showPassword ? (
+                                <EyeOff size={14} />
+                              ) : (
+                                <Eye size={14} />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -554,11 +731,21 @@ const CustomerSettingsModal: React.FC<CustomerSettingsModalProps> = ({ isOpen, o
                                 : "bg-[#d63a2f] hover:bg-[#c0322a] text-white border-[#d63a2f]"
                             }`}
                           >
-                            {changingPassword ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-                            {changingPassword ? "CHANGING..." : "UPDATE PASSWORD"}
+                            {changingPassword ? (
+                              <Loader size={12} className="animate-spin" />
+                            ) : (
+                              <Save size={12} />
+                            )}
+                            {changingPassword
+                              ? "CHANGING..."
+                              : "UPDATE PASSWORD"}
                           </button>
                           <button
-                            onClick={() => { setShowPasswordChange(false); setNewPassword(""); setConfirmPassword(""); }}
+                            onClick={() => {
+                              setShowPasswordChange(false);
+                              setNewPassword("");
+                              setConfirmPassword("");
+                            }}
                             className="px-6 py-3 bg-[#111] hover:bg-[#222] text-[#888] hover:text-white border border-[#333] text-[10px] font-bold tracking-widest uppercase transition flex items-center justify-center"
                           >
                             CANCEL

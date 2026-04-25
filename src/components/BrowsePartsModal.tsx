@@ -48,7 +48,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   onClose,
 }) => {
   const { user } = useAuth();
-  const shopId = user?.shop_id || "";
+  const shopId = user?.shop_id;
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,22 +59,26 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   >("all");
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
 
-
   useEffect(() => {
     if (isOpen) {
       fetchParts();
     }
   }, [isOpen]);
 
-
-
   const fetchParts = async () => {
     try {
       setLoading(true);
-      let query = supabase.from("parts").select("*").order("name", { ascending: true });
+
+      let query = supabase
+        .from("parts")
+        .select("*")
+        .order("name", { ascending: true });
+
+      // If we have a shopId, filter by it. Otherwise fetch all (public gallery view)
       if (shopId) {
         query = query.eq("shop_id", shopId);
       }
+
       const { data, error } = await query;
       if (error) throw error;
       setParts((data as Part[]) || []);
@@ -114,7 +118,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
   // ── Part detail view (read-only) ──
   if (selectedPart) {
     const isInStock = (selectedPart.quantity_in_stock ?? 0) > 0;
-    const stockQty = selectedPart.quantity_in_stock ?? 0;
 
     return (
       <AnimatePresence>
@@ -188,7 +191,7 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                     </span>
                     {isInStock ? (
                       <span className="text-[10px] font-bold tracking-[0.2em] bg-[#152215] text-[#4ade80] px-3 py-1.5 border border-[#4ade80]/40 uppercase flex items-center gap-1">
-                        <CheckCircle size={10} /> IN STOCK ({stockQty})
+                        <CheckCircle size={10} /> IN STOCK
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold tracking-[0.2em] bg-[#111] text-[#6b6b6b] px-3 py-1.5 border border-[#333] uppercase">
@@ -229,8 +232,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                       </span>
                     </div>
                   )}
-
-
                 </div>
               </div>
             </div>
@@ -442,7 +443,6 @@ const BrowsePartsModal: React.FC<BrowsePartsModalProps> = ({
                             </p>
                           )}
                         </div>
-
                       </div>
                     </motion.div>
                   );

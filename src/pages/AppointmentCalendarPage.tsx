@@ -86,7 +86,7 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
   useEffect(() => {
     fetchAppointments();
-    
+
     const channel = supabase
       .channel("appointments-changes")
       .on(
@@ -97,6 +97,8 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
       .subscribe();
 
     return () => {
+      // ✅ FIX: Call unsubscribe before removeChannel to properly clean up subscription
+      channel.unsubscribe();
       fetchAbortRef.current?.abort();
       supabase.removeChannel(channel);
     };
@@ -125,14 +127,19 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
   const getFilteredAppointments = (): Appointment[] => {
     if (user?.role === "owner") return appointments;
-    if (user?.role === "mechanic") return appointments.filter((apt) => apt.mechanic_id === user.id);
-    if (user?.role === "customer") return appointments.filter((apt) => apt.customer_id === user.id);
+    if (user?.role === "mechanic")
+      return appointments.filter((apt) => apt.mechanic_id === user.id);
+    if (user?.role === "customer")
+      return appointments.filter((apt) => apt.customer_id === user.id);
     return [];
   };
 
   const filteredAppointments = getFilteredAppointments();
 
-  const handleStatusChange = async (appointmentId: string, newStatus: AppointmentStatus) => {
+  const handleStatusChange = async (
+    appointmentId: string,
+    newStatus: AppointmentStatus,
+  ) => {
     if (user?.role === "owner" || user?.role === "mechanic") {
       try {
         const appointment = appointments.find((a) => a.id === appointmentId);
@@ -141,11 +148,15 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
         // Workflow Enforcements
         if (newStatus === "completed") {
           if (user.role !== "owner") {
-            alert("Only administrators can finalize appointments for the dashboard.");
+            alert(
+              "Only administrators can finalize appointments for the dashboard.",
+            );
             return;
           }
           if (appointment.status !== "ready_for_finalization") {
-            alert("The mechanic must mark the work as complete before you can finalize it.");
+            alert(
+              "The mechanic must mark the work as complete before you can finalize it.",
+            );
             return;
           }
         }
@@ -159,12 +170,18 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
               .select("quantity_in_stock")
               .eq("id", part.part_id)
               .single();
-            
+
             if (partData) {
-              const newQty = Math.max(0, partData.quantity_in_stock - part.quantity);
+              const newQty = Math.max(
+                0,
+                partData.quantity_in_stock - part.quantity,
+              );
               await supabase
                 .from("parts")
-                .update({ quantity_in_stock: newQty, updated_at: new Date().toISOString() })
+                .update({
+                  quantity_in_stock: newQty,
+                  updated_at: new Date().toISOString(),
+                })
                 .eq("id", part.part_id);
             }
           }
@@ -178,8 +195,14 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
         setAppointments(
           appointments.map((apt) =>
-            apt.id === appointmentId ? { ...apt, status: newStatus, updated_at: new Date().toISOString() } : apt
-          )
+            apt.id === appointmentId
+              ? {
+                  ...apt,
+                  status: newStatus,
+                  updated_at: new Date().toISOString(),
+                }
+              : apt,
+          ),
         );
       } catch (err) {
         console.error("Error updating appointment status:", err);
@@ -189,7 +212,11 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   };
 
   const handleBookAppointment = async () => {
-    if (!formData.customer_name || !formData.customer_phone || !formData.vehicle_make) {
+    if (
+      !formData.customer_name ||
+      !formData.customer_phone ||
+      !formData.vehicle_make
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -211,7 +238,11 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
         shop_id: user?.shop_id || null,
       };
 
-      const { data, error } = await supabase.from("appointments").insert([appointmentData]).select().single();
+      const { data, error } = await supabase
+        .from("appointments")
+        .insert([appointmentData])
+        .select()
+        .single();
       if (error) throw error;
 
       setAppointments([...appointments, data]);
@@ -239,28 +270,36 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
   const canUpdateStatus = isOwner || isMechanic;
 
   const upcomingAppointments = filteredAppointments.filter(
-    (a) => a.status === "pending" || a.status === "confirmed" || a.status === "ready_for_finalization"
+    (a) =>
+      a.status === "pending" ||
+      a.status === "confirmed" ||
+      a.status === "ready_for_finalization",
   );
   const pastAppointments = filteredAppointments.filter(
-    (a) => a.status === "completed" || a.status === "cancelled"
+    (a) => a.status === "completed" || a.status === "cancelled",
   );
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <section className="relative w-full pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-800 to-transparent">
         <div className="max-w-6xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
             <div className="flex items-center gap-3 mb-4">
               <Clock className="w-8 h-8 text-moto-accent" />
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white">
-                {isOwner ? 'Customer' : 'Your'} <span className="text-moto-accent">Appointments</span>
+                {isOwner ? "Customer" : "Your"}{" "}
+                <span className="text-moto-accent">Appointments</span>
               </h1>
             </div>
             <p className="text-lg text-slate-300 max-w-2xl">
-              {isOwner 
-                ? 'View and manage all customer appointments. Track booking statuses and assign mechanics.'
-                : 'Schedule service appointments, track your booking status, and select your preferred mechanic. Professional service at your convenience.'
-              }
+              {isOwner
+                ? "View and manage all customer appointments. Track booking statuses and assign mechanics."
+                : "Schedule service appointments, track your booking status, and select your preferred mechanic. Professional service at your convenience."}
             </p>
           </motion.div>
         </div>
@@ -271,13 +310,14 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-6 border-b border-[#222]">
             <div>
               <div className="flex items-center gap-3 text-[#d63a2f] text-[10px] font-bold tracking-[0.2em] uppercase mb-1">
-                <div className="w-6 h-[1px] bg-[#d63a2f]" /> {isOwner ? "SHOP APPOINTMENTS" : "MY APPOINTMENTS"}
+                <div className="w-6 h-[1px] bg-[#d63a2f]" />{" "}
+                {isOwner ? "SHOP APPOINTMENTS" : "MY APPOINTMENTS"}
               </div>
               <h1 className="font-display text-3xl sm:text-4xl text-white uppercase tracking-wide">
                 APPOINTMENTS LIST
               </h1>
             </div>
-            
+
             {canBookAppointments && (
               <button
                 onClick={() => setShowBookingForm(true)}
@@ -289,65 +329,110 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
           </div>
 
           {isMechanic && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 bg-[#221515] border border-[#d63a2f]/30 p-4 flex items-start gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 bg-[#221515] border border-[#d63a2f]/30 p-4 flex items-start gap-4"
+            >
               <Info className="w-5 h-5 text-[#d63a2f] flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-[#d63a2f] tracking-[0.2em] text-[10px] uppercase mb-1">Mechanic View</h3>
-                <p className="text-[#888] text-xs font-light">You can only see appointments assigned to you. Update assignment status to track service progress.</p>
+                <h3 className="font-bold text-[#d63a2f] tracking-[0.2em] text-[10px] uppercase mb-1">
+                  Mechanic View
+                </h3>
+                <p className="text-[#888] text-xs font-light">
+                  You can only see appointments assigned to you. Update
+                  assignment status to track service progress.
+                </p>
               </div>
             </motion.div>
           )}
 
           <div className="mb-12">
-            <h2 className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">ACTIVE & UPCOMING</h2>
+            <h2 className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
+              ACTIVE & UPCOMING
+            </h2>
             {upcomingAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 border border-[#222] bg-[#111]">
                 <Clock className="w-12 h-12 text-[#333] mb-4" strokeWidth={1} />
-                <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">NO ACTIVE APPOINTMENTS</p>
+                <p className="text-[#6b6b6b] text-[10px] tracking-widest uppercase font-bold">
+                  NO ACTIVE APPOINTMENTS
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 <AnimatePresence>
                   {upcomingAppointments.map((apt) => (
-                    <motion.div key={apt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111111] border border-[#222] hover:border-[#333] transition flex flex-col p-5">
+                    <motion.div
+                      key={apt.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[#111111] border border-[#222] hover:border-[#333] transition flex flex-col p-5"
+                    >
                       <div className="flex items-start justify-between mb-4 pb-4 border-b border-[#222]">
                         <div>
                           <p className="font-display text-xl text-white uppercase flex items-center gap-2">
-                           {new Date(apt.scheduled_date).toLocaleDateString("en-PH", { month: 'short', day: 'numeric', year: 'numeric' })}
-                           <span className="text-[#d63a2f] px-2">•</span>
-                           {apt.scheduled_time}
+                            {new Date(apt.scheduled_date).toLocaleDateString(
+                              "en-PH",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}
+                            <span className="text-[#d63a2f] px-2">•</span>
+                            {apt.scheduled_time}
                           </p>
-                          <p className="text-[#6b6b6b] text-[10px] font-bold tracking-[0.2em] uppercase mt-1">{apt.service_type}</p>
+                          <p className="text-[#6b6b6b] text-[10px] font-bold tracking-[0.2em] uppercase mt-1">
+                            {apt.service_type}
+                          </p>
                         </div>
                         {canUpdateStatus ? (
                           <div className="flex items-center gap-2">
-                             {apt.status === "ready_for_finalization" && isOwner && (
-                               <button 
-                                 onClick={() => handleStatusChange(apt.id, "completed")}
-                                 className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[9px] font-black uppercase tracking-widest transition shadow-lg shadow-green-900/20"
-                               >
-                                 Finalize Revenue
-                               </button>
-                             )}
-                             <select
-                               value={apt.status}
-                               onChange={(e) => handleStatusChange(apt.id, e.target.value as AppointmentStatus)}
-                               className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border appearance-none outline-none transition cursor-pointer text-center ${statusConfig[apt.status].color}`}
-                             >
-                               {Object.entries(statusConfig).map(([status, config]) => {
-                                 // Simple logic to hide confusing options from mechanics
-                                 if (isMechanic && (status === "completed")) return null;
-                                 if (isMechanic && status === "cancelled") return null;
-                                 return (
-                                   <option key={status} value={status} className="bg-[#111] text-white">
-                                     {config.label}
-                                   </option>
-                                 );
-                               })}
-                             </select>
+                            {apt.status === "ready_for_finalization" &&
+                              isOwner && (
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(apt.id, "completed")
+                                  }
+                                  className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[9px] font-black uppercase tracking-widest transition shadow-lg shadow-green-900/20"
+                                >
+                                  Finalize Revenue
+                                </button>
+                              )}
+                            <select
+                              value={apt.status}
+                              onChange={(e) =>
+                                handleStatusChange(
+                                  apt.id,
+                                  e.target.value as AppointmentStatus,
+                                )
+                              }
+                              className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border appearance-none outline-none transition cursor-pointer text-center ${statusConfig[apt.status].color}`}
+                            >
+                              {Object.entries(statusConfig).map(
+                                ([status, config]) => {
+                                  // Simple logic to hide confusing options from mechanics
+                                  if (isMechanic && status === "completed")
+                                    return null;
+                                  if (isMechanic && status === "cancelled")
+                                    return null;
+                                  return (
+                                    <option
+                                      key={status}
+                                      value={status}
+                                      className="bg-[#111] text-white"
+                                    >
+                                      {config.label}
+                                    </option>
+                                  );
+                                },
+                              )}
+                            </select>
                           </div>
                         ) : (
-                          <span className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border ${statusConfig[apt.status].color}`}>
+                          <span
+                            className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 border ${statusConfig[apt.status].color}`}
+                          >
                             {statusConfig[apt.status].label}
                           </span>
                         )}
@@ -355,18 +440,33 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
                       <div className="flex-1 space-y-2 mb-2">
                         {(apt as any).customer?.name && (
                           <div className="flex items-center gap-2">
-                            <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">CLIENT:</span>
-                            <span className="text-[#ccc] text-xs font-medium">{(apt as any).customer.name} {(apt as any).customer.phone ? `- ${(apt as any).customer.phone}` : ''}</span>
+                            <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">
+                              CLIENT:
+                            </span>
+                            <span className="text-[#ccc] text-xs font-medium">
+                              {(apt as any).customer.name}{" "}
+                              {(apt as any).customer.phone
+                                ? `- ${(apt as any).customer.phone}`
+                                : ""}
+                            </span>
                           </div>
                         )}
                         <div className="flex items-center gap-2">
-                          <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">VEHICLE:</span>
-                          <span className="text-[#ccc] text-xs font-medium">{apt.description?.split(" - ")[0] || "Unknown"}</span>
+                          <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">
+                            VEHICLE:
+                          </span>
+                          <span className="text-[#ccc] text-xs font-medium">
+                            {apt.description?.split(" - ")[0] || "Unknown"}
+                          </span>
                         </div>
                         {apt.notes && (
                           <div className="flex items-start gap-2 mt-2 pt-2 border-t border-[#1a1a1a]">
-                            <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">NOTES:</span>
-                            <span className="text-[#888] text-xs font-light">{apt.notes}</span>
+                            <span className="text-[#555] text-[10px] font-bold uppercase tracking-widest min-w-[70px]">
+                              NOTES:
+                            </span>
+                            <span className="text-[#888] text-xs font-light">
+                              {apt.notes}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -379,16 +479,34 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
           {pastAppointments.length > 0 && (
             <div>
-              <h2 className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">PAST & COMPLETED</h2>
+              <h2 className="text-[#6b6b6b] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
+                PAST & COMPLETED
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {pastAppointments.map((apt) => (
-                  <div key={apt.id} className="bg-[#0a0a0a] border border-[#222] p-4 opacity-75 hover:opacity-100 transition">
+                  <div
+                    key={apt.id}
+                    className="bg-[#0a0a0a] border border-[#222] p-4 opacity-75 hover:opacity-100 transition"
+                  >
                     <div className="flex justify-between items-center mb-2">
-                      <p className="font-display text-white uppercase text-sm">{new Date(apt.scheduled_date).toLocaleDateString("en-PH", { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                      <span className="text-[#555] text-[9px] font-bold uppercase tracking-widest border border-[#222] px-2 py-1">{statusConfig[apt.status].label}</span>
+                      <p className="font-display text-white uppercase text-sm">
+                        {new Date(apt.scheduled_date).toLocaleDateString(
+                          "en-PH",
+                          { month: "short", day: "numeric", year: "numeric" },
+                        )}
+                      </p>
+                      <span className="text-[#555] text-[9px] font-bold uppercase tracking-widest border border-[#222] px-2 py-1">
+                        {statusConfig[apt.status].label}
+                      </span>
                     </div>
-                    <p className="text-[#888] text-xs mb-1 font-bold">{apt.service_type}</p>
-                    {(apt as any).customer?.name && <p className="text-[#666] text-xs">{(apt as any).customer.name}</p>}
+                    <p className="text-[#888] text-xs mb-1 font-bold">
+                      {apt.service_type}
+                    </p>
+                    {(apt as any).customer?.name && (
+                      <p className="text-[#666] text-xs">
+                        {(apt as any).customer.name}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -399,18 +517,73 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
 
       <AnimatePresence>
         {showBookingForm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowBookingForm(false); }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full max-w-md shadow-2xl overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowBookingForm(false);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-[#0a0a0a] rounded-none border border-[#222] border-t-2 border-t-[#d63a2f] w-full max-w-md shadow-2xl overflow-hidden"
+            >
               <div className="px-6 py-5 border-b border-[#222] bg-[#111111] flex items-center justify-between">
-                <h3 className="text-xl font-display font-bold text-white uppercase tracking-wide">Book Appointment</h3>
-                <button onClick={() => setShowBookingForm(false)} className="text-[#6b6b6b] hover:text-white transition">&times;</button>
+                <h3 className="text-xl font-display font-bold text-white uppercase tracking-wide">
+                  Book Appointment
+                </h3>
+                <button
+                  onClick={() => setShowBookingForm(false)}
+                  className="text-[#6b6b6b] hover:text-white transition"
+                >
+                  &times;
+                </button>
               </div>
               <div className="px-6 py-6 space-y-4">
-                <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold" />
-                <input type="text" placeholder="Customer Name" value={formData.customer_name} onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })} className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]" />
-                <input type="tel" placeholder="Phone Number" value={formData.customer_phone} onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })} className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]" />
-                <input type="text" placeholder="Vehicle (Make/Model)" value={formData.vehicle_make} onChange={(e) => setFormData({ ...formData, vehicle_make: e.target.value })} className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]" />
-                <select value={formData.service_type} onChange={(e) => setFormData({ ...formData, service_type: e.target.value })} className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold"
+                />
+                <input
+                  type="text"
+                  placeholder="Customer Name"
+                  value={formData.customer_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customer_name: e.target.value })
+                  }
+                  className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={formData.customer_phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customer_phone: e.target.value })
+                  }
+                  className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]"
+                />
+                <input
+                  type="text"
+                  placeholder="Vehicle (Make/Model)"
+                  value={formData.vehicle_make}
+                  onChange={(e) =>
+                    setFormData({ ...formData, vehicle_make: e.target.value })
+                  }
+                  className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold placeholder:text-[#555]"
+                />
+                <select
+                  value={formData.service_type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, service_type: e.target.value })
+                  }
+                  className="w-full bg-[#111] text-white px-4 py-3 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold"
+                >
                   <option>Oil Change</option>
                   <option>Brake Service</option>
                   <option>Tire Replacement</option>
@@ -420,25 +593,50 @@ const AppointmentCalendarPage: React.FC<AppointmentCalendarPageProps> = () => {
                 </select>
                 <div className="bg-[#111] p-4 border border-[#333]">
                   <label className="flex items-center gap-2 text-white font-bold mb-3 uppercase text-[10px] tracking-widest">
-                    <Wrench className="w-3 h-3 text-[#d63a2f]" /> Assign Mechanic
+                    <Wrench className="w-3 h-3 text-[#d63a2f]" /> Assign
+                    Mechanic
                   </label>
                   {loadingMechanics ? (
-                    <p className="text-[#6b6b6b] text-xs uppercase tracking-widest">Loading mechanics...</p>
+                    <p className="text-[#6b6b6b] text-xs uppercase tracking-widest">
+                      Loading mechanics...
+                    </p>
                   ) : mechanics.length === 0 ? (
-                    <p className="text-[#6b6b6b] text-xs uppercase tracking-widest">No mechanics available</p>
+                    <p className="text-[#6b6b6b] text-xs uppercase tracking-widest">
+                      No mechanics available
+                    </p>
                   ) : (
-                    <select value={formData.mechanic_id} onChange={(e) => setFormData({ ...formData, mechanic_id: e.target.value })} className="w-full bg-[#1a1a1a] text-white px-3 py-2 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold">
+                    <select
+                      value={formData.mechanic_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          mechanic_id: e.target.value,
+                        })
+                      }
+                      className="w-full bg-[#1a1a1a] text-white px-3 py-2 border border-[#333] focus:border-[#d63a2f] focus:outline-none transition rounded-none uppercase text-xs tracking-widest font-bold"
+                    >
                       <option value="">Select a mechanic (optional)</option>
                       {mechanics.map((mechanic) => (
-                        <option key={mechanic.id} value={mechanic.id}>{mechanic.name}</option>
+                        <option key={mechanic.id} value={mechanic.id}>
+                          {mechanic.name}
+                        </option>
                       ))}
                     </select>
                   )}
                 </div>
               </div>
               <div className="px-6 py-5 border-t border-[#222] bg-[#111111] flex gap-3">
-                <button onClick={() => setShowBookingForm(false)} className="flex-1 bg-transparent hover:bg-[#222] text-[#6b6b6b] hover:text-white font-bold py-3 uppercase tracking-widest text-[10px] border border-[#333] transition">Cancel</button>
-                <button onClick={handleBookAppointment} disabled={saving} className="flex-1 bg-[#d63a2f] hover:bg-[#b82e25] text-white font-bold py-3 uppercase tracking-widest text-[10px] transition disabled:opacity-50">
+                <button
+                  onClick={() => setShowBookingForm(false)}
+                  className="flex-1 bg-transparent hover:bg-[#222] text-[#6b6b6b] hover:text-white font-bold py-3 uppercase tracking-widest text-[10px] border border-[#333] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBookAppointment}
+                  disabled={saving}
+                  className="flex-1 bg-[#d63a2f] hover:bg-[#b82e25] text-white font-bold py-3 uppercase tracking-widest text-[10px] transition disabled:opacity-50"
+                >
                   {saving ? "Saving..." : "Book Now"}
                 </button>
               </div>

@@ -46,12 +46,11 @@ interface CustomerContext {
   email: string;
   phone: string | null;
   address: string | null;
-  vehicles: {
+    vehicles: {
     id: string;
     make: string;
     model: string;
     year: number;
-    plate_number: string;
   }[];
   recentAppointments: {
     service_type: string;
@@ -100,7 +99,7 @@ async function fetchCustomerContext(userId: string): Promise<CustomerContext | n
     // Get vehicles
     const { data: vehicles } = await supabase
       .from("vehicles")
-      .select("id, make, model, year, plate_number")
+      .select("id, make, model, year")
       .eq("customer_id", customerData.id);
 
     // Get recent appointments
@@ -150,7 +149,7 @@ function buildSystemPrompt(ctx: ShopContext, customer: CustomerContext | null): 
     ? Object.entries(partsByCategory)
         .map(([cat, items]) =>
           `${cat.toUpperCase()}:\n` +
-          items.map((p) => `  - ${p.name}: PHP ${Number(p.unit_price).toFixed(2)} (${p.quantity_in_stock} pcs in stock)`).join("\n")
+          items.map((p) => `  - ${p.name}: PHP ${Number(p.unit_price).toFixed(2)} (In Stock)`).join("\n")
         ).join("\n")
     : "No parts listed. Advise customer to visit the shop.";
 
@@ -168,7 +167,7 @@ function buildSystemPrompt(ctx: ShopContext, customer: CustomerContext | null): 
   let customerBlock = "";
   if (customer) {
     const vehicleList = customer.vehicles.length > 0
-      ? customer.vehicles.map((v) => `  - ${v.year} ${v.make} ${v.model} (Plate: ${v.plate_number})`).join("\n")
+      ? customer.vehicles.map((v) => `  - ${v.year} ${v.make} ${v.model}`).join("\n")
       : "  - No vehicles registered yet.";
 
     const apptList = customer.recentAppointments.length > 0
